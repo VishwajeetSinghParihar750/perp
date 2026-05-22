@@ -203,8 +203,8 @@ export default class Exchange implements Snapshotable<EXCHANGE_SNAPSHOT> {
   getDepth(symbol: CURRENCY_SYMBOL) {
     return this.orderBook.getDepth(symbol);
   }
-  getOrders(symbol: CURRENCY_SYMBOL) {
-    return this.orderBook.getOrders(symbol);
+  getOrders(userId: string, symbol: CURRENCY_SYMBOL) {
+    return this.orderBook.getOrders(userId, symbol);
   }
   getPosition(userId: string, symbol?: CURRENCY_SYMBOL) {
     return this.positionManager.getPosition(userId, symbol);

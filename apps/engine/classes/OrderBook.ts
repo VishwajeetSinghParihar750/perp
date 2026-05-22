@@ -633,7 +633,7 @@ export default class OrderBook implements Snapshotable<ORDERBOOK_SNAPSHOT> {
     return { status: "NOT_CANCELLABLE" };
   };
 
-  getOrder = (orderId: ORDER_ID) => {
+  getOrder = (orderId: ORDER_ID): ORDER | null => {
     if (this.orders[orderId]) return { ...this.orders[orderId] };
 
     if (false) {
@@ -644,20 +644,11 @@ export default class OrderBook implements Snapshotable<ORDERBOOK_SNAPSHOT> {
 
     return null;
   };
-  getOrders = (symbol: CURRENCY_SYMBOL) => {
-    let ordersInfo = {
-      updateOffset: this.depthUpdateOffset.get(symbol),
-      orders: { asks: [] as any[], bids: [] as any[] },
-    };
-
-    this.orderBook[symbol]?.ASKS.forEach(([_, priceLevel]) => {
-      priceLevel.orders.forEach((order) => ordersInfo.orders.asks.push(order));
-    });
-    this.orderBook[symbol]?.BIDS.forEach(([_, priceLevel]) => {
-      priceLevel.orders.forEach((order) => ordersInfo.orders.bids.push(order));
-    });
-
-    return ordersInfo;
+  getOrders = (userId: string, symbol: CURRENCY_SYMBOL) => {
+    // TODO LATER : optimize this by addig another ds
+    return Object.values(this.orders).filter(
+      (order) => order.userId == userId && order.symbol == symbol,
+    );
   };
 
   // count is how many prices you want

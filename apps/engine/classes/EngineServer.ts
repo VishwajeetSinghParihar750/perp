@@ -2,56 +2,20 @@ import "dotenv/config";
 import { createClient, type RedisClientType } from "redis";
 import EventBus from "./EventBus.js";
 import Exchange from "./Exchange.js";
-import type { ENGINE_EVENT, ENGINE_EVENT_TYPE } from "@repo/shared-types";
+import type {
+  ENGINE_EVENT,
+  ENGINE_EVENT_TYPE,
+  ENGINE_REQUEST_SCHEMA,
+  ENGINE_REQUEST,
+  ENGINE_RESPONSE_SCHEMA,
+  ENGINE_RESPONSE,
+  SUBSCRIBE_EVENT_REQUEST,
+} from "@repo/shared-types";
 import EventPublisher from "./EventPublisher.js";
 import MarkPriceObserver from "./MarkPriceObserver.js";
 import SnapshotManager from "./SnapshotManger.js";
 
 type ENGINE_INFO_REQUEST_TYPE = "markprice_updated";
-
-type ENGINE_REQUEST_TYPE =
-  | "create_order"
-  | "cancel_order"
-  | "get_balance"
-  | "add_balance"
-  | "get_depth"
-  | "get_orders"
-  | "get_order"
-  | "get_orderbook"
-  | "get_position"
-  | "subscribe_event"
-  | "unsubscribe_event";
-
-type ENGINE_RESPONSE_TYPE =
-  | "order_created"
-  | "order_cancelled"
-  | "event_subscribed"
-  | "event_unsubscribed"
-  | "balance"
-  | "balance_updated"
-  | "depth"
-  | "position"
-  | "orders"
-  | "orderbook"
-  | "order"
-  | "fills"
-  | "error"; // for anything that did not succeed
-
-type ENGINE_INFO_REQUEST = {
-  type: ENGINE_INFO_REQUEST_TYPE;
-  payload?: any;
-};
-type ENGINE_REQUEST = {
-  stream: string;
-  requestId: string;
-  type: ENGINE_REQUEST_TYPE;
-  payload?: any;
-};
-type ENGINE_RESPONSE = {
-  requestId: string;
-  type: ENGINE_RESPONSE_TYPE;
-  payload?: any;
-};
 
 class EngineServer {
   private redisClient: RedisClientType;
@@ -150,11 +114,10 @@ class EngineServer {
   }
 
   private handleSubscribeEventRequest = (
-    engineRequest: ENGINE_REQUEST,
+    engineRequest: SUBSCRIBE_EVENT_REQUEST,
   ): ENGINE_RESPONSE => {
     try {
-      const { event, stream }: { event: ENGINE_EVENT_TYPE; stream: string } =
-        engineRequest.payload;
+      const { event, stream } = engineRequest.payload;
       this.eventPublisher.subscribeEvent(event, stream);
       return {
         requestId: engineRequest.requestId,
@@ -202,7 +165,10 @@ class EngineServer {
     engineRequest: ENGINE_REQUEST,
   ): ENGINE_RESPONSE => {
     try {
-      let orders = this.exchange.getOrders(engineRequest.payload.symbol);
+      let orders = this.exchange.getOrders(
+        engineRequest.payload.userId,
+        engineRequest.payload.symbol,
+      );
       return {
         requestId: engineRequest.requestId,
         type: "orders",

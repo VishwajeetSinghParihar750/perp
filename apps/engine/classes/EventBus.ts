@@ -1,12 +1,12 @@
 import { HashMap } from "js-sdsl";
-import type { ENGINE_EVENT, ENGINE_EVENT_TYPE } from "@repo/shared-types";
+import { EngineEvent } from "@repo/shared-types";
 
-type EVENT_CALLBACK_FUNCTION = (event: ENGINE_EVENT) => void;
+type EVENT_CALLBACK_FUNCTION = (event: EngineEvent.ENGINE_EVENT) => void;
 
 class EventBus {
   private eventCallbacks = new HashMap<string, EVENT_CALLBACK_FUNCTION[]>();
 
-  emit = (event: ENGINE_EVENT) => {
+  emit = (event: EngineEvent.ENGINE_EVENT) => {
     let callbacks = this.eventCallbacks.getElementByKey(event.type);
     if (callbacks) callbacks.forEach((cb) => cb(event));
 
@@ -15,7 +15,7 @@ class EventBus {
   };
 
   on = (
-    eventType: ENGINE_EVENT_TYPE | "ALL_EVENTS",
+    eventType: EngineEvent.ENGINE_EVENT_TYPE | "ALL_EVENTS",
     cb: EVENT_CALLBACK_FUNCTION,
   ) => {
     let callbacks = this.eventCallbacks.getElementByKey(eventType) || [];

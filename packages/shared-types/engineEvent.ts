@@ -2,6 +2,7 @@ import z from "zod";
 
 const ORDERBOOK_EVENT_TYPE = z.union([
   z.literal("depth.updated.sol_usd"),
+  z.literal("depth.updated.eth_usd"),
   z.literal("depth.updated.btc_usd"),
   z.literal("users_pnl.updated"),
 ]);
@@ -19,13 +20,25 @@ const ENGINE_EVENT_TYPE_SCHEMA = z.union([
 type ENGINE_EVENT_TYPE = z.infer<typeof ENGINE_EVENT_TYPE_SCHEMA>;
 
 //
-const DEPTH_UPDATED_SOL_USD_SCHEMA = z.object({});
-const DEPTH_UPDATED_BTC_USD_SCHEMA = z.object({});
+const DEPTH_UPDATED_SOL_USD_SCHEMA = z.object({
+  type: z.literal("depth.updated.sol_usd"),
+  data: z.object({}),
+});
+const DEPTH_UPDATED_BTC_USD_SCHEMA = z.object({
+  type: z.literal("depth.updated.btc_usd"),
+  data: z.object({}),
+});
+const DEPTH_UPDATED_ETH_USD_SCHEMA = z.object({
+  type: z.literal("depth.updated.eth_usd"),
+  data: z.object({}),
+});
 
 const ENGINE_EVENT_SCHEMA = z.union([
   DEPTH_UPDATED_BTC_USD_SCHEMA,
   DEPTH_UPDATED_SOL_USD_SCHEMA,
+  DEPTH_UPDATED_ETH_USD_SCHEMA,
 ]);
+
 type ENGINE_EVENT = z.infer<typeof ENGINE_EVENT_SCHEMA>;
 
 export { ENGINE_EVENT_TYPE_SCHEMA, ENGINE_EVENT_SCHEMA };

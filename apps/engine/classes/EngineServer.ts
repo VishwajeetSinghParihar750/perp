@@ -11,7 +11,7 @@ import type {
 import EventPublisher from "./EventPublisher.js";
 import MarkPriceObserver from "./MarkPriceObserver.js";
 import SnapshotManager from "./SnapshotManger.js";
-import type { FILLS_INFO } from "./OrderBook.js";
+import type { FILLS_INFO } from "../types/order.js";
 
 type ENGINE_INFO_REQUEST_TYPE = "markprice_updated";
 
@@ -309,7 +309,7 @@ class EngineServer {
       let { symbol } = engineRequest.payload;
 
       //
-      let payload = this.exchange.getOrderbook(symbol);
+      let payload = this.exchange.getOrderbookSnapshot(symbol);
 
       return { requestId: engineRequest.requestId, type: "orderbook", payload };
     } catch (error) {

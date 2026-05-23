@@ -1,15 +1,15 @@
 import type { RedisClientType } from "redis";
 
-import type { ENGINE_EVENT, ENGINE_EVENT_TYPE } from "@repo/shared-types";
+import type { EngineEvent } from "@repo/shared-types";
 import type EventBus from "./EventBus.js";
 import type { Snapshotable } from "./SnapshotManger.js";
 
 type EVENT_SUBSCRIPTIONS_SNAPSHOT = {
-  subscriptions: Record<ENGINE_EVENT_TYPE, string[]>;
+  subscriptions: Record<EngineEvent.ENGINE_EVENT_TYPE, string[]>;
 };
 
 class EventPublisher implements Snapshotable<EVENT_SUBSCRIPTIONS_SNAPSHOT> {
-  subscriptions: Map<ENGINE_EVENT_TYPE, Set<string>> = new Map(); // string represents stream name that is subscribed to that event
+  subscriptions: Map<EngineEvent.ENGINE_EVENT_TYPE, Set<string>> = new Map(); // string represents stream name that is subscribed to that event
   redisClient: RedisClientType;
 
   eventBus: EventBus;
@@ -26,11 +26,14 @@ class EventPublisher implements Snapshotable<EVENT_SUBSCRIPTIONS_SNAPSHOT> {
   loadSnapshot(data: EVENT_SUBSCRIPTIONS_SNAPSHOT) {
     this.subscriptions = new Map();
     Object.entries(data.subscriptions).forEach(([key, sub]) => {
-      this.subscriptions.set(key as ENGINE_EVENT_TYPE, new Set(sub));
+      this.subscriptions.set(
+        key as EngineEvent.ENGINE_EVENT_TYPE,
+        new Set(sub),
+      );
     });
   }
 
-  handleEvent = async (event: ENGINE_EVENT) => {
+  handleEvent = async (event: EngineEvent.ENGINE_EVENT) => {
     // send to all backends who are subbed
     let streams = this.subscriptions.get(event.type);
     if (streams)
@@ -58,13 +61,13 @@ class EventPublisher implements Snapshotable<EVENT_SUBSCRIPTIONS_SNAPSHOT> {
     this.eventBus = eventBus;
   }
 
-  subscribeEvent(event: ENGINE_EVENT_TYPE, stream: string) {
+  subscribeEvent(event: EngineEvent.ENGINE_EVENT_TYPE, stream: string) {
     // later TOOD: ideally should limit what outsiders can sub to
     let subs = this.subscriptions.getOrInsert(event, new Set());
     subs.add(stream);
     this.subscriptions.set(event, subs);
   }
-  unsubscribeEvent(event: ENGINE_EVENT_TYPE, stream: string) {
+  unsubscribeEvent(event: EngineEvent.ENGINE_EVENT_TYPE, stream: string) {
     // later TOOD: ideally should limit what outsiders can sub to
     this.subscriptions?.get(event)?.delete(stream);
   }

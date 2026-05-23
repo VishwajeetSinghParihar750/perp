@@ -131,13 +131,13 @@ class LiquidationEngine implements Snapshotable<LIQUIDATION_SNAPSHOT> {
     assert(position);
 
     // lock the positoin for this symbol for this user
-    this.eventBus.emit({
-      type: "liquidation.started",
-      data: {
-        userId: position.userId,
-        symbol: position.symbol,
-      },
-    });
+    // this.eventBus.emit({
+    //   type: "liquidation.started",
+    //   data: {
+    //     userId: position.userId,
+    //     symbol: position.symbol,
+    //   },
+    // });
 
     // plave in beingLiquidatedPositions
     delete this.positions[positionId];

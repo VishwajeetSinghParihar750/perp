@@ -6,41 +6,17 @@ import {
   type SIDE,
   type TYPE,
   type MARGIN_TYPE,
-  type ORDER_STATUS,
   type ORDER,
 } from "../types/order.js";
-import { type POSITION_TYPE } from "../types/positions.js";
 import { assert } from "node:console";
-import type { ENGINE_EVENT } from "@repo/shared-types";
 import type EventBus from "./EventBus.js";
 import type { Snapshotable } from "./SnapshotManger.js";
+import type { EngineEvent } from "@repo/shared-types";
+
+import type { FILLS_INFO } from "../types/order.js";
 
 type PRICE_LEVEL = { totalQuantity: number; orders: LinkList<ORDER> };
 
-type FILL_INFO = {
-  fillId: string;
-  symbol: CURRENCY_SYMBOL;
-  qty: number;
-  price: number;
-  bidPrice: number;
-
-  sellOrderInfo: {
-    sellerId: string;
-    orderId: string;
-    totalQty: number;
-    margin: number;
-    marginType: MARGIN_TYPE;
-  };
-  buyOrderInfo: {
-    buyerId: string;
-    orderId: string;
-    totalQty: number;
-    margin: number;
-    marginType: MARGIN_TYPE;
-  };
-};
-
-export type FILLS_INFO = FILL_INFO[];
 type DEPTH = { price: number; quantity: number }[];
 
 type ORDERBOOK = Partial<
@@ -350,31 +326,31 @@ export default class OrderBook implements Snapshotable<ORDERBOOK_SNAPSHOT> {
   private emitDepthUpdateEvents(symbol: CURRENCY_SYMBOL, depthUpdates: any) {
     //  emit depthUpdateEvent on  eventBus
     //  maintain depthUpdateOffset
-    switch (symbol) {
-      case "BTCUSD":
-        this.emitEvent({
-          type: "depth.updated.btc_usd",
-          data: {
-            updateOffset: this.depthUpdateOffset.get(symbol),
-            updates: depthUpdates,
-          },
-        });
+    // switch (symbol) {
+    //   case "BTCUSD":
+    //     this.emitEvent({
+    //       type: "depth.updated.btc_usd",
+    //       data: {
+    //         updateOffset: this.depthUpdateOffset.get(symbol),
+    //         updates: depthUpdates,
+    //       },
+    //     });
 
-        break;
+    //     break;
 
-      case "SOLUSD":
-        this.emitEvent({
-          type: "depth.updated.sol_usd",
-          data: {
-            updateOffset: this.depthUpdateOffset.get(symbol),
-            updates: depthUpdates,
-          },
-        });
-        break;
+    //   case "SOLUSD":
+    //     this.emitEvent({
+    //       type: "depth.updated.sol_usd",
+    //       data: {
+    //         updateOffset: this.depthUpdateOffset.get(symbol),
+    //         updates: depthUpdates,
+    //       },
+    //     });
+    //     break;
 
-      default:
-        return; //
-    }
+    //   default:
+    //     return; //
+    // }
 
     this.depthUpdateOffset.set(symbol, this.depthUpdateOffset.get(symbol)! + 1);
   }
@@ -542,7 +518,7 @@ export default class OrderBook implements Snapshotable<ORDERBOOK_SNAPSHOT> {
     };
   };
 
-  private emitEvent(event: ENGINE_EVENT) {
+  private emitEvent(event: EngineEvent.ENGINE_EVENT) {
     this.eventBus.emit(event);
   }
 

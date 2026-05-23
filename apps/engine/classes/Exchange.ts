@@ -1,7 +1,5 @@
-import OrderBook, {
-  type FILLS_INFO,
-  type ORDERBOOK_SNAPSHOT,
-} from "./OrderBook.js";
+import OrderBook, { type ORDERBOOK_SNAPSHOT } from "./OrderBook.js";
+import type { FILLS_INFO } from "../types/order.js";
 import Balances, { type BALANCE_SNAPSHOT } from "./Balances.js";
 import type {
   CURRENCY_SYMBOL,
@@ -193,10 +191,6 @@ export default class Exchange implements Snapshotable<EXCHANGE_SNAPSHOT> {
     }
   }
 
-  getOrder(orderId: ORDER_ID) {
-    return this.orderBook.getOrder(orderId);
-  }
-
   getBalance(userId: string, symbol?: CURRENCY_SYMBOL) {
     return this.balances.getBalance(userId, symbol);
   }
@@ -207,14 +201,11 @@ export default class Exchange implements Snapshotable<EXCHANGE_SNAPSHOT> {
   getDepth(symbol: CURRENCY_SYMBOL) {
     return this.orderBook.getDepth(symbol);
   }
-  getOrders(userId: string, symbol: CURRENCY_SYMBOL) {
-    return this.orderBook.getOrders(userId, symbol);
-  }
   getPosition(userId: string, symbol?: CURRENCY_SYMBOL) {
     return this.positionManager.getPosition(userId, symbol);
   }
-  getOrderbook(symbol: CURRENCY_SYMBOL) {
-    return this.orderBook.getOrderbook(symbol);
+  getOrderbookSnapshot(symbol: CURRENCY_SYMBOL) {
+    return this.orderBook.getOrderbookSnapshot(symbol);
   }
   handleMarkPriceUpdate({
     newPrice,

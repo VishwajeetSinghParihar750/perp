@@ -7,6 +7,31 @@ type ORDER_ID = string;
 type MARGIN_TYPE = "ISOLATED" | "CROSS";
 type ORDER_STATUS = "OPEN" | "PARTIALLY_FILLED" | "FILLED" | "CANCELLED";
 
+type FILL_INFO = {
+  fillId: string;
+  symbol: CURRENCY_SYMBOL;
+  qty: number;
+  price: number;
+  bidPrice: number;
+
+  sellOrderInfo: {
+    sellerId: string;
+    orderId: string;
+    totalQty: number;
+    margin: number;
+    marginType: MARGIN_TYPE;
+  };
+  buyOrderInfo: {
+    buyerId: string;
+    orderId: string;
+    totalQty: number;
+    margin: number;
+    marginType: MARGIN_TYPE;
+  };
+};
+
+type FILLS_INFO = FILL_INFO[];
+
 type ORDER = {
   userId: string;
   price: number;
@@ -32,5 +57,7 @@ export type {
   MARGIN_TYPE,
   ORDER_STATUS,
   ORDER,
+  FILLS_INFO,
+  FILL_INFO,
 };
 export { CURRENCY_SYMBOL_ARRAY };

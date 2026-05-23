@@ -1,7 +1,7 @@
 import type { CURRENCY_SYMBOL, MARGIN_TYPE } from "../types/order.js";
 import type { POSITION, POSITION_UPDATES } from "../types/positions.js";
-import type { FILLS_INFO } from "./OrderBook.js";
 import type { Snapshotable } from "./SnapshotManger.js";
+import type { FILLS_INFO } from "../types/order.js";
 
 type ORDER_UPDATES = Record<
   string, // userid

@@ -1,14 +1,13 @@
 import z from "zod";
 
-const signupSchema = z.object({
+const SIGNUP_SCHEMA = z.object({
   username: z.string(),
   password: z.string(),
 });
 
-const signinSchema = z.object({
+const SIGNIN_SCHEMA = z.object({
   username: z.string(),
   password: z.string(),
 });
 
-export { signinSchema, signupSchema };
-
+export { SIGNIN_SCHEMA, SIGNUP_SCHEMA };

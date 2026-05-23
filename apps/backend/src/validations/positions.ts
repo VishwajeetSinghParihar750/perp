@@ -1,8 +1,8 @@
 import z from "zod";
 import { CURRENCY_SYMBOL } from "./common.js";
 
-const getPositionSchema = z.object({
+const GET_POSITION_SCHEMA = z.object({
   symbol: CURRENCY_SYMBOL.optional(),
 });
 
-export { getPositionSchema };
+export { GET_POSITION_SCHEMA };

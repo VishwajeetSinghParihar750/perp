@@ -6,12 +6,12 @@ const SUBSCRIBED_EVENT = z.union([
   z.literal("depth.updated.eth_usd"),
 ]);
 
-const subscribeEventSchema = z.object({
+const SUBSCRIBE_EVENT_SCHEMA = z.object({
   eventType: SUBSCRIBED_EVENT,
 });
 
-const unsubscribeEventSchema = z.object({
+const UNSUBSCRIBE_EVENT_SCHEMA = z.object({
   eventType: SUBSCRIBED_EVENT,
 });
 
-export { subscribeEventSchema, unsubscribeEventSchema };
+export { SUBSCRIBED_EVENT, SUBSCRIBE_EVENT_SCHEMA, UNSUBSCRIBE_EVENT_SCHEMA };

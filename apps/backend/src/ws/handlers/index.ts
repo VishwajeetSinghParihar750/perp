@@ -1,30 +1,30 @@
 import { zodBodyVerificationWebSocket } from "../../middlewares/zodBodyVerification.js";
 import type { WS_REQUEST } from "../../types/wsServer.js";
 import {
-  addBalanceSchema,
-  getBalanceSchema,
+  ADD_BALANCE_SCHEMA,
+  GET_BALANCE_SCHEMA,
 } from "../../validations/balance.js";
 import WebSocket from "ws";
 import {
-  createOrderSchema,
-  deleteOrderSchema,
-  getDepthSchema,
-  getOrderbookSchema,
-  getOrderSchema,
+  CREATE_ORDER_SCHEMA,
+  DELETE_ORDER_SCHEMA,
+  GET_DEPTH_SCHEMA,
+  GET_ORDERBOOK_SCHEMA,
+  GET_ORDER_SCHEMA,
 } from "../../validations/order.js";
 import { sendMessageOnWebSocket } from "../utils/messaging.js";
 import {
-  subscribeEventSchema,
-  unsubscribeEventSchema,
+  SUBSCRIBE_EVENT_SCHEMA,
+  UNSUBSCRIBE_EVENT_SCHEMA,
 } from "../../validations/subscribeEvent.js";
 import EngineInterface from "../../engineInterface.js";
-import { getPositionSchema } from "../../validations/positions.js";
-import type { ENGINE_EVENT_TYPE } from "@repo/shared-types";
+import { GET_POSITION_SCHEMA } from "../../validations/positions.js";
+import type { EngineEvent } from "@repo/shared-types";
 
 const engine = new EngineInterface();
 
 async function handleAddBalanceRequest(req: WS_REQUEST, ws: WebSocket) {
-  if (zodBodyVerificationWebSocket(addBalanceSchema, req, ws)) {
+  if (zodBodyVerificationWebSocket(ADD_BALANCE_SCHEMA, req, ws)) {
     try {
       const { type, payload } = await engine.getEngineResponseForRequest(
         "add_balance",
@@ -58,7 +58,7 @@ async function handleAddBalanceRequest(req: WS_REQUEST, ws: WebSocket) {
 }
 
 async function handleCreateOrderRequest(req: WS_REQUEST, ws: WebSocket) {
-  if (zodBodyVerificationWebSocket(createOrderSchema, req, ws)) {
+  if (zodBodyVerificationWebSocket(CREATE_ORDER_SCHEMA, req, ws)) {
     try {
       const { type, price, qty, symbol, side } = req.payload;
 
@@ -95,25 +95,24 @@ async function handleCreateOrderRequest(req: WS_REQUEST, ws: WebSocket) {
 }
 
 async function handleGetOrderRequest(req: WS_REQUEST, ws: WebSocket) {
-  if (zodBodyVerificationWebSocket(getOrderSchema, req, ws)) {
+  if (zodBodyVerificationWebSocket(GET_ORDER_SCHEMA, req, ws)) {
     try {
-      const { orderId } = req.payload;
-
-      const { type: resType, payload } =
-        await engine.getEngineResponseForRequest("get_order", { orderId });
-
-      if (resType == "error") {
-        sendMessageOnWebSocket(ws, {
-          payload,
-          requestId: req.rqeuestId,
-          type: "error",
-        });
-      } else
-        sendMessageOnWebSocket(ws, {
-          payload,
-          requestId: req.rqeuestId,
-          type: "order",
-        });
+      // TODO: send to db
+      // const { orderId } = req.payload;
+      // const { type: resType, payload } =
+      //   await engine.getEngineResponseForRequest("get_order", { orderId });
+      // if (resType == "error") {
+      //   sendMessageOnWebSocket(ws, {
+      //     payload,
+      //     requestId: req.rqeuestId,
+      //     type: "error",
+      //   });
+      // } else
+      //   sendMessageOnWebSocket(ws, {
+      //     payload,
+      //     requestId: req.rqeuestId,
+      //     type: "order",
+      //   });
     } catch (error) {
       sendMessageOnWebSocket(ws, {
         type: "error",
@@ -125,7 +124,7 @@ async function handleGetOrderRequest(req: WS_REQUEST, ws: WebSocket) {
 }
 
 async function handleCancelOrderRequest(req: WS_REQUEST, ws: WebSocket) {
-  if (zodBodyVerificationWebSocket(deleteOrderSchema, req, ws)) {
+  if (zodBodyVerificationWebSocket(DELETE_ORDER_SCHEMA, req, ws)) {
     try {
       const { orderId } = req.payload;
 
@@ -155,7 +154,7 @@ async function handleCancelOrderRequest(req: WS_REQUEST, ws: WebSocket) {
 }
 
 async function handleGetDepthRequest(req: WS_REQUEST, ws: WebSocket) {
-  if (zodBodyVerificationWebSocket(getDepthSchema, req, ws)) {
+  if (zodBodyVerificationWebSocket(GET_DEPTH_SCHEMA, req, ws)) {
     try {
       const { symbol } = req.payload;
       const { type: resType, payload } =
@@ -187,24 +186,23 @@ async function handleGetDepthRequest(req: WS_REQUEST, ws: WebSocket) {
 
 async function handleGetOrdersRequest(req: WS_REQUEST, ws: WebSocket) {
   try {
-    const { type: resType, payload } = await engine.getEngineResponseForRequest(
-      "get_orders",
-
-      {},
-    );
-
-    if (resType == "error") {
-      sendMessageOnWebSocket(ws, {
-        payload,
-        requestId: req.rqeuestId,
-        type: "error",
-      });
-    } else
-      sendMessageOnWebSocket(ws, {
-        payload,
-        requestId: req.rqeuestId,
-        type: "orders",
-      });
+    // TODO: send to db
+    // const { type: resType, payload } = await engine.getEngineResponseForRequest(
+    //   "get_orders",
+    //   {},
+    // );
+    // if (resType == "error") {
+    //   sendMessageOnWebSocket(ws, {
+    //     payload,
+    //     requestId: req.rqeuestId,
+    //     type: "error",
+    //   });
+    // } else
+    //   sendMessageOnWebSocket(ws, {
+    //     payload,
+    //     requestId: req.rqeuestId,
+    //     type: "orders",
+    //   });
   } catch (error) {
     sendMessageOnWebSocket(ws, {
       type: "error",
@@ -215,7 +213,7 @@ async function handleGetOrdersRequest(req: WS_REQUEST, ws: WebSocket) {
 }
 
 async function handleGetOrderbookRequest(req: WS_REQUEST, ws: WebSocket) {
-  if (zodBodyVerificationWebSocket(getOrderbookSchema, req, ws))
+  if (zodBodyVerificationWebSocket(GET_ORDERBOOK_SCHEMA, req, ws))
     try {
       const { type: resType, payload } =
         await engine.getEngineResponseForRequest("get_orderbook", {
@@ -244,7 +242,7 @@ async function handleGetOrderbookRequest(req: WS_REQUEST, ws: WebSocket) {
 }
 
 async function handleGetPositionsRequest(req: WS_REQUEST, ws: WebSocket) {
-  if (zodBodyVerificationWebSocket(getPositionSchema, req, ws))
+  if (zodBodyVerificationWebSocket(GET_POSITION_SCHEMA, req, ws))
     try {
       const { type: resType, payload } =
         await engine.getEngineResponseForRequest("get_position", {
@@ -300,7 +298,7 @@ async function handleGetFillsRequest(req: WS_REQUEST, ws: WebSocket) {
 }
 
 async function handleGetBalanceRequest(req: WS_REQUEST, ws: WebSocket) {
-  if (zodBodyVerificationWebSocket(getBalanceSchema, req, ws)) {
+  if (zodBodyVerificationWebSocket(GET_BALANCE_SCHEMA, req, ws)) {
     try {
       const { symbol } = req.payload;
 
@@ -333,9 +331,10 @@ async function handleGetBalanceRequest(req: WS_REQUEST, ws: WebSocket) {
 }
 
 async function handleSubscribeEventRequest(req: WS_REQUEST, ws: WebSocket) {
-  if (zodBodyVerificationWebSocket(subscribeEventSchema, req, ws)) {
+  if (zodBodyVerificationWebSocket(SUBSCRIBE_EVENT_SCHEMA, req, ws)) {
     try {
-      const { eventType }: { eventType: ENGINE_EVENT_TYPE } = req.payload;
+      const { eventType }: { eventType: EngineEvent.ENGINE_EVENT_TYPE } =
+        req.payload;
 
       //
       await engine.subscribeEvent(eventType, ws);
@@ -368,9 +367,10 @@ async function handleSubscribeEventRequest(req: WS_REQUEST, ws: WebSocket) {
 }
 
 async function handleUnsubscribeEventRequest(req: WS_REQUEST, ws: WebSocket) {
-  if (zodBodyVerificationWebSocket(unsubscribeEventSchema, req, ws)) {
+  if (zodBodyVerificationWebSocket(UNSUBSCRIBE_EVENT_SCHEMA, req, ws)) {
     try {
-      const { eventType }: { eventType: ENGINE_EVENT_TYPE } = req.payload;
+      const { eventType }: { eventType: EngineEvent.ENGINE_EVENT_TYPE } =
+        req.payload;
 
       await engine.unsubscribeEvent(eventType, ws);
 

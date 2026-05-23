@@ -1,11 +1,11 @@
 import { Router } from "express";
 import { zodBodyVerification } from "../middlewares/zodBodyVerification.js";
-import { signinSchema, signupSchema } from "../validations/auth.js";
+import { SIGNIN_SCHEMA, SIGNUP_SCHEMA } from "../validations/auth.js";
 import { prisma } from "@repo/db";
 import jwt from "jsonwebtoken";
 
 const router = Router();
-router.post("/signup", zodBodyVerification(signupSchema), async (req, res) => {
+router.post("/signup", zodBodyVerification(SIGNUP_SCHEMA), async (req, res) => {
   //
   try {
     const { username, password } = req.body;
@@ -25,7 +25,7 @@ router.post("/signup", zodBodyVerification(signupSchema), async (req, res) => {
   }
 });
 
-router.post("/signin", zodBodyVerification(signinSchema), async (req, res) => {
+router.post("/signin", zodBodyVerification(SIGNIN_SCHEMA), async (req, res) => {
   try {
     const { username, password } = req.body;
 

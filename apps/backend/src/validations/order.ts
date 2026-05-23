@@ -1,7 +1,7 @@
 import z from "zod";
 import { CURRENCY_SYMBOL } from "./common.js";
 
-const createOrderSchema = z.object({
+const CREATE_ORDER_SCHEMA = z.object({
   type: z.enum(["MARKET", "LIMIT"]),
   side: z.enum(["BUY", "SELL"]),
   qty: z.number(),
@@ -9,17 +9,26 @@ const createOrderSchema = z.object({
   price: z.number().optional(),
 });
 
-const getOrderbookSchema = z.object({
+const GET_ORDERBOOK_SCHEMA = z.object({
   symbol: CURRENCY_SYMBOL,
 });
-const getOrderSchema = z.object({ orderId: z.string() });
-const deleteOrderSchema = z.object({ orderId: z.string() });
-const getDepthSchema = z.object({ symbol: CURRENCY_SYMBOL });
+
+const GET_ORDER_SCHEMA = z.object({
+  orderId: z.string(),
+});
+
+const DELETE_ORDER_SCHEMA = z.object({
+  orderId: z.string(),
+});
+
+const GET_DEPTH_SCHEMA = z.object({
+  symbol: CURRENCY_SYMBOL,
+});
 
 export {
-  createOrderSchema,
-  getOrderSchema,
-  deleteOrderSchema,
-  getDepthSchema,
-  getOrderbookSchema,
+  CREATE_ORDER_SCHEMA,
+  GET_ORDER_SCHEMA,
+  DELETE_ORDER_SCHEMA,
+  GET_DEPTH_SCHEMA,
+  GET_ORDERBOOK_SCHEMA,
 };

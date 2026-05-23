@@ -3,24 +3,28 @@ import WebSocket from "ws";
 import { redisClient as redisClientGlobal } from "@repo/db";
 import type { RedisClientType } from "redis";
 import type {
-  ENGINE_REQUEST,
-  ENGINE_REQUEST_TYPE,
-  ENGINE_RESPONSE,
-  ENGINE_EVENT_TYPE,
+  EngineRequest,
+  EngineResponse,
+  EngineEvent,
 } from "@repo/shared-types";
 import { sendMessageOnWebSocket } from "./ws/utils/messaging.js";
 
 class EngineInterface {
   redisClient: RedisClientType;
 
-  engineSubscriptions: Set<ENGINE_EVENT_TYPE> = new Set();
-  eventSubscriptions: Partial<Record<ENGINE_EVENT_TYPE, Set<WebSocket>>> = {};
+  engineSubscriptions: Set<EngineEvent.ENGINE_EVENT_TYPE> = new Set();
+  eventSubscriptions: Partial<
+    Record<EngineEvent.ENGINE_EVENT_TYPE, Set<WebSocket>>
+  > = {};
 
   // saving resolve, reject functions of promise
   pendingRequests: Record<string, [(data: any) => void, (data: any) => void]> =
     {};
 
-  async subscribeEvent(eventType: ENGINE_EVENT_TYPE, ws: WebSocket) {
+  async subscribeEvent(
+    eventType: EngineEvent.ENGINE_EVENT_TYPE,
+    ws: WebSocket,
+  ) {
     let res = await this.getEngineResponseForRequest("subscribe_event", {
       event: eventType,
       stream: process.env.REDIS_ENGINE_RECEIVE_STREAM_NAME!,
@@ -33,7 +37,10 @@ class EngineInterface {
 
     this.eventSubscriptions[eventType].add(ws);
   }
-  async unsubscribeEvent(eventType: ENGINE_EVENT_TYPE, ws: WebSocket) {
+  async unsubscribeEvent(
+    eventType: EngineEvent.ENGINE_EVENT_TYPE,
+    ws: WebSocket,
+  ) {
     let res = await this.getEngineResponseForRequest("unsubscribe_event", {
       event: eventType,
       stream: process.env.REDIS_ENGINE_RECEIVE_STREAM_NAME!,
@@ -70,10 +77,10 @@ class EngineInterface {
     await this.setupEventHandling();
   };
 
-  private broadcastEvent = (type: ENGINE_EVENT_TYPE, data: any) => {
+  private broadcastEvent = (type: EngineEvent.ENGINE_EVENT_TYPE, data: any) => {
     this.eventSubscriptions[type]?.forEach((ws) => {
       // TODO
-      sendMessageOnWebSocket(ws, { type, payload: data });
+      // sendMessageOnWebSocket(ws, { type, payload: data });
     });
   };
 
@@ -96,11 +103,18 @@ class EngineInterface {
           // it has a request id , means it was personal
           let gotRequestId = "";
           try {
-            let { type, payload, requestId } = JSON.parse(
+            let response = JSON.parse(
               message.data!,
-            ) as ENGINE_RESPONSE;
+            ) as EngineResponse.ENGINE_RESPONSE;
+
+            let { type, requestId } = response;
 
             gotRequestId = requestId;
+
+            let payload = undefined;
+            if ("payload" in response) {
+              payload = response.payload;
+            }
 
             if (requestId) {
               console.log(type, payload, requestId);
@@ -108,7 +122,7 @@ class EngineInterface {
               this.pendingRequests[requestId]?.[0]?.({ type, payload });
               delete this.pendingRequests[requestId];
             } else if (type != "error") {
-              this.broadcastEvent(payload.type, payload.data);
+              if (payload) this.broadcastEvent(payload.type, payload.data);
             }
           } catch (error) {
             console.log("error in parsing engine message", error);
@@ -124,7 +138,9 @@ class EngineInterface {
     this.handleEngineMessages(redisClient, lastRedisMessageId);
   }
 
-  private sendEngineRequest = async (engineRequest: ENGINE_REQUEST) => {
+  private sendEngineRequest = async (
+    engineRequest: EngineRequest.ENGINE_REQUEST,
+  ) => {
     let res = await this.redisClient.xAdd(
       process.env.REDIS_ENGINE_SEND_STREAM_NAME!,
       "*",
@@ -136,7 +152,7 @@ class EngineInterface {
   };
 
   getEngineResponseForRequest = async (
-    type: ENGINE_REQUEST_TYPE,
+    type: EngineRequest.ENGINE_REQUEST_TYPE,
     payload: any,
   ) => {
     let requestId = crypto.randomUUID();

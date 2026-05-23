@@ -1,10 +1,13 @@
 import z from "zod";
 import { CURRENCY_SYMBOL } from "./common.js";
 
-const addBalanceSchema = z.object({
+const ADD_BALANCE_SCHEMA = z.object({
   amount: z.number(),
   symbol: CURRENCY_SYMBOL,
 });
-const getBalanceSchema = z.object({ symbol: CURRENCY_SYMBOL.optional() });
 
-export { addBalanceSchema, getBalanceSchema };
+const GET_BALANCE_SCHEMA = z.object({
+  symbol: CURRENCY_SYMBOL.optional(),
+});
+
+export { ADD_BALANCE_SCHEMA, GET_BALANCE_SCHEMA };

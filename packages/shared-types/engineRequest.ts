@@ -18,6 +18,19 @@ type CURRENCY_SYMBOL = z.infer<typeof CURRENCY_SYMBOL_SCHEMA>;
 const MARGIN_TYPE_SCHEMA = z.union([z.literal("ISOLATED"), z.literal("CROSS")]);
 type MARGIN_TYPE = z.infer<typeof MARGIN_TYPE_SCHEMA>;
 
+const ENGINE_REQUEST_TYPE_SCHEMA = z.union([
+  z.literal("create_order"),
+  z.literal("cancel_order"),
+  z.literal("get_position"),
+  z.literal("get_balance"),
+  z.literal("add_balance"),
+  z.literal("get_depth"),
+  z.literal("get_orderbook"),
+  z.literal("subscribe_event"),
+  z.literal("unsubscribe_event"),
+]);
+type ENGINE_REQUEST_TYPE = z.infer<typeof ENGINE_REQUEST_TYPE_SCHEMA>;
+
 const baseSchema = z.object({
   stream: z.string(),
   requestId: z.string(),
@@ -128,6 +141,8 @@ export type {
   CURRENCY_SYMBOL,
   MARGIN_TYPE,
   SIDE,
+  TYPE,
+  ENGINE_REQUEST_TYPE,
 };
 
 export {
@@ -144,4 +159,6 @@ export {
   CURRENCY_SYMBOL_SCHEMA,
   MARGIN_TYPE_SCHEMA,
   SIDE_SCHEMA,
+  TYPE_SCHEMA,
+  ENGINE_REQUEST_TYPE_SCHEMA,
 };

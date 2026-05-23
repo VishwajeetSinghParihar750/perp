@@ -30,9 +30,14 @@ wss.on("connection", (ws, req) => {
       const jsonParsedData = JSON.parse(networkData.toString());
       await handleWebSocketMessage(ws, jsonParsedData);
     } catch (error) {
+      // sendMessageOnWebSocket(ws, {
+      // type: "error",
+      // payload: "wrong message format",
+      // });
       sendMessageOnWebSocket(ws, {
         type: "error",
-        payload: "wrong message format",
+        requestId: "0",
+        payload: "error happened in either parsing request or handling request",
       });
     }
   });

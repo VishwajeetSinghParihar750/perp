@@ -87,16 +87,14 @@ const GET_POSITION_SCHEMA = z.object({
 const SUBSCRIBE_EVENT_SCHEMA = z.object({
   type: z.literal("subscribe_event"),
   payload: z.object({
-    event: EngineEvent.ENGINE_EVENT_TYPE_SCHEMA,
-    stream: z.string(),
+    events: z.array(EngineEvent.ENGINE_EVENT_TYPE_SCHEMA).min(1),
   }),
 });
 
 const UNSUBSCRIBE_EVENT_SCHEMA = z.object({
   type: z.literal("unsubscribe_event"),
   payload: z.object({
-    event: EngineEvent.ENGINE_EVENT_TYPE_SCHEMA,
-    stream: z.string(),
+    events: z.array(EngineEvent.ENGINE_EVENT_TYPE_SCHEMA).min(1),
   }),
 });
 
@@ -111,6 +109,13 @@ const ENGINE_REQUEST_SCHEMA = z.union([
   CANCEL_ORDER_SCHEMA,
   CREATE_ORDER_SCHEMA,
 ]);
+
+const DB_REQUEST_SCHEMA = z.object({});
+const BACKEND_REQUEST_SCHEMA = z.union([
+  ENGINE_REQUEST_SCHEMA,
+  DB_REQUEST_SCHEMA,
+]);
+
 type CREATE_ORDER_REQUEST = z.infer<typeof CREATE_ORDER_SCHEMA>;
 type CANCEL_ORDER_REQUEST = z.infer<typeof CANCEL_ORDER_SCHEMA>;
 type GET_BALANCE_REQUEST = z.infer<typeof GET_BALANCE_SCHEMA>;
@@ -122,6 +127,7 @@ type SUBSCRIBE_EVENT_REQUEST = z.infer<typeof SUBSCRIBE_EVENT_SCHEMA>;
 type UNSUBSCRIBE_EVENT_REQUEST = z.infer<typeof UNSUBSCRIBE_EVENT_SCHEMA>;
 
 type ENGINE_REQUEST = z.infer<typeof ENGINE_REQUEST_SCHEMA>;
+type BACKEND_REQUEST = z.infer<typeof BACKEND_REQUEST_SCHEMA>;
 
 export type {
   CREATE_ORDER_REQUEST,
@@ -139,6 +145,7 @@ export type {
   SIDE,
   TYPE,
   ENGINE_REQUEST_TYPE,
+  BACKEND_REQUEST,
 };
 
 export {
@@ -158,4 +165,5 @@ export {
   TYPE_SCHEMA,
   ENGINE_REQUEST_TYPE_SCHEMA,
   CREATE_ORDER_PAYLOAD_SCHEMA,
+  BACKEND_REQUEST_SCHEMA,
 };

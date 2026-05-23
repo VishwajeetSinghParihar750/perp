@@ -1,7 +1,11 @@
-import type { WS_RESPONSE } from "../../types/wsServer.js";
 import WebSocket from "ws";
 
-const sendMessageOnWebSocket = (ws: WebSocket, message: WS_RESPONSE) => {
+import { BackendResponse } from "@repo/shared-backend-types";
+
+const sendMessageOnWebSocket = (
+  ws: WebSocket,
+  message: BackendResponse.BACKEND_RESPOSNE,
+) => {
   ws.send(JSON.stringify(message));
 };
 export { sendMessageOnWebSocket };

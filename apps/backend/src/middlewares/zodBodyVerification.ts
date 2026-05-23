@@ -3,6 +3,7 @@ import z from "zod";
 import { sendMessageOnWebSocket } from "../ws/utils/messaging.js";
 import type { WS_REQUEST } from "../types/wsServer.js";
 import WebSocket from "ws";
+import type { BackendRequest } from "@repo/shared-backend-types";
 
 const zodBodyVerification =
   (schema: z.ZodObject) =>
@@ -17,7 +18,7 @@ const zodBodyVerification =
 
 const zodBodyVerificationWebSocket = (
   schema: z.ZodObject,
-  request: WS_REQUEST,
+  request: BackendRequest.BACKEND_REQUEST,
   ws: WebSocket,
 ): boolean => {
   const { success } = schema.safeParse(request.payload);

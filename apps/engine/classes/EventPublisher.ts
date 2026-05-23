@@ -35,14 +35,15 @@ class EventPublisher implements Snapshotable<EVENT_SUBSCRIPTIONS_SNAPSHOT> {
 
   handleEvent = async (event: EngineEvent.ENGINE_EVENT) => {
     // send to all backends who are subbed
-    let streams = this.subscriptions.get(event.type);
+    let { data, type } = event.payload;
+    let streams = this.subscriptions.get(type);
     if (streams)
       await Promise.all(
         [...streams].map((stream) =>
           this.redisClient.xAdd(stream, "*", {
             data: JSON.stringify({
-              type: event.type,
-              payload: event.data,
+              type: type,
+              payload: data,
             }),
           }),
         ),

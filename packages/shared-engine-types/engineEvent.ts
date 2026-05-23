@@ -24,19 +24,19 @@ const baseEventSchema = z.object({ type: z.literal("event") });
 const DEPTH_UPDATED_SOL_USD_SCHEMA = baseEventSchema.extend({
   payload: z.object({
     type: z.literal("depth.updated.sol_usd"),
-    data: z.object({}),
+    data: z.string(),
   }),
 });
 const DEPTH_UPDATED_BTC_USD_SCHEMA = baseEventSchema.extend({
   payload: z.object({
     type: z.literal("depth.updated.btc_usd"),
-    data: z.object({}),
+    data: z.string(),
   }),
 });
 const DEPTH_UPDATED_ETH_USD_SCHEMA = baseEventSchema.extend({
   payload: z.object({
     type: z.literal("depth.updated.eth_usd"),
-    data: z.object({}),
+    data: z.string(),
   }),
 });
 

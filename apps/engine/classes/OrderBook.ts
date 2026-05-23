@@ -52,6 +52,11 @@ type ORDERBOOK = Partial<
     }
   >
 >;
+type PRICE_LEVEL_SNAPSHOT = { totalQuantity: number; orders: ORDER[] };
+type ORDERBOOK_SYMBOL_SNAPSHOT = {
+  BIDS: [number, PRICE_LEVEL_SNAPSHOT][];
+  ASKS: [number, PRICE_LEVEL_SNAPSHOT][];
+};
 
 // TODO : separate isolated and cross margin, they cant be merged together, that means
 // you can have two positions at same price, one - isolated , one - cross
@@ -71,8 +76,28 @@ export default class OrderBook implements Snapshotable<ORDERBOOK_SNAPSHOT> {
   eventBus: EventBus;
   depthUpdateOffset: Map<CURRENCY_SYMBOL, number>;
 
-  getOrderbook(symbol: CURRENCY_SYMBOL) {
-    return this.orderBook[symbol];
+  getOrderbookSnapshot(symbol: CURRENCY_SYMBOL): ORDERBOOK_SYMBOL_SNAPSHOT {
+    let toReturn: ORDERBOOK_SYMBOL_SNAPSHOT = {
+      ASKS: [],
+      BIDS: [],
+    };
+
+    this.orderBook[symbol]?.ASKS.forEach(([price, priceLevel]) => {
+      let priceLevelSnapshot: PRICE_LEVEL_SNAPSHOT = {
+        totalQuantity: priceLevel.totalQuantity,
+        orders: [...priceLevel.orders],
+      };
+      toReturn.ASKS.push([price, priceLevelSnapshot]);
+    });
+    this.orderBook[symbol]?.BIDS.forEach(([price, priceLevel]) => {
+      let priceLevelSnapshot: PRICE_LEVEL_SNAPSHOT = {
+        totalQuantity: priceLevel.totalQuantity,
+        orders: [...priceLevel.orders],
+      };
+      toReturn.BIDS.push([price, priceLevelSnapshot]);
+    });
+
+    return toReturn;
   }
 
   getSnapshot(): ORDERBOOK_SNAPSHOT {
@@ -633,30 +658,12 @@ export default class OrderBook implements Snapshotable<ORDERBOOK_SNAPSHOT> {
     return { status: "NOT_CANCELLABLE" };
   };
 
-  getOrder = (orderId: ORDER_ID): ORDER | null => {
-    if (this.orders[orderId]) return { ...this.orders[orderId] };
-
-    if (false) {
-      // TODO :
-      // check in db, etc if its already filled and is there
-      // send request to some other guy to fulfill
-    }
-
-    return null;
-  };
-  getOrders = (userId: string, symbol: CURRENCY_SYMBOL) => {
-    // TODO LATER : optimize this by addig another ds
-    return Object.values(this.orders).filter(
-      (order) => order.userId == userId && order.symbol == symbol,
-    );
-  };
-
   // count is how many prices you want
   getDepth = (
     symbol: CURRENCY_SYMBOL,
     count: number = 20,
-  ): { asks: DEPTH; bids: DEPTH } => {
-    let toReturn: { asks: DEPTH; bids: DEPTH } = { asks: [], bids: [] };
+  ): { ASKS: DEPTH; BIDS: DEPTH } => {
+    let toReturn: { ASKS: DEPTH; BIDS: DEPTH } = { ASKS: [], BIDS: [] };
 
     if (!this.orderBook[symbol]?.ASKS) return toReturn;
 
@@ -668,7 +675,7 @@ export default class OrderBook implements Snapshotable<ORDERBOOK_SNAPSHOT> {
       it != this.orderBook[symbol]!.ASKS.end() && i < countToReturn;
       it = it.next(), i++
     ) {
-      toReturn.asks.push({
+      toReturn.ASKS.push({
         price: it.pointer[0],
         quantity: it.pointer[1].totalQuantity,
       });
@@ -680,7 +687,7 @@ export default class OrderBook implements Snapshotable<ORDERBOOK_SNAPSHOT> {
       it != this.orderBook[symbol]!.BIDS.end() && i < countToReturn;
       it = it.next(), i++
     ) {
-      toReturn.bids.push({
+      toReturn.BIDS.push({
         price: it.pointer[0],
         quantity: it.pointer[1].totalQuantity,
       });

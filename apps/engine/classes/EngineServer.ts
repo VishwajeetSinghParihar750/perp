@@ -3,17 +3,15 @@ import { createClient, type RedisClientType } from "redis";
 import EventBus from "./EventBus.js";
 import Exchange from "./Exchange.js";
 import type {
-  ENGINE_EVENT,
-  ENGINE_EVENT_TYPE,
-  ENGINE_REQUEST_SCHEMA,
-  ENGINE_REQUEST,
-  ENGINE_RESPONSE_SCHEMA,
-  ENGINE_RESPONSE,
-  SUBSCRIBE_EVENT_REQUEST,
+  EngineEvent,
+  EngineRequest,
+  EngineResponse,
 } from "@repo/shared-types";
+
 import EventPublisher from "./EventPublisher.js";
 import MarkPriceObserver from "./MarkPriceObserver.js";
 import SnapshotManager from "./SnapshotManger.js";
+import type { FILLS_INFO } from "./OrderBook.js";
 
 type ENGINE_INFO_REQUEST_TYPE = "markprice_updated";
 
@@ -114,125 +112,109 @@ class EngineServer {
   }
 
   private handleSubscribeEventRequest = (
-    engineRequest: SUBSCRIBE_EVENT_REQUEST,
-  ): ENGINE_RESPONSE => {
+    engineRequest: EngineRequest.SUBSCRIBE_EVENT_REQUEST,
+  ): EngineResponse.ENGINE_RESPONSE => {
     try {
       const { event, stream } = engineRequest.payload;
       this.eventPublisher.subscribeEvent(event, stream);
       return {
         requestId: engineRequest.requestId,
         type: "event_subscribed",
-        payload: null,
       };
     } catch (error) {
-      return { requestId: engineRequest.requestId, type: "error" };
+      return {
+        requestId: engineRequest.requestId,
+        type: "error",
+        payload: (error as Error).message,
+      };
     }
   };
 
   private handleUnsubscribeEventRequest = (
-    engineRequest: ENGINE_REQUEST,
-  ): ENGINE_RESPONSE => {
+    engineRequest: EngineRequest.UNSUBSCRIBE_EVENT_REQUEST,
+  ): EngineResponse.ENGINE_RESPONSE => {
     try {
-      const { event, stream }: { event: ENGINE_EVENT_TYPE; stream: string } =
-        engineRequest.payload;
+      const { event, stream } = engineRequest.payload;
       this.eventPublisher.unsubscribeEvent(event, stream);
       return {
         requestId: engineRequest.requestId,
         type: "event_unsubscribed",
-        payload: null,
       };
     } catch (error) {
-      return { requestId: engineRequest.requestId, type: "error" };
+      return {
+        requestId: engineRequest.requestId,
+        type: "error",
+        payload: (error as Error).message,
+      };
     }
   };
 
   private handleGetDepthRequest = (
-    engineRequest: ENGINE_REQUEST,
-  ): ENGINE_RESPONSE => {
+    engineRequest: EngineRequest.GET_DEPTH_REQUEST,
+  ): EngineResponse.ENGINE_RESPONSE => {
     try {
-      let depth = this.exchange.getDepth(engineRequest.payload.symbol);
+      let { symbol } = engineRequest.payload;
+      let depth = this.exchange.getDepth(symbol);
       return {
         requestId: engineRequest.requestId,
         type: "depth",
         payload: depth,
       };
     } catch (error) {
-      return { requestId: engineRequest.requestId, type: "error" };
-    }
-  };
-
-  private handleGetOrdersRequest = (
-    engineRequest: ENGINE_REQUEST,
-  ): ENGINE_RESPONSE => {
-    try {
-      let orders = this.exchange.getOrders(
-        engineRequest.payload.userId,
-        engineRequest.payload.symbol,
-      );
       return {
         requestId: engineRequest.requestId,
-        type: "orders",
-        payload: orders,
+        type: "error",
+        payload: (error as Error).message,
       };
-    } catch (error) {
-      return { requestId: engineRequest.requestId, type: "error" };
     }
   };
 
-  private handleGetOrderRequest = (
-    engineRequest: ENGINE_REQUEST,
-  ): ENGINE_RESPONSE => {
-    try {
-      let order = this.exchange.getOrder(engineRequest.payload.orderId);
-      if (!order) throw new Error();
-
-      return {
-        requestId: engineRequest.requestId,
-        type: "order",
-        payload: order,
-      };
-    } catch (error) {
-      return { requestId: engineRequest.requestId, type: "error" };
-    }
-  };
   private handleGetBalanceRequest = (
-    engineRequest: ENGINE_REQUEST,
-  ): ENGINE_RESPONSE => {
+    engineRequest: EngineRequest.GET_BALANCE_REQUEST,
+  ): EngineResponse.ENGINE_RESPONSE => {
+    const { userId, symbol } = engineRequest.payload;
     try {
-      let balance = this.exchange.getBalance(
-        engineRequest.payload.userId,
-        engineRequest.payload.symbol,
-      );
+      let balance = this.exchange.getBalance(userId, symbol);
       return {
         requestId: engineRequest.requestId,
         type: "balance",
         payload: balance,
       };
     } catch (error) {
-      return { requestId: engineRequest.requestId, type: "error" };
+      return {
+        requestId: engineRequest.requestId,
+        type: "error",
+        payload: (error as Error).message,
+      };
     }
   };
 
   private handleCancelOrderRequest = (
-    engineRequest: ENGINE_REQUEST,
-  ): ENGINE_RESPONSE => {
+    engineRequest: EngineRequest.CANCEL_ORDER_REQUEST,
+  ): EngineResponse.ENGINE_RESPONSE => {
     try {
-      let { status } = this.exchange.cancelOrder(engineRequest.payload.orderId);
-      if (status != "CANCELLED") throw new Error();
+      let { orderId } = engineRequest.payload;
+      let { status } = this.exchange.cancelOrder(orderId);
+
+      if (status != "CANCELLED") throw new Error(status);
 
       return { requestId: engineRequest.requestId, type: "order_cancelled" };
     } catch (error) {
-      return { requestId: engineRequest.requestId, type: "error" };
+      return {
+        requestId: engineRequest.requestId,
+        type: "error",
+        payload: (error as Error).message,
+      };
     }
   };
 
   private handleCreateOrderRequest = (
-    engineRequest: ENGINE_REQUEST,
-  ): ENGINE_RESPONSE => {
+    engineRequest: EngineRequest.CREATE_ORDER_REQUEST,
+  ): EngineResponse.ENGINE_RESPONSE => {
     try {
       let { type, side, price, qty, symbol, userId, margin, marginType } =
         engineRequest.payload;
-      let { status, orderId, fills } = this.exchange.createOrder(
+      let res = this.exchange.createOrder(
         type,
         side,
         symbol,
@@ -242,6 +224,7 @@ class EngineServer {
         marginType,
         price,
       );
+      let { status } = res;
       if (status == "REJECTED")
         return {
           requestId: engineRequest.requestId,
@@ -249,28 +232,41 @@ class EngineServer {
           payload: "ORDER_REJECTED",
         };
 
+      let { fills, orderId } = res as {
+        status: "OPEN" | "FILLED";
+        orderId: string;
+        fills: FILLS_INFO;
+      };
+
       return {
         requestId: engineRequest.requestId,
         type: "order_created",
         payload: { status, fills, orderId },
       };
     } catch (error) {
-      return { requestId: engineRequest.requestId, type: "error" };
+      return {
+        requestId: engineRequest.requestId,
+        type: "error",
+        payload: (error as Error).message,
+      };
     }
   };
 
   private handleAddBalanceRequest = (
-    engineRequest: ENGINE_REQUEST,
-  ): ENGINE_RESPONSE => {
+    engineRequest: EngineRequest.ADD_BALANCE_REQUEST,
+  ): EngineResponse.ENGINE_RESPONSE => {
     try {
-      this.exchange.addBalance(
-        engineRequest.payload.userId,
-        engineRequest.payload.amount,
-        engineRequest.payload.symbol,
-      );
+      const { amount, symbol, userId } = engineRequest.payload;
+
+      this.exchange.addBalance(userId, amount, symbol);
+
       return { requestId: engineRequest.requestId, type: "balance_updated" };
     } catch (error) {
-      return { requestId: engineRequest.requestId, type: "error" };
+      return {
+        requestId: engineRequest.requestId,
+        type: "error",
+        payload: (error as Error).message,
+      };
     }
   };
 
@@ -288,19 +284,27 @@ class EngineServer {
     }
   };
 
-  private handleGetPositonRequest = (engineRequest: ENGINE_REQUEST) => {
+  private handleGetPositonRequest = (
+    engineRequest: EngineRequest.GET_POSITION_REQUEST,
+  ): EngineResponse.ENGINE_RESPONSE => {
     try {
       let { userId, symbol } = engineRequest.payload;
-
       //
       let payload = this.exchange.getPosition(userId, symbol);
 
       return { requestId: engineRequest.requestId, type: "position", payload };
     } catch (error) {
-      console.error("error in hanlding mark price update ", error);
+      return {
+        requestId: engineRequest.requestId,
+        type: "error",
+        payload: (error as Error).message,
+      };
     }
   };
-  private handleGetOrderbookRequest = (engineRequest: ENGINE_REQUEST) => {
+
+  private handleGetOrderbookRequest = (
+    engineRequest: EngineRequest.GET_ORDERBOOK_REQUEST,
+  ): EngineResponse.ENGINE_RESPONSE => {
     try {
       let { symbol } = engineRequest.payload;
 
@@ -309,11 +313,17 @@ class EngineServer {
 
       return { requestId: engineRequest.requestId, type: "orderbook", payload };
     } catch (error) {
-      console.error("error in hanlding mark price update ", error);
+      return {
+        requestId: engineRequest.requestId,
+        type: "error",
+        payload: (error as Error).message,
+      };
     }
   };
 
-  private handleEngineRequest = (engineRequest: ENGINE_REQUEST) => {
+  private handleEngineRequest = (
+    engineRequest: EngineRequest.ENGINE_REQUEST,
+  ) => {
     let response;
     switch (engineRequest.type) {
       case "add_balance":
@@ -338,12 +348,6 @@ class EngineServer {
       case "get_depth":
         response = this.handleGetDepthRequest(engineRequest);
         break;
-      case "get_order":
-        response = this.handleGetOrderRequest(engineRequest);
-        break;
-      case "get_orders":
-        response = this.handleGetOrdersRequest(engineRequest);
-        break;
       case "subscribe_event":
         response = this.handleSubscribeEventRequest(engineRequest);
         break;
@@ -357,6 +361,7 @@ class EngineServer {
 
     return response;
   };
+
   private handleEngineInfoRequest = (engineRequest: ENGINE_INFO_REQUEST) => {
     switch (engineRequest.type) {
       case "markprice_updated":

@@ -1,23 +1,9 @@
-import z, { string, symbol } from "zod";
+import z from "zod";
 import {
   CURRENCY_SYMBOL_SCHEMA,
   MARGIN_TYPE_SCHEMA,
   SIDE_SCHEMA,
 } from "./engineRequest.js";
-type ENGINE_RESPONSE_TYPE =
-  | "order_created"
-  | "order_cancelled"
-  | "event_subscribed"
-  | "event_unsubscribed"
-  | "balance"
-  | "balance_updated"
-  | "depth"
-  | "position"
-  | "orders"
-  | "orderbook"
-  | "order"
-  | "fills"
-  | "error";
 
 const ORDER_STATUS_SCHEMA = z.union([
   z.literal("OPEN"),
@@ -40,9 +26,17 @@ const ORDER_SCHEMA = z.object({
   //  for perp
   margin: z.number(),
   marginType: MARGIN_TYPE_SCHEMA,
+
   status: ORDER_STATUS_SCHEMA,
 });
-const ORDERBOOK_SCHEMA = z.object({});
+
+const PRICE_LEVEL_SCHEMA = z.object({
+  totalQuantity: z.number(),
+  orders: z.array(ORDER_SCHEMA),
+});
+const SYMBOL_ORDERBOOK_SCHEMA = z.object({
+  BIDS: z.array(z.tuple([z.number(), PRICE_LEVEL_SCHEMA])),
+});
 
 const POSITION_TYPE_SCHEMA = z.union([z.literal("LONG"), z.literal("SHORT")]);
 const POSITION_SCHEMA = z.object({
@@ -106,7 +100,10 @@ const EVENT_UNSUBSCRIBED_SCHEMA = baseResponseSchema.extend({
 });
 const BALANCE_SCHEMA = baseResponseSchema.extend({
   type: z.literal("balance"),
-  payload: z.union([z.number(), z.record(CURRENCY_SYMBOL_SCHEMA, z.number())]),
+  payload: z.union([
+    z.number(),
+    z.partialRecord(CURRENCY_SYMBOL_SCHEMA, z.number()),
+  ]),
 });
 const BALANCE_UPDATED_SCHEMA = baseResponseSchema.extend({
   type: z.literal("balance_updated"),
@@ -124,25 +121,35 @@ const POSITION_RES_SCHEMA = baseResponseSchema.extend({
   type: z.literal("position"),
   payload: z.union([
     POSITION_SCHEMA,
-    z.record(CURRENCY_SYMBOL_SCHEMA, POSITION_SCHEMA),
-  ]),
-});
-
-const ORDERS_SCHEMA = baseResponseSchema.extend({
-  type: z.literal("orders"),
-  payload: z.union([
-    ORDER_SCHEMA,
-    z.record(CURRENCY_SYMBOL_SCHEMA, POSITION_SCHEMA),
+    z.partialRecord(CURRENCY_SYMBOL_SCHEMA, POSITION_SCHEMA),
+    z.undefined(),
   ]),
 });
 
 const ORDERBOOK_RES_SCHEMA = baseResponseSchema.extend({
   type: z.literal("orderbook"),
-  payload: ORDERBOOK_SCHEMA,
+  payload: SYMBOL_ORDERBOOK_SCHEMA,
 });
 
-const ENGINE_RESPONSE_SCHEMA = z.union([ORDER_CREATED_SCHEMA]);
+const ERROR_SCHEMA = baseResponseSchema.extend({
+  type: z.literal("error"),
+  payload: z.string(), // TODO LATER : this could be error names we define , to keep it simple
+});
+
+const ENGINE_RESPONSE_SCHEMA = z.union([
+  ORDER_CREATED_SCHEMA,
+  ORDER_CANCELLED_SCHEMA,
+  BALANCE_SCHEMA,
+  ERROR_SCHEMA,
+  ORDERBOOK_RES_SCHEMA,
+  POSITION_RES_SCHEMA,
+  DEPTH_SCHEMA,
+  BALANCE_UPDATED_SCHEMA,
+  EVENT_SUBSCRIBED_SCHEMA,
+  EVENT_UNSUBSCRIBED_SCHEMA,
+]);
+
 type ENGINE_RESPONSE = z.infer<typeof ENGINE_RESPONSE_SCHEMA>;
 
-export { ENGINE_RESPONSE_SCHEMA, FILL_SCHEMA, FILLS_SCHEMA };
-export type { FILL, FILLS, ENGINE_RESPONSE };
+export { ENGINE_RESPONSE_SCHEMA };
+export type { ENGINE_RESPONSE };

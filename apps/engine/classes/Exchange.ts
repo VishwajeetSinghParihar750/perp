@@ -90,11 +90,15 @@ export default class Exchange implements Snapshotable<EXCHANGE_SNAPSHOT> {
     marginType: MARGIN_TYPE,
     price?: number,
     liquidation?: boolean,
-  ): {
-    status: "REJECTED" | "OPEN" | "FILLED";
-    orderId?: ORDER_ID;
-    fills?: FILLS_INFO;
-  } {
+  ):
+    | {
+        status: "REJECTED";
+      }
+    | {
+        status: "OPEN" | "FILLED";
+        orderId: ORDER_ID;
+        fills: FILLS_INFO;
+      } {
     if (!liquidation) {
       // check if account locked
       if (this.balances.isAccountLocked(userId, symbol)) {
@@ -193,7 +197,7 @@ export default class Exchange implements Snapshotable<EXCHANGE_SNAPSHOT> {
     return this.orderBook.getOrder(orderId);
   }
 
-  getBalance(userId: string, symbol: CURRENCY_SYMBOL) {
+  getBalance(userId: string, symbol?: CURRENCY_SYMBOL) {
     return this.balances.getBalance(userId, symbol);
   }
   addBalance(userId: string, amount: number, symbol: CURRENCY_SYMBOL) {

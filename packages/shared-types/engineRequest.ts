@@ -4,6 +4,9 @@ import { ENGINE_EVENT_TYPE_SCHEMA } from "./engineEvent.js";
 const SIDE_SCHEMA = z.union([z.literal("BUY"), z.literal("SELL")]);
 type SIDE = z.infer<typeof SIDE_SCHEMA>;
 
+const TYPE_SCHEMA = z.union([z.literal("MARKET"), z.literal("LIMIT")]);
+type TYPE = z.infer<typeof SIDE_SCHEMA>;
+
 const CURRENCY_SYMBOL_SCHEMA = z.union([
   z.literal("USD"),
   z.literal("BTCUSD"),
@@ -30,6 +33,7 @@ const CREATE_ORDER_SCHEMA = baseSchema.extend({
     userId: z.string(),
     margin: z.number(),
     marginType: MARGIN_TYPE_SCHEMA,
+    type: TYPE_SCHEMA,
   }),
 });
 
@@ -58,16 +62,6 @@ const GET_DEPTH_SCHEMA = baseSchema.extend({
   type: z.literal("get_depth"),
   payload: z.object({
     symbol: CURRENCY_SYMBOL_SCHEMA,
-  }),
-});
-const GET_ORDERS_SCHEMA = baseSchema.extend({
-  type: z.literal("get_orders"),
-  payload: z.object({ userId: z.string(), symbol: CURRENCY_SYMBOL_SCHEMA }),
-});
-const GET_ORDER_SCHEMA = baseSchema.extend({
-  type: z.literal("get_order"),
-  payload: z.object({
-    orderId: z.string(),
   }),
 });
 const GET_ORDERBOOK_SCHEMA = baseSchema.extend({
@@ -101,8 +95,6 @@ const ENGINE_REQUEST_SCHEMA = z.union([
 
   SUBSCRIBE_EVENT_SCHEMA,
   GET_POSITION_SCHEMA,
-  GET_ORDER_SCHEMA,
-  GET_ORDER_SCHEMA,
   GET_ORDERBOOK_SCHEMA,
   GET_DEPTH_SCHEMA,
   ADD_BALANCE_SCHEMA,
@@ -115,8 +107,6 @@ type CANCEL_ORDER_REQUEST = z.infer<typeof CANCEL_ORDER_SCHEMA>;
 type GET_BALANCE_REQUEST = z.infer<typeof GET_BALANCE_SCHEMA>;
 type ADD_BALANCE_REQUEST = z.infer<typeof ADD_BALANCE_SCHEMA>;
 type GET_DEPTH_REQUEST = z.infer<typeof GET_DEPTH_SCHEMA>;
-type GET_ORDERS_REQUEST = z.infer<typeof GET_ORDERS_SCHEMA>;
-type GET_ORDER_REQUEST = z.infer<typeof GET_ORDER_SCHEMA>;
 type GET_ORDERBOOK_REQUEST = z.infer<typeof GET_ORDERBOOK_SCHEMA>;
 type GET_POSITION_REQUEST = z.infer<typeof GET_POSITION_SCHEMA>;
 type SUBSCRIBE_EVENT_REQUEST = z.infer<typeof SUBSCRIBE_EVENT_SCHEMA>;
@@ -128,8 +118,6 @@ type ENGINE_REQUEST =
   | GET_BALANCE_REQUEST
   | ADD_BALANCE_REQUEST
   | GET_DEPTH_REQUEST
-  | GET_ORDER_REQUEST
-  | GET_ORDERS_REQUEST
   | GET_ORDERBOOK_REQUEST
   | GET_POSITION_REQUEST
   | SUBSCRIBE_EVENT_REQUEST
@@ -141,8 +129,6 @@ export type {
   GET_BALANCE_REQUEST,
   ADD_BALANCE_REQUEST,
   GET_DEPTH_REQUEST,
-  GET_ORDER_REQUEST,
-  GET_ORDERS_REQUEST,
   GET_ORDERBOOK_REQUEST,
   GET_POSITION_REQUEST,
   SUBSCRIBE_EVENT_REQUEST,
@@ -159,8 +145,6 @@ export {
   GET_BALANCE_SCHEMA,
   ADD_BALANCE_SCHEMA,
   GET_DEPTH_SCHEMA,
-  GET_ORDER_SCHEMA,
-  GET_ORDERS_SCHEMA,
   GET_ORDERBOOK_SCHEMA,
   GET_POSITION_SCHEMA,
   SUBSCRIBE_EVENT_SCHEMA,

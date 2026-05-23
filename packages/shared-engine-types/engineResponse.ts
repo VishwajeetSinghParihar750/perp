@@ -1,9 +1,7 @@
 import z from "zod";
-import {
-  CURRENCY_SYMBOL_SCHEMA,
-  MARGIN_TYPE_SCHEMA,
-  SIDE_SCHEMA,
-} from "./engineRequest.js";
+import { BackendRequest } from "@repo/shared-backend-types";
+
+import { ENGINE_EVENT_SCHEMA } from "./engineEvent.js";
 
 const ORDER_STATUS_SCHEMA = z.union([
   z.literal("OPEN"),
@@ -16,8 +14,8 @@ const ORDER_SCHEMA = z.object({
   userId: z.string(),
   price: z.number(),
   qty: z.number(),
-  side: SIDE_SCHEMA,
-  symbol: CURRENCY_SYMBOL_SCHEMA,
+  side: BackendRequest.SIDE_SCHEMA,
+  symbol: BackendRequest.CURRENCY_SYMBOL_SCHEMA,
   type: ORDER_TYPE_SCHEMA,
   filledQty: z.number(),
   orderId: z.string(),
@@ -25,7 +23,7 @@ const ORDER_SCHEMA = z.object({
 
   //  for perp
   margin: z.number(),
-  marginType: MARGIN_TYPE_SCHEMA,
+  marginType: BackendRequest.MARGIN_TYPE_SCHEMA,
 
   status: ORDER_STATUS_SCHEMA,
 });
@@ -45,15 +43,15 @@ const POSITION_SCHEMA = z.object({
   price: z.number(),
   qty: z.number(),
   type: POSITION_TYPE_SCHEMA,
-  symbol: CURRENCY_SYMBOL_SCHEMA,
+  symbol: BackendRequest.CURRENCY_SYMBOL_SCHEMA,
   createdAt: z.date(),
   margin: z.number(),
-  marginType: MARGIN_TYPE_SCHEMA,
+  marginType: BackendRequest.MARGIN_TYPE_SCHEMA,
 });
 
 const FILL_SCHEMA = z.object({
   fillId: z.string(),
-  symbol: CURRENCY_SYMBOL_SCHEMA,
+  symbol: BackendRequest.CURRENCY_SYMBOL_SCHEMA,
   qty: z.number(),
   price: z.number(),
   bidPrice: z.number(),
@@ -62,14 +60,14 @@ const FILL_SCHEMA = z.object({
     orderId: z.string(),
     totalQty: z.number(),
     margin: z.number(),
-    marginType: MARGIN_TYPE_SCHEMA,
+    marginType: BackendRequest.MARGIN_TYPE_SCHEMA,
   }),
   sellOrderInfo: z.object({
     sellerId: z.string(),
     orderId: z.string(),
     totalQty: z.number(),
     margin: z.number(),
-    marginType: MARGIN_TYPE_SCHEMA,
+    marginType: BackendRequest.MARGIN_TYPE_SCHEMA,
   }),
 });
 
@@ -102,7 +100,7 @@ const BALANCE_SCHEMA = baseResponseSchema.extend({
   type: z.literal("balance"),
   payload: z.union([
     z.number(),
-    z.partialRecord(CURRENCY_SYMBOL_SCHEMA, z.number()),
+    z.partialRecord(BackendRequest.CURRENCY_SYMBOL_SCHEMA, z.number()),
   ]),
 });
 const BALANCE_UPDATED_SCHEMA = baseResponseSchema.extend({
@@ -121,7 +119,7 @@ const POSITION_RES_SCHEMA = baseResponseSchema.extend({
   type: z.literal("position"),
   payload: z.union([
     POSITION_SCHEMA,
-    z.partialRecord(CURRENCY_SYMBOL_SCHEMA, POSITION_SCHEMA),
+    z.partialRecord(BackendRequest.CURRENCY_SYMBOL_SCHEMA, POSITION_SCHEMA),
     z.undefined(),
   ]),
 });
@@ -147,6 +145,7 @@ const ENGINE_RESPONSE_SCHEMA = z.union([
   BALANCE_UPDATED_SCHEMA,
   EVENT_SUBSCRIBED_SCHEMA,
   EVENT_UNSUBSCRIBED_SCHEMA,
+  ENGINE_EVENT_SCHEMA,
 ]);
 
 type ENGINE_RESPONSE = z.infer<typeof ENGINE_RESPONSE_SCHEMA>;

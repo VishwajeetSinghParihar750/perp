@@ -2,11 +2,7 @@ import "dotenv/config";
 import { createClient, type RedisClientType } from "redis";
 import EventBus from "./EventBus.js";
 import Exchange from "./Exchange.js";
-import type {
-  EngineEvent,
-  EngineRequest,
-  EngineResponse,
-} from "@repo/shared-types";
+import { EngineRequest, EngineResponse } from "@repo/shared-engine-types";
 
 import EventPublisher from "./EventPublisher.js";
 import MarkPriceObserver from "./MarkPriceObserver.js";
@@ -45,9 +41,8 @@ class EngineServer {
         if (perStreamRespone.name == process.env.REDIS_ENGINE_STREAM) {
           for (let { id, message } of perStreamRespone.messages) {
             try {
-              let request: ENGINE_REQUEST | ENGINE_INFO_REQUEST = JSON.parse(
-                message.data!,
-              );
+              let request: EngineRequest.ENGINE_REQUEST | ENGINE_INFO_REQUEST =
+                JSON.parse(message.data!);
               // here switch based on info types
               if (request.type == "markprice_updated") {
                 this.handleEngineInfoRequest(request);
@@ -323,7 +318,18 @@ class EngineServer {
 
   private handleEngineRequest = (
     engineRequest: EngineRequest.ENGINE_REQUEST,
-  ) => {
+  ): EngineResponse.ENGINE_RESPONSE => {
+    let { success, data } =
+      EngineRequest.ENGINE_REQUEST_SCHEMA.safeParse(engineRequest);
+
+    if (!success) {
+      return {
+        type: "error",
+        requestId: engineRequest.requestId,
+        payload: "INVALID_REQUEST_FORMAT",
+      };
+    }
+
     let response;
     switch (engineRequest.type) {
       case "add_balance":

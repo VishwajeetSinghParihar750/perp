@@ -11,7 +11,7 @@ import {
 import { assert } from "node:console";
 import type EventBus from "./EventBus.js";
 import type { Snapshotable } from "./SnapshotManger.js";
-import type { EngineEvent } from "@repo/shared-types";
+import type { EngineEvent } from "@repo/shared-engine-types";
 
 import type { FILLS_INFO } from "../types/order.js";
 

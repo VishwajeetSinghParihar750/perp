@@ -6,7 +6,7 @@ import type {
   EngineRequest,
   EngineResponse,
   EngineEvent,
-} from "@repo/shared-types";
+} from "@repo/shared-engine-types";
 import { sendMessageOnWebSocket } from "./ws/utils/messaging.js";
 
 class EngineInterface {
@@ -77,10 +77,11 @@ class EngineInterface {
     await this.setupEventHandling();
   };
 
-  private broadcastEvent = (type: EngineEvent.ENGINE_EVENT_TYPE, data: any) => {
+  private broadcastEvent = (event: EngineEvent.ENGINE_EVENT) => {
+    let { type, data } = event.payload;
     this.eventSubscriptions[type]?.forEach((ws) => {
       // TODO
-      // sendMessageOnWebSocket(ws, { type, payload: data });
+      sendMessageOnWebSocket(ws, { type, payload: data });
     });
   };
 
@@ -107,22 +108,23 @@ class EngineInterface {
               message.data!,
             ) as EngineResponse.ENGINE_RESPONSE;
 
-            let { type, requestId } = response;
+            let { type } = response;
 
-            gotRequestId = requestId;
+            if ("requestId" in response) {
+              let { requestId } = response;
+              let payload = undefined;
+              if ("payload" in response) payload = response.payload;
 
-            let payload = undefined;
-            if ("payload" in response) {
-              payload = response.payload;
-            }
+              if (type == "error")
+                this.pendingRequests[requestId]?.[1]?.({ type, payload });
+              else this.pendingRequests[requestId]?.[0]?.({ type, payload });
 
-            if (requestId) {
-              console.log(type, payload, requestId);
-
-              this.pendingRequests[requestId]?.[0]?.({ type, payload });
               delete this.pendingRequests[requestId];
-            } else if (type != "error") {
-              if (payload) this.broadcastEvent(payload.type, payload.data);
+            } else if (type == "event") {
+              this.broadcastEvent(response);
+            } else {
+              // wtf
+              console.error("why is xread res coming here");
             }
           } catch (error) {
             console.log("error in parsing engine message", error);

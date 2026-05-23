@@ -19,7 +19,7 @@ import {
 } from "../../validations/subscribeEvent.js";
 import EngineInterface from "../../engineInterface.js";
 import { GET_POSITION_SCHEMA } from "../../validations/positions.js";
-import type { EngineEvent } from "@repo/shared-types";
+import type { EngineEvent } from "@repo/shared-engine-types";
 
 const engine = new EngineInterface();
 

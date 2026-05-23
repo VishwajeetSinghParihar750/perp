@@ -19,7 +19,7 @@
   },
   "dependencies": {
     "@repo/db": ".",
-    "@repo/shared-types": ".",
+    "@repo/shared-engine-types": ".",
     "dotenv": "^17.4.2",
     "js-sdsl": "^4.4.2",
     "jsonwebtoken": "^9.0.3",

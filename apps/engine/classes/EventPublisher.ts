@@ -1,6 +1,6 @@
 import type { RedisClientType } from "redis";
 
-import type { EngineEvent } from "@repo/shared-types";
+import type { EngineEvent } from "@repo/shared-engine-types";
 import type EventBus from "./EventBus.js";
 import type { Snapshotable } from "./SnapshotManger.js";
 

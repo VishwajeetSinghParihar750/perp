@@ -1,5 +1,5 @@
 import z from "zod";
-import { ENGINE_EVENT_TYPE_SCHEMA } from "./engineEvent.js";
+import { EngineEvent } from "@repo/shared-engine-types";
 
 const SIDE_SCHEMA = z.union([z.literal("BUY"), z.literal("SELL")]);
 type SIDE = z.infer<typeof SIDE_SCHEMA>;
@@ -31,81 +31,77 @@ const ENGINE_REQUEST_TYPE_SCHEMA = z.union([
 ]);
 type ENGINE_REQUEST_TYPE = z.infer<typeof ENGINE_REQUEST_TYPE_SCHEMA>;
 
-const baseSchema = z.object({
-  stream: z.string(),
-  requestId: z.string(),
+const CREATE_ORDER_PAYLOAD_SCHEMA = z.object({
+  side: SIDE_SCHEMA,
+  price: z.number(),
+  qty: z.number(),
+  symbol: CURRENCY_SYMBOL_SCHEMA,
+  margin: z.number(),
+  marginType: MARGIN_TYPE_SCHEMA,
+  type: TYPE_SCHEMA,
 });
 
-const CREATE_ORDER_SCHEMA = baseSchema.extend({
+const CREATE_ORDER_SCHEMA = z.object({
   type: z.literal("create_order"),
-  payload: z.object({
-    side: SIDE_SCHEMA,
-    price: z.number(),
-    qty: z.number(),
-    symbol: CURRENCY_SYMBOL_SCHEMA,
-    userId: z.string(),
-    margin: z.number(),
-    marginType: MARGIN_TYPE_SCHEMA,
-    type: TYPE_SCHEMA,
-  }),
+  payload: CREATE_ORDER_PAYLOAD_SCHEMA,
 });
 
-const CANCEL_ORDER_SCHEMA = baseSchema.extend({
+const CANCEL_ORDER_SCHEMA = z.object({
   type: z.literal("cancel_order"),
   payload: z.object({ orderId: z.string() }),
 });
-const GET_BALANCE_SCHEMA = baseSchema.extend({
+
+const GET_BALANCE_SCHEMA = z.object({
   type: z.literal("get_balance"),
   payload: z.object({
-    userId: z.string(),
     symbol: CURRENCY_SYMBOL_SCHEMA.optional(),
   }),
 });
 
-const ADD_BALANCE_SCHEMA = baseSchema.extend({
+const ADD_BALANCE_SCHEMA = z.object({
   type: z.literal("add_balance"),
   payload: z.object({
-    userId: z.string(),
     symbol: CURRENCY_SYMBOL_SCHEMA,
     amount: z.number(),
   }),
 });
 
-const GET_DEPTH_SCHEMA = baseSchema.extend({
+const GET_DEPTH_SCHEMA = z.object({
   type: z.literal("get_depth"),
   payload: z.object({
     symbol: CURRENCY_SYMBOL_SCHEMA,
   }),
 });
-const GET_ORDERBOOK_SCHEMA = baseSchema.extend({
+const GET_ORDERBOOK_SCHEMA = z.object({
   type: z.literal("get_orderbook"),
   payload: z.object({
     symbol: CURRENCY_SYMBOL_SCHEMA,
   }),
 });
-const GET_POSITION_SCHEMA = baseSchema.extend({
+const GET_POSITION_SCHEMA = z.object({
   type: z.literal("get_position"),
   payload: z.object({
-    userId: z.string(),
     symbol: CURRENCY_SYMBOL_SCHEMA.optional(),
   }),
 });
-const SUBSCRIBE_EVENT_SCHEMA = baseSchema.extend({
+const SUBSCRIBE_EVENT_SCHEMA = z.object({
   type: z.literal("subscribe_event"),
-  payload: z.object({ event: ENGINE_EVENT_TYPE_SCHEMA, stream: z.string() }),
+  payload: z.object({
+    event: EngineEvent.ENGINE_EVENT_TYPE_SCHEMA,
+    stream: z.string(),
+  }),
 });
 
-const UNSUBSCRIBE_EVENT_SCHEMA = baseSchema.extend({
+const UNSUBSCRIBE_EVENT_SCHEMA = z.object({
   type: z.literal("unsubscribe_event"),
   payload: z.object({
-    event: ENGINE_EVENT_TYPE_SCHEMA,
+    event: EngineEvent.ENGINE_EVENT_TYPE_SCHEMA,
     stream: z.string(),
   }),
 });
 
 const ENGINE_REQUEST_SCHEMA = z.union([
   UNSUBSCRIBE_EVENT_SCHEMA,
-
   SUBSCRIBE_EVENT_SCHEMA,
   GET_POSITION_SCHEMA,
   GET_ORDERBOOK_SCHEMA,
@@ -161,4 +157,5 @@ export {
   SIDE_SCHEMA,
   TYPE_SCHEMA,
   ENGINE_REQUEST_TYPE_SCHEMA,
+  CREATE_ORDER_PAYLOAD_SCHEMA,
 };

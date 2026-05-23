@@ -41,24 +41,27 @@ const CREATE_ORDER_PAYLOAD_SCHEMA = z.object({
   type: TYPE_SCHEMA,
 });
 
-const CREATE_ORDER_SCHEMA = z.object({
+const BASE_SCHEMA = z.object({
+  requestId: z.string(),
+});
+const CREATE_ORDER_SCHEMA = BASE_SCHEMA.extend({
   type: z.literal("create_order"),
   payload: CREATE_ORDER_PAYLOAD_SCHEMA,
 });
 
-const CANCEL_ORDER_SCHEMA = z.object({
+const CANCEL_ORDER_SCHEMA = BASE_SCHEMA.extend({
   type: z.literal("cancel_order"),
   payload: z.object({ orderId: z.string() }),
 });
 
-const GET_BALANCE_SCHEMA = z.object({
+const GET_BALANCE_SCHEMA = BASE_SCHEMA.extend({
   type: z.literal("get_balance"),
   payload: z.object({
     symbol: CURRENCY_SYMBOL_SCHEMA.optional(),
   }),
 });
 
-const ADD_BALANCE_SCHEMA = z.object({
+const ADD_BALANCE_SCHEMA = BASE_SCHEMA.extend({
   type: z.literal("add_balance"),
   payload: z.object({
     symbol: CURRENCY_SYMBOL_SCHEMA,
@@ -66,32 +69,32 @@ const ADD_BALANCE_SCHEMA = z.object({
   }),
 });
 
-const GET_DEPTH_SCHEMA = z.object({
+const GET_DEPTH_SCHEMA = BASE_SCHEMA.extend({
   type: z.literal("get_depth"),
   payload: z.object({
     symbol: CURRENCY_SYMBOL_SCHEMA,
   }),
 });
-const GET_ORDERBOOK_SCHEMA = z.object({
+const GET_ORDERBOOK_SCHEMA = BASE_SCHEMA.extend({
   type: z.literal("get_orderbook"),
   payload: z.object({
     symbol: CURRENCY_SYMBOL_SCHEMA,
   }),
 });
-const GET_POSITION_SCHEMA = z.object({
+const GET_POSITION_SCHEMA = BASE_SCHEMA.extend({
   type: z.literal("get_position"),
   payload: z.object({
     symbol: CURRENCY_SYMBOL_SCHEMA.optional(),
   }),
 });
-const SUBSCRIBE_EVENT_SCHEMA = z.object({
+const SUBSCRIBE_EVENT_SCHEMA = BASE_SCHEMA.extend({
   type: z.literal("subscribe_event"),
   payload: z.object({
     events: z.array(EngineEvent.ENGINE_EVENT_TYPE_SCHEMA).min(1),
   }),
 });
 
-const UNSUBSCRIBE_EVENT_SCHEMA = z.object({
+const UNSUBSCRIBE_EVENT_SCHEMA = BASE_SCHEMA.extend({
   type: z.literal("unsubscribe_event"),
   payload: z.object({
     events: z.array(EngineEvent.ENGINE_EVENT_TYPE_SCHEMA).min(1),
@@ -111,6 +114,8 @@ const ENGINE_REQUEST_SCHEMA = z.union([
 ]);
 
 const DB_REQUEST_SCHEMA = z.object({});
+type DB_REQUEST = z.infer<typeof DB_REQUEST_SCHEMA>;
+
 const BACKEND_REQUEST_SCHEMA = z.union([
   ENGINE_REQUEST_SCHEMA,
   DB_REQUEST_SCHEMA,
@@ -145,7 +150,15 @@ export type {
   SIDE,
   TYPE,
   ENGINE_REQUEST_TYPE,
+  DB_REQUEST,
   BACKEND_REQUEST,
+};
+
+const isEngineRequset = (request: unknown): request is ENGINE_REQUEST => {
+  return ENGINE_REQUEST_SCHEMA.safeParse(request).success;
+};
+const isDbRequest = (request: unknown): request is DB_REQUEST => {
+  return DB_REQUEST_SCHEMA.safeParse(request).success;
 };
 
 export {
@@ -166,4 +179,7 @@ export {
   ENGINE_REQUEST_TYPE_SCHEMA,
   CREATE_ORDER_PAYLOAD_SCHEMA,
   BACKEND_REQUEST_SCHEMA,
+  DB_REQUEST_SCHEMA,
+  isDbRequest,
+  isEngineRequset,
 };

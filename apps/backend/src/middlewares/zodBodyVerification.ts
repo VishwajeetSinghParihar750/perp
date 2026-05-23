@@ -17,14 +17,14 @@ const zodBodyVerification =
   };
 
 const zodBodyVerificationWebSocket = (
-  schema: z.ZodObject,
+  schema: z.ZodType,
   request: BackendRequest.BACKEND_REQUEST,
   ws: WebSocket,
 ): boolean => {
   const { success } = schema.safeParse(request.payload);
   if (!success) {
     sendMessageOnWebSocket(ws, {
-      requestId: request.rqeuestId,
+      requestId: request.requestId,
       type: "error",
       payload: "INVALID_REQUEST_FORMAT",
     });

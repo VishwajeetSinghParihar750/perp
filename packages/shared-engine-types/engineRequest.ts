@@ -2,13 +2,13 @@ import { BackendRequest } from "@repo/shared-backend-types";
 
 const BASE_REQUEST_SCHEMA = z.object({
   stream: z.string(),
-  requestId: z.string(),
 });
 
 import z from "zod";
 // todo : add db request bater
 
 const GET_POSITION_SCHEMA = z.object({
+  requestId: z.string(),
   type: z.literal("get_position"),
   payload: z.object({
     userId: z.string(),
@@ -16,6 +16,7 @@ const GET_POSITION_SCHEMA = z.object({
   }),
 });
 const CREATE_ORDER_SCHEMA = z.object({
+  requestId: z.string(),
   type: "create_order",
   payload: BackendRequest.CREATE_ORDER_PAYLOAD_SCHEMA.extend({
     userId: z.string(),
@@ -23,6 +24,7 @@ const CREATE_ORDER_SCHEMA = z.object({
 });
 
 const GET_BALANCE_SCHEMA = z.object({
+  requestId: z.string(),
   type: z.literal("get_balance"),
   payload: z.object({
     userId: z.string(),
@@ -31,6 +33,7 @@ const GET_BALANCE_SCHEMA = z.object({
 });
 
 const ADD_BALANCE_SCHEMA = z.object({
+  requestId: z.string(),
   type: z.literal("add_balance"),
   payload: z.object({
     userId: z.string(),

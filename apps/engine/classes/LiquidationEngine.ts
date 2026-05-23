@@ -42,6 +42,7 @@ class LiquidationEngine implements Snapshotable<LIQUIDATION_SNAPSHOT> {
     string,
     Map<CURRENCY_SYMBOL, POSITION>
   > = new Map();
+
   private indexPrices: Partial<Record<CURRENCY_SYMBOL, number>> = {};
 
   private positions: Record<string, POSITION> = {}; // positions in positions being liqudated are ref of this
@@ -92,31 +93,13 @@ class LiquidationEngine implements Snapshotable<LIQUIDATION_SNAPSHOT> {
         position.userId,
         new Map(),
       );
+
       byUserIdInit.set(position.symbol, position);
       this.positionsBeingLiquidated.set(position.userId, byUserIdInit);
     });
   }
 
   private requestLiquidation: (order: LiquidationOrderInfo) => void;
-
-  private keepTryingLiquidation = (positionId: string) => {
-    // every 2s keep putting margin order until filled
-
-    let curPosition = this.positions[positionId];
-    if (curPosition) {
-      this.requestLiquidation({
-        qty: curPosition.qty,
-        side: curPosition.type == "LONG" ? "SELL" : "BUY",
-        symbol: curPosition.symbol,
-        type: "MARKET",
-        userId: curPosition.userId,
-      });
-      setTimeout(() => {
-        this.keepTryingLiquidation(positionId);
-      }, 2000);
-    }
-    // else filled already
-  };
 
   constructor(
     eventBus: EventBus,
@@ -152,8 +135,14 @@ class LiquidationEngine implements Snapshotable<LIQUIDATION_SNAPSHOT> {
       new Map([[position.symbol, position]]),
     );
 
-    // keep placing margin orders for this until fully filled
-    this.keepTryingLiquidation(position.positionId);
+    // place a margin order for liuqidation
+    this.requestLiquidation({
+      qty: position.qty,
+      side: position.type == "LONG" ? "SELL" : "BUY",
+      symbol: position.symbol,
+      type: "LIMIT", // TODO LATER : make this market order based
+      userId: position.userId,
+    });
   }
 
   private getLiquidationForPosition(positon: POSITION): number {
@@ -209,6 +198,17 @@ class LiquidationEngine implements Snapshotable<LIQUIDATION_SNAPSHOT> {
   }): number {
     return 0;
   }
+
+  // notifyIncomingOrder(
+  //   type: TYPE,
+  //   side: SIDE,
+  //   symbol: CURRENCY_SYMBOL,
+  //   qty: number,
+  //   price?: number,
+  // ) {
+  //   // check if there are positions we can liquidate
+  //   // place lmit order for them
+  // }
 
   //  remove all data strcures and clear empty ds, and similarly in normal position udpats
   private handlePositonUpdateLiquidation(position: POSITION) {

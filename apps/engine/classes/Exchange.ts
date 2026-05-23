@@ -125,6 +125,15 @@ export default class Exchange implements Snapshotable<EXCHANGE_SNAPSHOT> {
 
       // lock margin
       this.balances.removeBalance(userId, "USD", margin);
+
+      // // check if liquid positoins care about this order
+      // this.liquidationEngine.notifyIncomingOrder(
+      //   type,
+      //   side,
+      //   symbol,
+      //   qty,
+      //   price,
+      // );
     }
 
     // place order in orderbook

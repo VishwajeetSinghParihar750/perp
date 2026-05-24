@@ -44,40 +44,14 @@ export default class Exchange implements Snapshotable<EXCHANGE_SNAPSHOT> {
     this.liquidationEngine.loadSnapshot(data.liquidation);
   }
 
-  //actually balance locking is not needed in this coz order would go through, in multi threaded it wuold be needed
-  private handleLiquidation = (order: LiquidationOrderInfo) => {
-    // lock account for this user id , symbol
-    let { symbol, userId, qty, side, type } = order;
-    this.balances.lockAccount(userId, symbol);
-
-    // place order
-    this.createOrder(
-      type,
-      side,
-      symbol,
-      qty,
-      userId,
-      0,
-      "ISOLATED",
-      undefined,
-      true,
-    );
-
-    // unlock account for this user id , symbol
-    this.balances.unlockAccount(userId, symbol);
-  };
-
   constructor(eventBus: EventBus) {
-    this.balances = new Balances();
+    this.balances = new Balances(eventBus);
     this.orderBook = new OrderBook(eventBus);
     this.positionManager = new PositionManager();
-    this.liquidationEngine = new LiquidationEngine(
-      eventBus,
-      this.handleLiquidation,
-    );
+    this.liquidationEngine = new LiquidationEngine(eventBus, this.createOrder);
   }
 
-  createOrder(
+  createOrder = (
     type: TYPE,
     side: SIDE,
     symbol: CURRENCY_SYMBOL,
@@ -96,7 +70,7 @@ export default class Exchange implements Snapshotable<EXCHANGE_SNAPSHOT> {
         status: "OPEN" | "FILLED";
         orderId: ORDER_ID;
         fills: FILLS_INFO;
-      } {
+      } => {
     if (!liquidation) {
       // check if account locked
       if (this.balances.isAccountLocked(userId, symbol)) {
@@ -164,7 +138,7 @@ export default class Exchange implements Snapshotable<EXCHANGE_SNAPSHOT> {
       orderId: newOrderId,
       fills,
     };
-  }
+  };
 
   cancelOrder(orderId: ORDER_ID): {
     status: "CANCELLED" | "ALREADY_FILLED" | "NOT_CANCELLABLE";

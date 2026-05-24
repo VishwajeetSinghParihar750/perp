@@ -370,6 +370,7 @@ class EngineServer {
   private handleEngineInfoRequest = (
     engineRequest: EngineRequest.ENGINE_INFO_REQUEST,
   ) => {
+    // console.log("engineRequest", engineRequest);
     switch (engineRequest.type) {
       case "markprice_updated":
         this.handleUpdateMarkPriceRequest(engineRequest);

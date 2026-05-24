@@ -1,5 +1,6 @@
 import { OrderedMap } from "js-sdsl";
 import type {
+  MARGIN_TYPE,
   SIDE as ORDER_SIDE,
   TYPE as ORDER_TYPE,
   SIDE,
@@ -47,6 +48,18 @@ class LiquidationEngine implements Snapshotable<LIQUIDATION_SNAPSHOT> {
 
   private positions: Record<string, POSITION> = {}; // positions in positions being liqudated are ref of this
   private liquidationPrice: Record<string, number> = {}; // position id mapped to price
+
+  private createOrder: (
+    type: TYPE,
+    side: SIDE,
+    symbol: CURRENCY_SYMBOL,
+    qty: number,
+    userId: string,
+    margin: number,
+    marginType: MARGIN_TYPE,
+    price?: number,
+    liquidation?: boolean,
+  ) => void;
 
   getSnapshot(): LIQUIDATION_SNAPSHOT {
     return {
@@ -99,13 +112,31 @@ class LiquidationEngine implements Snapshotable<LIQUIDATION_SNAPSHOT> {
     });
   }
 
-  private requestLiquidation: (order: LiquidationOrderInfo) => void;
+  private requestLiquidation(order: LiquidationOrderInfo) {
+    // lock account for this user id , symbol
+    let { symbol, userId, qty, side, type } = order;
 
-  constructor(
-    eventBus: EventBus,
-    requestLiquidation: (order: LiquidationOrderInfo) => void,
-  ) {
-    this.requestLiquidation = requestLiquidation;
+    // this.balances.lockAccount(userId, symbol);
+
+    // place order
+    this.createOrder(
+      type,
+      side,
+      symbol,
+      qty,
+      userId,
+      0,
+      "ISOLATED",
+      undefined,
+      true,
+    );
+
+    // unlock account for this user id , symbol
+    // this.balances.unlockAccount(userId, symbol);
+  }
+
+  constructor(eventBus: EventBus, createOrder: any) {
+    this.createOrder = createOrder;
     this.eventBus = eventBus;
   }
 
@@ -114,13 +145,16 @@ class LiquidationEngine implements Snapshotable<LIQUIDATION_SNAPSHOT> {
     assert(position);
 
     // lock the positoin for this symbol for this user
-    // this.eventBus.emit({
-    //   type: "liquidation.started",
-    //   data: {
-    //     userId: position.userId,
-    //     symbol: position.symbol,
-    //   },
-    // });
+    this.eventBus.emit({
+      type: "event",
+      payload: {
+        type: "liquidation.started",
+        data: {
+          userId: position.userId,
+          symbol: position.symbol,
+        },
+      },
+    });
 
     // plave in beingLiquidatedPositions
     delete this.positions[positionId];
@@ -199,17 +233,6 @@ class LiquidationEngine implements Snapshotable<LIQUIDATION_SNAPSHOT> {
     return 0;
   }
 
-  // notifyIncomingOrder(
-  //   type: TYPE,
-  //   side: SIDE,
-  //   symbol: CURRENCY_SYMBOL,
-  //   qty: number,
-  //   price?: number,
-  // ) {
-  //   // check if there are positions we can liquidate
-  //   // place lmit order for them
-  // }
-
   //  remove all data strcures and clear empty ds, and similarly in normal position udpats
   private handlePositonUpdateLiquidation(position: POSITION) {
     if (position.qty == 0) {
@@ -231,6 +254,17 @@ class LiquidationEngine implements Snapshotable<LIQUIDATION_SNAPSHOT> {
       delete this.liquidationPrice[position.positionId];
       delete this.positions[position.positionId];
       this.positionsBeingLiquidated.delete(position.positionId);
+
+      this.eventBus.emit({
+        type: "event",
+        payload: {
+          type: "liquidation.completed",
+          data: {
+            symbol: position.symbol,
+            userId: position.userId,
+          },
+        },
+      });
     }
 
     // remove from

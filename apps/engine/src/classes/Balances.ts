@@ -1,5 +1,8 @@
+import type { EngineEvent } from "@repo/shared-types";
+
 import { CURRENCY_SYMBOL_ARRAY, type CURRENCY_SYMBOL } from "../types/order.js";
 import { InsufficientBalanceError } from "./Errors/Balances.js";
+import type EventBus from "./EventBus.js";
 import type { Snapshotable } from "./SnapshotManger.js";
 
 type BALANCE_SNAPSHOT = {
@@ -16,6 +19,24 @@ export default class BalanceManager implements Snapshotable<BALANCE_SNAPSHOT> {
   private exchangeBalance = 100000000;
 
   private lockedAccounts: Partial<Record<CURRENCY_SYMBOL, Set<string>>> = {};
+
+  private handleLiquidationStarted = (
+    event: EngineEvent.LIQUIDATION_STARTED_EVENT,
+  ) => {
+    const { userId, symbol } = event.payload.data;
+    this.lockAccount(userId, symbol);
+  };
+  private handleLiquidtationCompleted = (
+    event: EngineEvent.LIQUIDATION_COMPLETED_EVENT,
+  ) => {
+    const { userId, symbol } = event.payload.data;
+    this.unlockAccount(userId, symbol);
+  };
+
+  constructor(eventBus: EventBus) {
+    eventBus.on("liquidation.started", this.handleLiquidationStarted);
+    eventBus.on("liquidation.completed", this.handleLiquidtationCompleted);
+  }
 
   getSnapshot(): BALANCE_SNAPSHOT {
     return {
@@ -41,11 +62,11 @@ export default class BalanceManager implements Snapshotable<BALANCE_SNAPSHOT> {
     );
   }
 
-  lockAccount(userId: string, symbol: CURRENCY_SYMBOL) {
+  private lockAccount(userId: string, symbol: CURRENCY_SYMBOL) {
     if (!this.lockedAccounts[symbol]) this.lockedAccounts[symbol] = new Set();
     this.lockedAccounts[symbol].add(userId);
   }
-  unlockAccount(userId: string, symbol: CURRENCY_SYMBOL) {
+  private unlockAccount(userId: string, symbol: CURRENCY_SYMBOL) {
     this.lockedAccounts?.[symbol]?.delete(userId);
   }
   isAccountLocked(userId: string, symbol: CURRENCY_SYMBOL): boolean {

@@ -2,7 +2,7 @@ import { type NextFunction, type Request, type Response } from "express";
 import z from "zod";
 import { sendMessageOnWebSocket } from "../ws/utils/messaging.js";
 import WebSocket from "ws";
-import type { BackendRequest } from "@repo/shared-backend-types";
+import { BackendRequest } from "@repo/shared-types";
 
 const zodBodyVerification =
   (schema: z.ZodObject) =>

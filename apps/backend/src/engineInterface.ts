@@ -2,14 +2,9 @@ import "dotenv/config";
 import WebSocket from "ws";
 import { redisClient as redisClientGlobal } from "@repo/db";
 import type { RedisClientType } from "redis";
-import {
-  type EngineRequest,
-  EngineResponse,
-  type EngineEvent,
-} from "@repo/shared-engine-types";
+import { EngineRequest, EngineResponse, EngineEvent } from "@repo/shared-types";
+
 import { sendMessageOnWebSocket } from "./ws/utils/messaging.js";
-import type { BackendRequest } from "@repo/shared-backend-types";
-import z from "zod";
 
 class EngineInterface {
   redisClient: RedisClientType;
@@ -114,6 +109,9 @@ class EngineInterface {
                 JSON.parse(message.data!),
               );
 
+            // zod validation
+            EngineResponse.ENGINE_RESPONSE_SCHEMA.parse(response);
+
             let { type } = response;
 
             if ("requestId" in response) {
@@ -160,7 +158,7 @@ class EngineInterface {
   };
 
   getEngineResponseForRequest = async (
-    engineRequest: EngineRequest.ENGINE_REQUEST,
+    engineRequest: EngineRequest.ENGINE_REQUEST_FROM_BACKEND,
   ): Promise<EngineResponse.ENGINE_RESPONSE> => {
     let promiseToReturn = new Promise<EngineResponse.ENGINE_RESPONSE>(
       (res, rej) => {

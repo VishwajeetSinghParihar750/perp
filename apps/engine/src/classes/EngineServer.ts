@@ -1,16 +1,13 @@
 import "dotenv/config";
-import z from "zod";
 import { createClient, type RedisClientType } from "redis";
 import EventBus from "./EventBus.js";
 import Exchange from "./Exchange.js";
-import { EngineRequest, EngineResponse } from "@repo/shared-engine-types";
+import { EngineRequest, EngineResponse } from "@repo/shared-types";
 
 import EventPublisher from "./EventPublisher.js";
 import MarkPriceObserver from "./MarkPriceObserver.js";
 import SnapshotManager from "./SnapshotManger.js";
 import type { FILLS_INFO } from "../types/order.js";
-
-type ENGINE_INFO_REQUEST_TYPE = "markprice_updated";
 
 class EngineServer {
   private redisClient: RedisClientType;

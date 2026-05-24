@@ -1,5 +1,5 @@
 {
-  "name": "@repo/shared-backend-types",
+  "name": "@repo/shared-types",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -8,9 +8,6 @@
   },
   "exports": {
     ".": "./index.js"
-  },
-  "dependencies": {
-    "@repo/shared-engine-types": "."
   },
   "keywords": [],
   "author": "",

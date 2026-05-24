@@ -1,4 +1,4 @@
-import { EngineEvent } from "@repo/shared-engine-types";
+import * as EngineEvent from "../shared-engine-types/engineEvent";
 
 import z from "zod";
 // todo : add db events later

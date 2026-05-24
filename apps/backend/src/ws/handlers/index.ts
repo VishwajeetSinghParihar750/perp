@@ -6,10 +6,11 @@ import {
   BackendRequest,
   BackendEvent,
   BackendResponse,
-} from "@repo/shared-backend-types";
+  EngineEvent,
+  EngineRequest,
+} from "@repo/shared-types";
 
 import EngineInterface from "../../engineInterface.js";
-import type { EngineEvent, EngineRequest } from "@repo/shared-engine-types";
 import { sendMessageOnWebSocket } from "../utils/messaging.js";
 
 const engine = new EngineInterface();

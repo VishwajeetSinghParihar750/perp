@@ -1,5 +1,5 @@
 import { HashMap } from "js-sdsl";
-import { EngineEvent } from "@repo/shared-engine-types";
+import { EngineEvent } from "@repo/shared-types";
 
 type EVENT_CALLBACK_FUNCTION = (event: EngineEvent.ENGINE_EVENT) => void;
 

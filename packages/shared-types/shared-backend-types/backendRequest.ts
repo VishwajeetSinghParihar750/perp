@@ -1,5 +1,5 @@
 import z from "zod";
-import { EngineEvent } from "@repo/shared-engine-types";
+import * as EngineEvent from "../shared-engine-types/engineEvent.js";
 
 const SIDE_SCHEMA = z.union([z.literal("BUY"), z.literal("SELL")]);
 type SIDE = z.infer<typeof SIDE_SCHEMA>;

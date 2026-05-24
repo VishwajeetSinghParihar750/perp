@@ -1,4 +1,4 @@
-import { BackendRequest } from "@repo/shared-backend-types";
+import * as BackendRequest from "../shared-backend-types/backendRequest.js";
 
 const BASE_REQUEST_SCHEMA = z.object({
   stream: z.string(),

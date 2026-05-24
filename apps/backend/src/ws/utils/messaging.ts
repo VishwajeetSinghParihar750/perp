@@ -1,6 +1,6 @@
 import WebSocket from "ws";
 
-import { BackendResponse } from "@repo/shared-backend-types";
+import { BackendResponse } from "@repo/shared-types";
 
 const sendMessageOnWebSocket = (
   ws: WebSocket,

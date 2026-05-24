@@ -1,4 +1,4 @@
-import { EngineResponse } from "@repo/shared-engine-types";
+import * as EngineResponse from "../shared-engine-types/engineResponse.js";
 
 import z from "zod";
 // todo : add db request bater

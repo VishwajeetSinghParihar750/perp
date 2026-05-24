@@ -1,19 +1,15 @@
 import z from "zod";
-import * as EngineEvent from "../shared-engine-types/engineEvent.js";
+import {
+  type CURRENCY_SYMBOL,
+  CURRENCY_SYMBOL_SCHEMA,
+  ENGINE_EVENT_TYPE_SCHEMA,
+} from "../shared-engine-types/engineEvent.js";
 
 const SIDE_SCHEMA = z.union([z.literal("BUY"), z.literal("SELL")]);
 type SIDE = z.infer<typeof SIDE_SCHEMA>;
 
 const TYPE_SCHEMA = z.union([z.literal("MARKET"), z.literal("LIMIT")]);
 type TYPE = z.infer<typeof SIDE_SCHEMA>;
-
-const CURRENCY_SYMBOL_SCHEMA = z.union([
-  z.literal("USD"),
-  z.literal("BTCUSD"),
-  z.literal("SOLUSD"),
-  z.literal("ETHUSD"),
-]);
-type CURRENCY_SYMBOL = z.infer<typeof CURRENCY_SYMBOL_SCHEMA>;
 
 const MARGIN_TYPE_SCHEMA = z.union([z.literal("ISOLATED"), z.literal("CROSS")]);
 type MARGIN_TYPE = z.infer<typeof MARGIN_TYPE_SCHEMA>;
@@ -90,14 +86,14 @@ const GET_POSITION_SCHEMA = BASE_SCHEMA.extend({
 const SUBSCRIBE_EVENT_SCHEMA = BASE_SCHEMA.extend({
   type: z.literal("subscribe_event"),
   payload: z.object({
-    events: z.array(EngineEvent.ENGINE_EVENT_TYPE_SCHEMA).min(1),
+    events: z.array(ENGINE_EVENT_TYPE_SCHEMA).min(1),
   }),
 });
 
 const UNSUBSCRIBE_EVENT_SCHEMA = BASE_SCHEMA.extend({
   type: z.literal("unsubscribe_event"),
   payload: z.object({
-    events: z.array(EngineEvent.ENGINE_EVENT_TYPE_SCHEMA).min(1),
+    events: z.array(ENGINE_EVENT_TYPE_SCHEMA).min(1),
   }),
 });
 

@@ -384,6 +384,7 @@ type FieldRefInputType<Model, FieldType> = Model extends never ? never : FieldRe
 
 
 export const ModelName = {
+  Market: 'Market',
   User: 'User',
   Order: 'Order',
   Fill: 'Fill'
@@ -402,10 +403,84 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "order" | "fill"
+    modelProps: "market" | "user" | "order" | "fill"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
+    Market: {
+      payload: Prisma.$MarketPayload<ExtArgs>
+      fields: Prisma.MarketFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.MarketFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MarketPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.MarketFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MarketPayload>
+        }
+        findFirst: {
+          args: Prisma.MarketFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MarketPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.MarketFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MarketPayload>
+        }
+        findMany: {
+          args: Prisma.MarketFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MarketPayload>[]
+        }
+        create: {
+          args: Prisma.MarketCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MarketPayload>
+        }
+        createMany: {
+          args: Prisma.MarketCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.MarketCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MarketPayload>[]
+        }
+        delete: {
+          args: Prisma.MarketDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MarketPayload>
+        }
+        update: {
+          args: Prisma.MarketUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MarketPayload>
+        }
+        deleteMany: {
+          args: Prisma.MarketDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.MarketUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.MarketUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MarketPayload>[]
+        }
+        upsert: {
+          args: Prisma.MarketUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MarketPayload>
+        }
+        aggregate: {
+          args: Prisma.MarketAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateMarket>
+        }
+        groupBy: {
+          args: Prisma.MarketGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.MarketGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.MarketCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.MarketCountAggregateOutputType> | number
+        }
+      }
+    }
     User: {
       payload: Prisma.$UserPayload<ExtArgs>
       fields: Prisma.UserFieldRefs
@@ -667,6 +742,14 @@ export const TransactionIsolationLevel = runtime.makeStrictEnum({
 export type TransactionIsolationLevel = (typeof TransactionIsolationLevel)[keyof typeof TransactionIsolationLevel]
 
 
+export const MarketScalarFieldEnum = {
+  id: 'id',
+  MARKET_SYMBOL: 'MARKET_SYMBOL'
+} as const
+
+export type MarketScalarFieldEnum = (typeof MarketScalarFieldEnum)[keyof typeof MarketScalarFieldEnum]
+
+
 export const UserScalarFieldEnum = {
   id: 'id',
   username: 'username',
@@ -680,14 +763,14 @@ export type UserScalarFieldEnum = (typeof UserScalarFieldEnum)[keyof typeof User
 export const OrderScalarFieldEnum = {
   id: 'id',
   userId: 'userId',
-  side: 'side',
-  symbol: 'symbol',
+  ORDER_SIDE: 'ORDER_SIDE',
+  MARKET_SYMBOL: 'MARKET_SYMBOL',
   margin: 'margin',
   price: 'price',
   filledQuantity: 'filledQuantity',
   quantity: 'quantity',
   status: 'status',
-  type: 'type',
+  ORDER_TYPE: 'ORDER_TYPE',
   marginType: 'marginType'
 } as const
 
@@ -696,7 +779,7 @@ export type OrderScalarFieldEnum = (typeof OrderScalarFieldEnum)[keyof typeof Or
 
 export const FillScalarFieldEnum = {
   id: 'id',
-  symbol: 'symbol',
+  MARKET_SYMBOL: 'MARKET_SYMBOL',
   quantity: 'quantity',
   price: 'price',
   bidPrice: 'bidPrice',
@@ -746,6 +829,20 @@ export type ListStringFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaMod
 
 
 /**
+ * Reference to a field of type 'MARKET_SYMBOL'
+ */
+export type EnumMARKET_SYMBOLFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'MARKET_SYMBOL'>
+    
+
+
+/**
+ * Reference to a field of type 'MARKET_SYMBOL[]'
+ */
+export type ListEnumMARKET_SYMBOLFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'MARKET_SYMBOL[]'>
+    
+
+
+/**
  * Reference to a field of type 'DateTime'
  */
 export type DateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DateTime'>
@@ -760,30 +857,16 @@ export type ListDateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaM
 
 
 /**
- * Reference to a field of type 'SIDE'
+ * Reference to a field of type 'ORDER_SIDE'
  */
-export type EnumSIDEFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'SIDE'>
+export type EnumORDER_SIDEFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ORDER_SIDE'>
     
 
 
 /**
- * Reference to a field of type 'SIDE[]'
+ * Reference to a field of type 'ORDER_SIDE[]'
  */
-export type ListEnumSIDEFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'SIDE[]'>
-    
-
-
-/**
- * Reference to a field of type 'SYMBOL'
- */
-export type EnumSYMBOLFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'SYMBOL'>
-    
-
-
-/**
- * Reference to a field of type 'SYMBOL[]'
- */
-export type ListEnumSYMBOLFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'SYMBOL[]'>
+export type ListEnumORDER_SIDEFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ORDER_SIDE[]'>
     
 
 
@@ -816,16 +899,16 @@ export type ListEnumORDER_STATUSFieldRefInput<$PrismaModel> = FieldRefInputType<
 
 
 /**
- * Reference to a field of type 'TYPE'
+ * Reference to a field of type 'ORDER_TYPE'
  */
-export type EnumTYPEFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'TYPE'>
+export type EnumORDER_TYPEFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ORDER_TYPE'>
     
 
 
 /**
- * Reference to a field of type 'TYPE[]'
+ * Reference to a field of type 'ORDER_TYPE[]'
  */
-export type ListEnumTYPEFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'TYPE[]'>
+export type ListEnumORDER_TYPEFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ORDER_TYPE[]'>
     
 
 
@@ -966,6 +1049,7 @@ export type PrismaClientOptions = ({
   queryPlanCacheMaxSize?: number
 }
 export type GlobalOmitConfig = {
+  market?: Prisma.MarketOmit
   user?: Prisma.UserOmit
   order?: Prisma.OrderOmit
   fill?: Prisma.FillOmit

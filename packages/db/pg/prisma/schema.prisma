@@ -14,17 +14,18 @@ datasource db {
 
 
 
-enum SIDE {
+enum ORDER_SIDE {
   LONG
   SHORT
 }
 
-enum SYMBOL {
+enum MARKET_SYMBOL {
   ETHUSD
   BTCUSD
   SOLUSD
 }
-enum TYPE {
+
+enum ORDER_TYPE {
   MARKET
   LIMIT
 }
@@ -39,6 +40,14 @@ enum ORDER_STATUS {
   CANCELLED
 }
 
+model Market {
+  id String @id @default(uuid())
+  MARKET_SYMBOL MARKET_SYMBOL @unique
+
+  //
+  orders Order[]
+  fills Fill[]
+}
 
 model User {
 
@@ -57,25 +66,26 @@ model User {
 model Order {
   id String @id @default(uuid())
   userId String 
-  side SIDE
-  symbol SYMBOL
+  ORDER_SIDE ORDER_SIDE
+  MARKET_SYMBOL MARKET_SYMBOL
   margin Decimal @db.Decimal(18,0)
   price Decimal @db.Decimal(18,0)
   filledQuantity Decimal @db.Decimal(18,0)
   quantity Decimal @db.Decimal(18,0)
   status ORDER_STATUS
 
-  type TYPE
+  ORDER_TYPE ORDER_TYPE
   marginType MARGIN_TYPE
   //
   user User @relation(fields: [userId],references: [id])
   longFills Fill[] @relation(name : "longOrder")
   shortFills Fill[] @relation(name : "shortOrder")
+  market Market @relation(fields: [MARKET_SYMBOL], references: [MARKET_SYMBOL])
 }
 
 model Fill {
   id String @id @default(ulid())
-  symbol SYMBOL
+  MARKET_SYMBOL MARKET_SYMBOL
   quantity Decimal @db.Decimal(18,0)
   price Decimal @db.Decimal(18,0)
   bidPrice Decimal @db.Decimal(18,0)
@@ -92,5 +102,7 @@ model Fill {
   
   longOrder Order @relation(name : "longOrder"  ,fields: [longOrderId], references: [id])
   shortOrder Order @relation(name : "shortOrder" ,fields: [shortOrderId], references: [id])
+
+  market Market @relation(fields: [MARKET_SYMBOL], references: [MARKET_SYMBOL])
 
 }

@@ -40,7 +40,7 @@ export type FillSumAggregateOutputType = {
 
 export type FillMinAggregateOutputType = {
   id: string | null
-  symbol: $Enums.SYMBOL | null
+  MARKET_SYMBOL: $Enums.MARKET_SYMBOL | null
   quantity: runtime.Decimal | null
   price: runtime.Decimal | null
   bidPrice: runtime.Decimal | null
@@ -52,7 +52,7 @@ export type FillMinAggregateOutputType = {
 
 export type FillMaxAggregateOutputType = {
   id: string | null
-  symbol: $Enums.SYMBOL | null
+  MARKET_SYMBOL: $Enums.MARKET_SYMBOL | null
   quantity: runtime.Decimal | null
   price: runtime.Decimal | null
   bidPrice: runtime.Decimal | null
@@ -64,7 +64,7 @@ export type FillMaxAggregateOutputType = {
 
 export type FillCountAggregateOutputType = {
   id: number
-  symbol: number
+  MARKET_SYMBOL: number
   quantity: number
   price: number
   bidPrice: number
@@ -90,7 +90,7 @@ export type FillSumAggregateInputType = {
 
 export type FillMinAggregateInputType = {
   id?: true
-  symbol?: true
+  MARKET_SYMBOL?: true
   quantity?: true
   price?: true
   bidPrice?: true
@@ -102,7 +102,7 @@ export type FillMinAggregateInputType = {
 
 export type FillMaxAggregateInputType = {
   id?: true
-  symbol?: true
+  MARKET_SYMBOL?: true
   quantity?: true
   price?: true
   bidPrice?: true
@@ -114,7 +114,7 @@ export type FillMaxAggregateInputType = {
 
 export type FillCountAggregateInputType = {
   id?: true
-  symbol?: true
+  MARKET_SYMBOL?: true
   quantity?: true
   price?: true
   bidPrice?: true
@@ -213,7 +213,7 @@ export type FillGroupByArgs<ExtArgs extends runtime.Types.Extensions.InternalArg
 
 export type FillGroupByOutputType = {
   id: string
-  symbol: $Enums.SYMBOL
+  MARKET_SYMBOL: $Enums.MARKET_SYMBOL
   quantity: runtime.Decimal
   price: runtime.Decimal
   bidPrice: runtime.Decimal
@@ -248,7 +248,7 @@ export type FillWhereInput = {
   OR?: Prisma.FillWhereInput[]
   NOT?: Prisma.FillWhereInput | Prisma.FillWhereInput[]
   id?: Prisma.StringFilter<"Fill"> | string
-  symbol?: Prisma.EnumSYMBOLFilter<"Fill"> | $Enums.SYMBOL
+  MARKET_SYMBOL?: Prisma.EnumMARKET_SYMBOLFilter<"Fill"> | $Enums.MARKET_SYMBOL
   quantity?: Prisma.DecimalFilter<"Fill"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   price?: Prisma.DecimalFilter<"Fill"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   bidPrice?: Prisma.DecimalFilter<"Fill"> | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -260,11 +260,12 @@ export type FillWhereInput = {
   shortUser?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
   longOrder?: Prisma.XOR<Prisma.OrderScalarRelationFilter, Prisma.OrderWhereInput>
   shortOrder?: Prisma.XOR<Prisma.OrderScalarRelationFilter, Prisma.OrderWhereInput>
+  market?: Prisma.XOR<Prisma.MarketScalarRelationFilter, Prisma.MarketWhereInput>
 }
 
 export type FillOrderByWithRelationInput = {
   id?: Prisma.SortOrder
-  symbol?: Prisma.SortOrder
+  MARKET_SYMBOL?: Prisma.SortOrder
   quantity?: Prisma.SortOrder
   price?: Prisma.SortOrder
   bidPrice?: Prisma.SortOrder
@@ -276,6 +277,7 @@ export type FillOrderByWithRelationInput = {
   shortUser?: Prisma.UserOrderByWithRelationInput
   longOrder?: Prisma.OrderOrderByWithRelationInput
   shortOrder?: Prisma.OrderOrderByWithRelationInput
+  market?: Prisma.MarketOrderByWithRelationInput
 }
 
 export type FillWhereUniqueInput = Prisma.AtLeast<{
@@ -283,7 +285,7 @@ export type FillWhereUniqueInput = Prisma.AtLeast<{
   AND?: Prisma.FillWhereInput | Prisma.FillWhereInput[]
   OR?: Prisma.FillWhereInput[]
   NOT?: Prisma.FillWhereInput | Prisma.FillWhereInput[]
-  symbol?: Prisma.EnumSYMBOLFilter<"Fill"> | $Enums.SYMBOL
+  MARKET_SYMBOL?: Prisma.EnumMARKET_SYMBOLFilter<"Fill"> | $Enums.MARKET_SYMBOL
   quantity?: Prisma.DecimalFilter<"Fill"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   price?: Prisma.DecimalFilter<"Fill"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   bidPrice?: Prisma.DecimalFilter<"Fill"> | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -295,11 +297,12 @@ export type FillWhereUniqueInput = Prisma.AtLeast<{
   shortUser?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
   longOrder?: Prisma.XOR<Prisma.OrderScalarRelationFilter, Prisma.OrderWhereInput>
   shortOrder?: Prisma.XOR<Prisma.OrderScalarRelationFilter, Prisma.OrderWhereInput>
+  market?: Prisma.XOR<Prisma.MarketScalarRelationFilter, Prisma.MarketWhereInput>
 }, "id">
 
 export type FillOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
-  symbol?: Prisma.SortOrder
+  MARKET_SYMBOL?: Prisma.SortOrder
   quantity?: Prisma.SortOrder
   price?: Prisma.SortOrder
   bidPrice?: Prisma.SortOrder
@@ -319,7 +322,7 @@ export type FillScalarWhereWithAggregatesInput = {
   OR?: Prisma.FillScalarWhereWithAggregatesInput[]
   NOT?: Prisma.FillScalarWhereWithAggregatesInput | Prisma.FillScalarWhereWithAggregatesInput[]
   id?: Prisma.StringWithAggregatesFilter<"Fill"> | string
-  symbol?: Prisma.EnumSYMBOLWithAggregatesFilter<"Fill"> | $Enums.SYMBOL
+  MARKET_SYMBOL?: Prisma.EnumMARKET_SYMBOLWithAggregatesFilter<"Fill"> | $Enums.MARKET_SYMBOL
   quantity?: Prisma.DecimalWithAggregatesFilter<"Fill"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   price?: Prisma.DecimalWithAggregatesFilter<"Fill"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   bidPrice?: Prisma.DecimalWithAggregatesFilter<"Fill"> | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -331,7 +334,6 @@ export type FillScalarWhereWithAggregatesInput = {
 
 export type FillCreateInput = {
   id?: string
-  symbol: $Enums.SYMBOL
   quantity: runtime.Decimal | runtime.DecimalJsLike | number | string
   price: runtime.Decimal | runtime.DecimalJsLike | number | string
   bidPrice: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -339,11 +341,12 @@ export type FillCreateInput = {
   shortUser: Prisma.UserCreateNestedOneWithoutShortFillsInput
   longOrder: Prisma.OrderCreateNestedOneWithoutLongFillsInput
   shortOrder: Prisma.OrderCreateNestedOneWithoutShortFillsInput
+  market: Prisma.MarketCreateNestedOneWithoutFillsInput
 }
 
 export type FillUncheckedCreateInput = {
   id?: string
-  symbol: $Enums.SYMBOL
+  MARKET_SYMBOL: $Enums.MARKET_SYMBOL
   quantity: runtime.Decimal | runtime.DecimalJsLike | number | string
   price: runtime.Decimal | runtime.DecimalJsLike | number | string
   bidPrice: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -355,7 +358,6 @@ export type FillUncheckedCreateInput = {
 
 export type FillUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  symbol?: Prisma.EnumSYMBOLFieldUpdateOperationsInput | $Enums.SYMBOL
   quantity?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   price?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   bidPrice?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -363,11 +365,12 @@ export type FillUpdateInput = {
   shortUser?: Prisma.UserUpdateOneRequiredWithoutShortFillsNestedInput
   longOrder?: Prisma.OrderUpdateOneRequiredWithoutLongFillsNestedInput
   shortOrder?: Prisma.OrderUpdateOneRequiredWithoutShortFillsNestedInput
+  market?: Prisma.MarketUpdateOneRequiredWithoutFillsNestedInput
 }
 
 export type FillUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  symbol?: Prisma.EnumSYMBOLFieldUpdateOperationsInput | $Enums.SYMBOL
+  MARKET_SYMBOL?: Prisma.EnumMARKET_SYMBOLFieldUpdateOperationsInput | $Enums.MARKET_SYMBOL
   quantity?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   price?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   bidPrice?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -379,7 +382,7 @@ export type FillUncheckedUpdateInput = {
 
 export type FillCreateManyInput = {
   id?: string
-  symbol: $Enums.SYMBOL
+  MARKET_SYMBOL: $Enums.MARKET_SYMBOL
   quantity: runtime.Decimal | runtime.DecimalJsLike | number | string
   price: runtime.Decimal | runtime.DecimalJsLike | number | string
   bidPrice: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -391,7 +394,6 @@ export type FillCreateManyInput = {
 
 export type FillUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  symbol?: Prisma.EnumSYMBOLFieldUpdateOperationsInput | $Enums.SYMBOL
   quantity?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   price?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   bidPrice?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -399,7 +401,7 @@ export type FillUpdateManyMutationInput = {
 
 export type FillUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  symbol?: Prisma.EnumSYMBOLFieldUpdateOperationsInput | $Enums.SYMBOL
+  MARKET_SYMBOL?: Prisma.EnumMARKET_SYMBOLFieldUpdateOperationsInput | $Enums.MARKET_SYMBOL
   quantity?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   price?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   bidPrice?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -421,7 +423,7 @@ export type FillOrderByRelationAggregateInput = {
 
 export type FillCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
-  symbol?: Prisma.SortOrder
+  MARKET_SYMBOL?: Prisma.SortOrder
   quantity?: Prisma.SortOrder
   price?: Prisma.SortOrder
   bidPrice?: Prisma.SortOrder
@@ -439,7 +441,7 @@ export type FillAvgOrderByAggregateInput = {
 
 export type FillMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
-  symbol?: Prisma.SortOrder
+  MARKET_SYMBOL?: Prisma.SortOrder
   quantity?: Prisma.SortOrder
   price?: Prisma.SortOrder
   bidPrice?: Prisma.SortOrder
@@ -451,7 +453,7 @@ export type FillMaxOrderByAggregateInput = {
 
 export type FillMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
-  symbol?: Prisma.SortOrder
+  MARKET_SYMBOL?: Prisma.SortOrder
   quantity?: Prisma.SortOrder
   price?: Prisma.SortOrder
   bidPrice?: Prisma.SortOrder
@@ -465,6 +467,48 @@ export type FillSumOrderByAggregateInput = {
   quantity?: Prisma.SortOrder
   price?: Prisma.SortOrder
   bidPrice?: Prisma.SortOrder
+}
+
+export type FillCreateNestedManyWithoutMarketInput = {
+  create?: Prisma.XOR<Prisma.FillCreateWithoutMarketInput, Prisma.FillUncheckedCreateWithoutMarketInput> | Prisma.FillCreateWithoutMarketInput[] | Prisma.FillUncheckedCreateWithoutMarketInput[]
+  connectOrCreate?: Prisma.FillCreateOrConnectWithoutMarketInput | Prisma.FillCreateOrConnectWithoutMarketInput[]
+  createMany?: Prisma.FillCreateManyMarketInputEnvelope
+  connect?: Prisma.FillWhereUniqueInput | Prisma.FillWhereUniqueInput[]
+}
+
+export type FillUncheckedCreateNestedManyWithoutMarketInput = {
+  create?: Prisma.XOR<Prisma.FillCreateWithoutMarketInput, Prisma.FillUncheckedCreateWithoutMarketInput> | Prisma.FillCreateWithoutMarketInput[] | Prisma.FillUncheckedCreateWithoutMarketInput[]
+  connectOrCreate?: Prisma.FillCreateOrConnectWithoutMarketInput | Prisma.FillCreateOrConnectWithoutMarketInput[]
+  createMany?: Prisma.FillCreateManyMarketInputEnvelope
+  connect?: Prisma.FillWhereUniqueInput | Prisma.FillWhereUniqueInput[]
+}
+
+export type FillUpdateManyWithoutMarketNestedInput = {
+  create?: Prisma.XOR<Prisma.FillCreateWithoutMarketInput, Prisma.FillUncheckedCreateWithoutMarketInput> | Prisma.FillCreateWithoutMarketInput[] | Prisma.FillUncheckedCreateWithoutMarketInput[]
+  connectOrCreate?: Prisma.FillCreateOrConnectWithoutMarketInput | Prisma.FillCreateOrConnectWithoutMarketInput[]
+  upsert?: Prisma.FillUpsertWithWhereUniqueWithoutMarketInput | Prisma.FillUpsertWithWhereUniqueWithoutMarketInput[]
+  createMany?: Prisma.FillCreateManyMarketInputEnvelope
+  set?: Prisma.FillWhereUniqueInput | Prisma.FillWhereUniqueInput[]
+  disconnect?: Prisma.FillWhereUniqueInput | Prisma.FillWhereUniqueInput[]
+  delete?: Prisma.FillWhereUniqueInput | Prisma.FillWhereUniqueInput[]
+  connect?: Prisma.FillWhereUniqueInput | Prisma.FillWhereUniqueInput[]
+  update?: Prisma.FillUpdateWithWhereUniqueWithoutMarketInput | Prisma.FillUpdateWithWhereUniqueWithoutMarketInput[]
+  updateMany?: Prisma.FillUpdateManyWithWhereWithoutMarketInput | Prisma.FillUpdateManyWithWhereWithoutMarketInput[]
+  deleteMany?: Prisma.FillScalarWhereInput | Prisma.FillScalarWhereInput[]
+}
+
+export type FillUncheckedUpdateManyWithoutMarketNestedInput = {
+  create?: Prisma.XOR<Prisma.FillCreateWithoutMarketInput, Prisma.FillUncheckedCreateWithoutMarketInput> | Prisma.FillCreateWithoutMarketInput[] | Prisma.FillUncheckedCreateWithoutMarketInput[]
+  connectOrCreate?: Prisma.FillCreateOrConnectWithoutMarketInput | Prisma.FillCreateOrConnectWithoutMarketInput[]
+  upsert?: Prisma.FillUpsertWithWhereUniqueWithoutMarketInput | Prisma.FillUpsertWithWhereUniqueWithoutMarketInput[]
+  createMany?: Prisma.FillCreateManyMarketInputEnvelope
+  set?: Prisma.FillWhereUniqueInput | Prisma.FillWhereUniqueInput[]
+  disconnect?: Prisma.FillWhereUniqueInput | Prisma.FillWhereUniqueInput[]
+  delete?: Prisma.FillWhereUniqueInput | Prisma.FillWhereUniqueInput[]
+  connect?: Prisma.FillWhereUniqueInput | Prisma.FillWhereUniqueInput[]
+  update?: Prisma.FillUpdateWithWhereUniqueWithoutMarketInput | Prisma.FillUpdateWithWhereUniqueWithoutMarketInput[]
+  updateMany?: Prisma.FillUpdateManyWithWhereWithoutMarketInput | Prisma.FillUpdateManyWithWhereWithoutMarketInput[]
+  deleteMany?: Prisma.FillScalarWhereInput | Prisma.FillScalarWhereInput[]
 }
 
 export type FillCreateNestedManyWithoutLongUserInput = {
@@ -635,20 +679,83 @@ export type FillUncheckedUpdateManyWithoutShortOrderNestedInput = {
   deleteMany?: Prisma.FillScalarWhereInput | Prisma.FillScalarWhereInput[]
 }
 
+export type FillCreateWithoutMarketInput = {
+  id?: string
+  quantity: runtime.Decimal | runtime.DecimalJsLike | number | string
+  price: runtime.Decimal | runtime.DecimalJsLike | number | string
+  bidPrice: runtime.Decimal | runtime.DecimalJsLike | number | string
+  longUser: Prisma.UserCreateNestedOneWithoutLongFillsInput
+  shortUser: Prisma.UserCreateNestedOneWithoutShortFillsInput
+  longOrder: Prisma.OrderCreateNestedOneWithoutLongFillsInput
+  shortOrder: Prisma.OrderCreateNestedOneWithoutShortFillsInput
+}
+
+export type FillUncheckedCreateWithoutMarketInput = {
+  id?: string
+  quantity: runtime.Decimal | runtime.DecimalJsLike | number | string
+  price: runtime.Decimal | runtime.DecimalJsLike | number | string
+  bidPrice: runtime.Decimal | runtime.DecimalJsLike | number | string
+  longUserId: string
+  shortUserId: string
+  longOrderId: string
+  shortOrderId: string
+}
+
+export type FillCreateOrConnectWithoutMarketInput = {
+  where: Prisma.FillWhereUniqueInput
+  create: Prisma.XOR<Prisma.FillCreateWithoutMarketInput, Prisma.FillUncheckedCreateWithoutMarketInput>
+}
+
+export type FillCreateManyMarketInputEnvelope = {
+  data: Prisma.FillCreateManyMarketInput | Prisma.FillCreateManyMarketInput[]
+  skipDuplicates?: boolean
+}
+
+export type FillUpsertWithWhereUniqueWithoutMarketInput = {
+  where: Prisma.FillWhereUniqueInput
+  update: Prisma.XOR<Prisma.FillUpdateWithoutMarketInput, Prisma.FillUncheckedUpdateWithoutMarketInput>
+  create: Prisma.XOR<Prisma.FillCreateWithoutMarketInput, Prisma.FillUncheckedCreateWithoutMarketInput>
+}
+
+export type FillUpdateWithWhereUniqueWithoutMarketInput = {
+  where: Prisma.FillWhereUniqueInput
+  data: Prisma.XOR<Prisma.FillUpdateWithoutMarketInput, Prisma.FillUncheckedUpdateWithoutMarketInput>
+}
+
+export type FillUpdateManyWithWhereWithoutMarketInput = {
+  where: Prisma.FillScalarWhereInput
+  data: Prisma.XOR<Prisma.FillUpdateManyMutationInput, Prisma.FillUncheckedUpdateManyWithoutMarketInput>
+}
+
+export type FillScalarWhereInput = {
+  AND?: Prisma.FillScalarWhereInput | Prisma.FillScalarWhereInput[]
+  OR?: Prisma.FillScalarWhereInput[]
+  NOT?: Prisma.FillScalarWhereInput | Prisma.FillScalarWhereInput[]
+  id?: Prisma.StringFilter<"Fill"> | string
+  MARKET_SYMBOL?: Prisma.EnumMARKET_SYMBOLFilter<"Fill"> | $Enums.MARKET_SYMBOL
+  quantity?: Prisma.DecimalFilter<"Fill"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  price?: Prisma.DecimalFilter<"Fill"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  bidPrice?: Prisma.DecimalFilter<"Fill"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  longUserId?: Prisma.StringFilter<"Fill"> | string
+  shortUserId?: Prisma.StringFilter<"Fill"> | string
+  longOrderId?: Prisma.StringFilter<"Fill"> | string
+  shortOrderId?: Prisma.StringFilter<"Fill"> | string
+}
+
 export type FillCreateWithoutLongUserInput = {
   id?: string
-  symbol: $Enums.SYMBOL
   quantity: runtime.Decimal | runtime.DecimalJsLike | number | string
   price: runtime.Decimal | runtime.DecimalJsLike | number | string
   bidPrice: runtime.Decimal | runtime.DecimalJsLike | number | string
   shortUser: Prisma.UserCreateNestedOneWithoutShortFillsInput
   longOrder: Prisma.OrderCreateNestedOneWithoutLongFillsInput
   shortOrder: Prisma.OrderCreateNestedOneWithoutShortFillsInput
+  market: Prisma.MarketCreateNestedOneWithoutFillsInput
 }
 
 export type FillUncheckedCreateWithoutLongUserInput = {
   id?: string
-  symbol: $Enums.SYMBOL
+  MARKET_SYMBOL: $Enums.MARKET_SYMBOL
   quantity: runtime.Decimal | runtime.DecimalJsLike | number | string
   price: runtime.Decimal | runtime.DecimalJsLike | number | string
   bidPrice: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -669,18 +776,18 @@ export type FillCreateManyLongUserInputEnvelope = {
 
 export type FillCreateWithoutShortUserInput = {
   id?: string
-  symbol: $Enums.SYMBOL
   quantity: runtime.Decimal | runtime.DecimalJsLike | number | string
   price: runtime.Decimal | runtime.DecimalJsLike | number | string
   bidPrice: runtime.Decimal | runtime.DecimalJsLike | number | string
   longUser: Prisma.UserCreateNestedOneWithoutLongFillsInput
   longOrder: Prisma.OrderCreateNestedOneWithoutLongFillsInput
   shortOrder: Prisma.OrderCreateNestedOneWithoutShortFillsInput
+  market: Prisma.MarketCreateNestedOneWithoutFillsInput
 }
 
 export type FillUncheckedCreateWithoutShortUserInput = {
   id?: string
-  symbol: $Enums.SYMBOL
+  MARKET_SYMBOL: $Enums.MARKET_SYMBOL
   quantity: runtime.Decimal | runtime.DecimalJsLike | number | string
   price: runtime.Decimal | runtime.DecimalJsLike | number | string
   bidPrice: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -715,21 +822,6 @@ export type FillUpdateManyWithWhereWithoutLongUserInput = {
   data: Prisma.XOR<Prisma.FillUpdateManyMutationInput, Prisma.FillUncheckedUpdateManyWithoutLongUserInput>
 }
 
-export type FillScalarWhereInput = {
-  AND?: Prisma.FillScalarWhereInput | Prisma.FillScalarWhereInput[]
-  OR?: Prisma.FillScalarWhereInput[]
-  NOT?: Prisma.FillScalarWhereInput | Prisma.FillScalarWhereInput[]
-  id?: Prisma.StringFilter<"Fill"> | string
-  symbol?: Prisma.EnumSYMBOLFilter<"Fill"> | $Enums.SYMBOL
-  quantity?: Prisma.DecimalFilter<"Fill"> | runtime.Decimal | runtime.DecimalJsLike | number | string
-  price?: Prisma.DecimalFilter<"Fill"> | runtime.Decimal | runtime.DecimalJsLike | number | string
-  bidPrice?: Prisma.DecimalFilter<"Fill"> | runtime.Decimal | runtime.DecimalJsLike | number | string
-  longUserId?: Prisma.StringFilter<"Fill"> | string
-  shortUserId?: Prisma.StringFilter<"Fill"> | string
-  longOrderId?: Prisma.StringFilter<"Fill"> | string
-  shortOrderId?: Prisma.StringFilter<"Fill"> | string
-}
-
 export type FillUpsertWithWhereUniqueWithoutShortUserInput = {
   where: Prisma.FillWhereUniqueInput
   update: Prisma.XOR<Prisma.FillUpdateWithoutShortUserInput, Prisma.FillUncheckedUpdateWithoutShortUserInput>
@@ -748,18 +840,18 @@ export type FillUpdateManyWithWhereWithoutShortUserInput = {
 
 export type FillCreateWithoutLongOrderInput = {
   id?: string
-  symbol: $Enums.SYMBOL
   quantity: runtime.Decimal | runtime.DecimalJsLike | number | string
   price: runtime.Decimal | runtime.DecimalJsLike | number | string
   bidPrice: runtime.Decimal | runtime.DecimalJsLike | number | string
   longUser: Prisma.UserCreateNestedOneWithoutLongFillsInput
   shortUser: Prisma.UserCreateNestedOneWithoutShortFillsInput
   shortOrder: Prisma.OrderCreateNestedOneWithoutShortFillsInput
+  market: Prisma.MarketCreateNestedOneWithoutFillsInput
 }
 
 export type FillUncheckedCreateWithoutLongOrderInput = {
   id?: string
-  symbol: $Enums.SYMBOL
+  MARKET_SYMBOL: $Enums.MARKET_SYMBOL
   quantity: runtime.Decimal | runtime.DecimalJsLike | number | string
   price: runtime.Decimal | runtime.DecimalJsLike | number | string
   bidPrice: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -780,18 +872,18 @@ export type FillCreateManyLongOrderInputEnvelope = {
 
 export type FillCreateWithoutShortOrderInput = {
   id?: string
-  symbol: $Enums.SYMBOL
   quantity: runtime.Decimal | runtime.DecimalJsLike | number | string
   price: runtime.Decimal | runtime.DecimalJsLike | number | string
   bidPrice: runtime.Decimal | runtime.DecimalJsLike | number | string
   longUser: Prisma.UserCreateNestedOneWithoutLongFillsInput
   shortUser: Prisma.UserCreateNestedOneWithoutShortFillsInput
   longOrder: Prisma.OrderCreateNestedOneWithoutLongFillsInput
+  market: Prisma.MarketCreateNestedOneWithoutFillsInput
 }
 
 export type FillUncheckedCreateWithoutShortOrderInput = {
   id?: string
-  symbol: $Enums.SYMBOL
+  MARKET_SYMBOL: $Enums.MARKET_SYMBOL
   quantity: runtime.Decimal | runtime.DecimalJsLike | number | string
   price: runtime.Decimal | runtime.DecimalJsLike | number | string
   bidPrice: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -842,9 +934,53 @@ export type FillUpdateManyWithWhereWithoutShortOrderInput = {
   data: Prisma.XOR<Prisma.FillUpdateManyMutationInput, Prisma.FillUncheckedUpdateManyWithoutShortOrderInput>
 }
 
+export type FillCreateManyMarketInput = {
+  id?: string
+  quantity: runtime.Decimal | runtime.DecimalJsLike | number | string
+  price: runtime.Decimal | runtime.DecimalJsLike | number | string
+  bidPrice: runtime.Decimal | runtime.DecimalJsLike | number | string
+  longUserId: string
+  shortUserId: string
+  longOrderId: string
+  shortOrderId: string
+}
+
+export type FillUpdateWithoutMarketInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  quantity?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  price?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  bidPrice?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  longUser?: Prisma.UserUpdateOneRequiredWithoutLongFillsNestedInput
+  shortUser?: Prisma.UserUpdateOneRequiredWithoutShortFillsNestedInput
+  longOrder?: Prisma.OrderUpdateOneRequiredWithoutLongFillsNestedInput
+  shortOrder?: Prisma.OrderUpdateOneRequiredWithoutShortFillsNestedInput
+}
+
+export type FillUncheckedUpdateWithoutMarketInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  quantity?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  price?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  bidPrice?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  longUserId?: Prisma.StringFieldUpdateOperationsInput | string
+  shortUserId?: Prisma.StringFieldUpdateOperationsInput | string
+  longOrderId?: Prisma.StringFieldUpdateOperationsInput | string
+  shortOrderId?: Prisma.StringFieldUpdateOperationsInput | string
+}
+
+export type FillUncheckedUpdateManyWithoutMarketInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  quantity?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  price?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  bidPrice?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  longUserId?: Prisma.StringFieldUpdateOperationsInput | string
+  shortUserId?: Prisma.StringFieldUpdateOperationsInput | string
+  longOrderId?: Prisma.StringFieldUpdateOperationsInput | string
+  shortOrderId?: Prisma.StringFieldUpdateOperationsInput | string
+}
+
 export type FillCreateManyLongUserInput = {
   id?: string
-  symbol: $Enums.SYMBOL
+  MARKET_SYMBOL: $Enums.MARKET_SYMBOL
   quantity: runtime.Decimal | runtime.DecimalJsLike | number | string
   price: runtime.Decimal | runtime.DecimalJsLike | number | string
   bidPrice: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -855,7 +991,7 @@ export type FillCreateManyLongUserInput = {
 
 export type FillCreateManyShortUserInput = {
   id?: string
-  symbol: $Enums.SYMBOL
+  MARKET_SYMBOL: $Enums.MARKET_SYMBOL
   quantity: runtime.Decimal | runtime.DecimalJsLike | number | string
   price: runtime.Decimal | runtime.DecimalJsLike | number | string
   bidPrice: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -866,18 +1002,18 @@ export type FillCreateManyShortUserInput = {
 
 export type FillUpdateWithoutLongUserInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  symbol?: Prisma.EnumSYMBOLFieldUpdateOperationsInput | $Enums.SYMBOL
   quantity?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   price?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   bidPrice?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   shortUser?: Prisma.UserUpdateOneRequiredWithoutShortFillsNestedInput
   longOrder?: Prisma.OrderUpdateOneRequiredWithoutLongFillsNestedInput
   shortOrder?: Prisma.OrderUpdateOneRequiredWithoutShortFillsNestedInput
+  market?: Prisma.MarketUpdateOneRequiredWithoutFillsNestedInput
 }
 
 export type FillUncheckedUpdateWithoutLongUserInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  symbol?: Prisma.EnumSYMBOLFieldUpdateOperationsInput | $Enums.SYMBOL
+  MARKET_SYMBOL?: Prisma.EnumMARKET_SYMBOLFieldUpdateOperationsInput | $Enums.MARKET_SYMBOL
   quantity?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   price?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   bidPrice?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -888,7 +1024,7 @@ export type FillUncheckedUpdateWithoutLongUserInput = {
 
 export type FillUncheckedUpdateManyWithoutLongUserInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  symbol?: Prisma.EnumSYMBOLFieldUpdateOperationsInput | $Enums.SYMBOL
+  MARKET_SYMBOL?: Prisma.EnumMARKET_SYMBOLFieldUpdateOperationsInput | $Enums.MARKET_SYMBOL
   quantity?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   price?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   bidPrice?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -899,18 +1035,18 @@ export type FillUncheckedUpdateManyWithoutLongUserInput = {
 
 export type FillUpdateWithoutShortUserInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  symbol?: Prisma.EnumSYMBOLFieldUpdateOperationsInput | $Enums.SYMBOL
   quantity?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   price?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   bidPrice?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   longUser?: Prisma.UserUpdateOneRequiredWithoutLongFillsNestedInput
   longOrder?: Prisma.OrderUpdateOneRequiredWithoutLongFillsNestedInput
   shortOrder?: Prisma.OrderUpdateOneRequiredWithoutShortFillsNestedInput
+  market?: Prisma.MarketUpdateOneRequiredWithoutFillsNestedInput
 }
 
 export type FillUncheckedUpdateWithoutShortUserInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  symbol?: Prisma.EnumSYMBOLFieldUpdateOperationsInput | $Enums.SYMBOL
+  MARKET_SYMBOL?: Prisma.EnumMARKET_SYMBOLFieldUpdateOperationsInput | $Enums.MARKET_SYMBOL
   quantity?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   price?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   bidPrice?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -921,7 +1057,7 @@ export type FillUncheckedUpdateWithoutShortUserInput = {
 
 export type FillUncheckedUpdateManyWithoutShortUserInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  symbol?: Prisma.EnumSYMBOLFieldUpdateOperationsInput | $Enums.SYMBOL
+  MARKET_SYMBOL?: Prisma.EnumMARKET_SYMBOLFieldUpdateOperationsInput | $Enums.MARKET_SYMBOL
   quantity?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   price?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   bidPrice?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -932,7 +1068,7 @@ export type FillUncheckedUpdateManyWithoutShortUserInput = {
 
 export type FillCreateManyLongOrderInput = {
   id?: string
-  symbol: $Enums.SYMBOL
+  MARKET_SYMBOL: $Enums.MARKET_SYMBOL
   quantity: runtime.Decimal | runtime.DecimalJsLike | number | string
   price: runtime.Decimal | runtime.DecimalJsLike | number | string
   bidPrice: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -943,7 +1079,7 @@ export type FillCreateManyLongOrderInput = {
 
 export type FillCreateManyShortOrderInput = {
   id?: string
-  symbol: $Enums.SYMBOL
+  MARKET_SYMBOL: $Enums.MARKET_SYMBOL
   quantity: runtime.Decimal | runtime.DecimalJsLike | number | string
   price: runtime.Decimal | runtime.DecimalJsLike | number | string
   bidPrice: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -954,18 +1090,18 @@ export type FillCreateManyShortOrderInput = {
 
 export type FillUpdateWithoutLongOrderInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  symbol?: Prisma.EnumSYMBOLFieldUpdateOperationsInput | $Enums.SYMBOL
   quantity?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   price?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   bidPrice?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   longUser?: Prisma.UserUpdateOneRequiredWithoutLongFillsNestedInput
   shortUser?: Prisma.UserUpdateOneRequiredWithoutShortFillsNestedInput
   shortOrder?: Prisma.OrderUpdateOneRequiredWithoutShortFillsNestedInput
+  market?: Prisma.MarketUpdateOneRequiredWithoutFillsNestedInput
 }
 
 export type FillUncheckedUpdateWithoutLongOrderInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  symbol?: Prisma.EnumSYMBOLFieldUpdateOperationsInput | $Enums.SYMBOL
+  MARKET_SYMBOL?: Prisma.EnumMARKET_SYMBOLFieldUpdateOperationsInput | $Enums.MARKET_SYMBOL
   quantity?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   price?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   bidPrice?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -976,7 +1112,7 @@ export type FillUncheckedUpdateWithoutLongOrderInput = {
 
 export type FillUncheckedUpdateManyWithoutLongOrderInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  symbol?: Prisma.EnumSYMBOLFieldUpdateOperationsInput | $Enums.SYMBOL
+  MARKET_SYMBOL?: Prisma.EnumMARKET_SYMBOLFieldUpdateOperationsInput | $Enums.MARKET_SYMBOL
   quantity?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   price?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   bidPrice?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -987,18 +1123,18 @@ export type FillUncheckedUpdateManyWithoutLongOrderInput = {
 
 export type FillUpdateWithoutShortOrderInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  symbol?: Prisma.EnumSYMBOLFieldUpdateOperationsInput | $Enums.SYMBOL
   quantity?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   price?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   bidPrice?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   longUser?: Prisma.UserUpdateOneRequiredWithoutLongFillsNestedInput
   shortUser?: Prisma.UserUpdateOneRequiredWithoutShortFillsNestedInput
   longOrder?: Prisma.OrderUpdateOneRequiredWithoutLongFillsNestedInput
+  market?: Prisma.MarketUpdateOneRequiredWithoutFillsNestedInput
 }
 
 export type FillUncheckedUpdateWithoutShortOrderInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  symbol?: Prisma.EnumSYMBOLFieldUpdateOperationsInput | $Enums.SYMBOL
+  MARKET_SYMBOL?: Prisma.EnumMARKET_SYMBOLFieldUpdateOperationsInput | $Enums.MARKET_SYMBOL
   quantity?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   price?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   bidPrice?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -1009,7 +1145,7 @@ export type FillUncheckedUpdateWithoutShortOrderInput = {
 
 export type FillUncheckedUpdateManyWithoutShortOrderInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  symbol?: Prisma.EnumSYMBOLFieldUpdateOperationsInput | $Enums.SYMBOL
+  MARKET_SYMBOL?: Prisma.EnumMARKET_SYMBOLFieldUpdateOperationsInput | $Enums.MARKET_SYMBOL
   quantity?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   price?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   bidPrice?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -1022,7 +1158,7 @@ export type FillUncheckedUpdateManyWithoutShortOrderInput = {
 
 export type FillSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
-  symbol?: boolean
+  MARKET_SYMBOL?: boolean
   quantity?: boolean
   price?: boolean
   bidPrice?: boolean
@@ -1034,11 +1170,12 @@ export type FillSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   shortUser?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   longOrder?: boolean | Prisma.OrderDefaultArgs<ExtArgs>
   shortOrder?: boolean | Prisma.OrderDefaultArgs<ExtArgs>
+  market?: boolean | Prisma.MarketDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["fill"]>
 
 export type FillSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
-  symbol?: boolean
+  MARKET_SYMBOL?: boolean
   quantity?: boolean
   price?: boolean
   bidPrice?: boolean
@@ -1050,11 +1187,12 @@ export type FillSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   shortUser?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   longOrder?: boolean | Prisma.OrderDefaultArgs<ExtArgs>
   shortOrder?: boolean | Prisma.OrderDefaultArgs<ExtArgs>
+  market?: boolean | Prisma.MarketDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["fill"]>
 
 export type FillSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
-  symbol?: boolean
+  MARKET_SYMBOL?: boolean
   quantity?: boolean
   price?: boolean
   bidPrice?: boolean
@@ -1066,11 +1204,12 @@ export type FillSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   shortUser?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   longOrder?: boolean | Prisma.OrderDefaultArgs<ExtArgs>
   shortOrder?: boolean | Prisma.OrderDefaultArgs<ExtArgs>
+  market?: boolean | Prisma.MarketDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["fill"]>
 
 export type FillSelectScalar = {
   id?: boolean
-  symbol?: boolean
+  MARKET_SYMBOL?: boolean
   quantity?: boolean
   price?: boolean
   bidPrice?: boolean
@@ -1080,24 +1219,27 @@ export type FillSelectScalar = {
   shortOrderId?: boolean
 }
 
-export type FillOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "symbol" | "quantity" | "price" | "bidPrice" | "longUserId" | "shortUserId" | "longOrderId" | "shortOrderId", ExtArgs["result"]["fill"]>
+export type FillOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "MARKET_SYMBOL" | "quantity" | "price" | "bidPrice" | "longUserId" | "shortUserId" | "longOrderId" | "shortOrderId", ExtArgs["result"]["fill"]>
 export type FillInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   longUser?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   shortUser?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   longOrder?: boolean | Prisma.OrderDefaultArgs<ExtArgs>
   shortOrder?: boolean | Prisma.OrderDefaultArgs<ExtArgs>
+  market?: boolean | Prisma.MarketDefaultArgs<ExtArgs>
 }
 export type FillIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   longUser?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   shortUser?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   longOrder?: boolean | Prisma.OrderDefaultArgs<ExtArgs>
   shortOrder?: boolean | Prisma.OrderDefaultArgs<ExtArgs>
+  market?: boolean | Prisma.MarketDefaultArgs<ExtArgs>
 }
 export type FillIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   longUser?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   shortUser?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   longOrder?: boolean | Prisma.OrderDefaultArgs<ExtArgs>
   shortOrder?: boolean | Prisma.OrderDefaultArgs<ExtArgs>
+  market?: boolean | Prisma.MarketDefaultArgs<ExtArgs>
 }
 
 export type $FillPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1107,10 +1249,11 @@ export type $FillPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     shortUser: Prisma.$UserPayload<ExtArgs>
     longOrder: Prisma.$OrderPayload<ExtArgs>
     shortOrder: Prisma.$OrderPayload<ExtArgs>
+    market: Prisma.$MarketPayload<ExtArgs>
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
-    symbol: $Enums.SYMBOL
+    MARKET_SYMBOL: $Enums.MARKET_SYMBOL
     quantity: runtime.Decimal
     price: runtime.Decimal
     bidPrice: runtime.Decimal
@@ -1516,6 +1659,7 @@ export interface Prisma__FillClient<T, Null = never, ExtArgs extends runtime.Typ
   shortUser<T extends Prisma.UserDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.UserDefaultArgs<ExtArgs>>): Prisma.Prisma__UserClient<runtime.Types.Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   longOrder<T extends Prisma.OrderDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.OrderDefaultArgs<ExtArgs>>): Prisma.Prisma__OrderClient<runtime.Types.Result.GetResult<Prisma.$OrderPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   shortOrder<T extends Prisma.OrderDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.OrderDefaultArgs<ExtArgs>>): Prisma.Prisma__OrderClient<runtime.Types.Result.GetResult<Prisma.$OrderPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+  market<T extends Prisma.MarketDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.MarketDefaultArgs<ExtArgs>>): Prisma.Prisma__MarketClient<runtime.Types.Result.GetResult<Prisma.$MarketPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1546,7 +1690,7 @@ export interface Prisma__FillClient<T, Null = never, ExtArgs extends runtime.Typ
  */
 export interface FillFieldRefs {
   readonly id: Prisma.FieldRef<"Fill", 'String'>
-  readonly symbol: Prisma.FieldRef<"Fill", 'SYMBOL'>
+  readonly MARKET_SYMBOL: Prisma.FieldRef<"Fill", 'MARKET_SYMBOL'>
   readonly quantity: Prisma.FieldRef<"Fill", 'Decimal'>
   readonly price: Prisma.FieldRef<"Fill", 'Decimal'>
   readonly bidPrice: Prisma.FieldRef<"Fill", 'Decimal'>

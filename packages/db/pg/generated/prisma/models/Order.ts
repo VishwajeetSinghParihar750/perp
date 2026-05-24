@@ -43,42 +43,42 @@ export type OrderSumAggregateOutputType = {
 export type OrderMinAggregateOutputType = {
   id: string | null
   userId: string | null
-  side: $Enums.SIDE | null
-  symbol: $Enums.SYMBOL | null
+  ORDER_SIDE: $Enums.ORDER_SIDE | null
+  MARKET_SYMBOL: $Enums.MARKET_SYMBOL | null
   margin: runtime.Decimal | null
   price: runtime.Decimal | null
   filledQuantity: runtime.Decimal | null
   quantity: runtime.Decimal | null
   status: $Enums.ORDER_STATUS | null
-  type: $Enums.TYPE | null
+  ORDER_TYPE: $Enums.ORDER_TYPE | null
   marginType: $Enums.MARGIN_TYPE | null
 }
 
 export type OrderMaxAggregateOutputType = {
   id: string | null
   userId: string | null
-  side: $Enums.SIDE | null
-  symbol: $Enums.SYMBOL | null
+  ORDER_SIDE: $Enums.ORDER_SIDE | null
+  MARKET_SYMBOL: $Enums.MARKET_SYMBOL | null
   margin: runtime.Decimal | null
   price: runtime.Decimal | null
   filledQuantity: runtime.Decimal | null
   quantity: runtime.Decimal | null
   status: $Enums.ORDER_STATUS | null
-  type: $Enums.TYPE | null
+  ORDER_TYPE: $Enums.ORDER_TYPE | null
   marginType: $Enums.MARGIN_TYPE | null
 }
 
 export type OrderCountAggregateOutputType = {
   id: number
   userId: number
-  side: number
-  symbol: number
+  ORDER_SIDE: number
+  MARKET_SYMBOL: number
   margin: number
   price: number
   filledQuantity: number
   quantity: number
   status: number
-  type: number
+  ORDER_TYPE: number
   marginType: number
   _all: number
 }
@@ -101,42 +101,42 @@ export type OrderSumAggregateInputType = {
 export type OrderMinAggregateInputType = {
   id?: true
   userId?: true
-  side?: true
-  symbol?: true
+  ORDER_SIDE?: true
+  MARKET_SYMBOL?: true
   margin?: true
   price?: true
   filledQuantity?: true
   quantity?: true
   status?: true
-  type?: true
+  ORDER_TYPE?: true
   marginType?: true
 }
 
 export type OrderMaxAggregateInputType = {
   id?: true
   userId?: true
-  side?: true
-  symbol?: true
+  ORDER_SIDE?: true
+  MARKET_SYMBOL?: true
   margin?: true
   price?: true
   filledQuantity?: true
   quantity?: true
   status?: true
-  type?: true
+  ORDER_TYPE?: true
   marginType?: true
 }
 
 export type OrderCountAggregateInputType = {
   id?: true
   userId?: true
-  side?: true
-  symbol?: true
+  ORDER_SIDE?: true
+  MARKET_SYMBOL?: true
   margin?: true
   price?: true
   filledQuantity?: true
   quantity?: true
   status?: true
-  type?: true
+  ORDER_TYPE?: true
   marginType?: true
   _all?: true
 }
@@ -230,14 +230,14 @@ export type OrderGroupByArgs<ExtArgs extends runtime.Types.Extensions.InternalAr
 export type OrderGroupByOutputType = {
   id: string
   userId: string
-  side: $Enums.SIDE
-  symbol: $Enums.SYMBOL
+  ORDER_SIDE: $Enums.ORDER_SIDE
+  MARKET_SYMBOL: $Enums.MARKET_SYMBOL
   margin: runtime.Decimal
   price: runtime.Decimal
   filledQuantity: runtime.Decimal
   quantity: runtime.Decimal
   status: $Enums.ORDER_STATUS
-  type: $Enums.TYPE
+  ORDER_TYPE: $Enums.ORDER_TYPE
   marginType: $Enums.MARGIN_TYPE
   _count: OrderCountAggregateOutputType | null
   _avg: OrderAvgAggregateOutputType | null
@@ -267,35 +267,37 @@ export type OrderWhereInput = {
   NOT?: Prisma.OrderWhereInput | Prisma.OrderWhereInput[]
   id?: Prisma.StringFilter<"Order"> | string
   userId?: Prisma.StringFilter<"Order"> | string
-  side?: Prisma.EnumSIDEFilter<"Order"> | $Enums.SIDE
-  symbol?: Prisma.EnumSYMBOLFilter<"Order"> | $Enums.SYMBOL
+  ORDER_SIDE?: Prisma.EnumORDER_SIDEFilter<"Order"> | $Enums.ORDER_SIDE
+  MARKET_SYMBOL?: Prisma.EnumMARKET_SYMBOLFilter<"Order"> | $Enums.MARKET_SYMBOL
   margin?: Prisma.DecimalFilter<"Order"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   price?: Prisma.DecimalFilter<"Order"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   filledQuantity?: Prisma.DecimalFilter<"Order"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   quantity?: Prisma.DecimalFilter<"Order"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: Prisma.EnumORDER_STATUSFilter<"Order"> | $Enums.ORDER_STATUS
-  type?: Prisma.EnumTYPEFilter<"Order"> | $Enums.TYPE
+  ORDER_TYPE?: Prisma.EnumORDER_TYPEFilter<"Order"> | $Enums.ORDER_TYPE
   marginType?: Prisma.EnumMARGIN_TYPEFilter<"Order"> | $Enums.MARGIN_TYPE
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
   longFills?: Prisma.FillListRelationFilter
   shortFills?: Prisma.FillListRelationFilter
+  market?: Prisma.XOR<Prisma.MarketScalarRelationFilter, Prisma.MarketWhereInput>
 }
 
 export type OrderOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   userId?: Prisma.SortOrder
-  side?: Prisma.SortOrder
-  symbol?: Prisma.SortOrder
+  ORDER_SIDE?: Prisma.SortOrder
+  MARKET_SYMBOL?: Prisma.SortOrder
   margin?: Prisma.SortOrder
   price?: Prisma.SortOrder
   filledQuantity?: Prisma.SortOrder
   quantity?: Prisma.SortOrder
   status?: Prisma.SortOrder
-  type?: Prisma.SortOrder
+  ORDER_TYPE?: Prisma.SortOrder
   marginType?: Prisma.SortOrder
   user?: Prisma.UserOrderByWithRelationInput
   longFills?: Prisma.FillOrderByRelationAggregateInput
   shortFills?: Prisma.FillOrderByRelationAggregateInput
+  market?: Prisma.MarketOrderByWithRelationInput
 }
 
 export type OrderWhereUniqueInput = Prisma.AtLeast<{
@@ -304,31 +306,32 @@ export type OrderWhereUniqueInput = Prisma.AtLeast<{
   OR?: Prisma.OrderWhereInput[]
   NOT?: Prisma.OrderWhereInput | Prisma.OrderWhereInput[]
   userId?: Prisma.StringFilter<"Order"> | string
-  side?: Prisma.EnumSIDEFilter<"Order"> | $Enums.SIDE
-  symbol?: Prisma.EnumSYMBOLFilter<"Order"> | $Enums.SYMBOL
+  ORDER_SIDE?: Prisma.EnumORDER_SIDEFilter<"Order"> | $Enums.ORDER_SIDE
+  MARKET_SYMBOL?: Prisma.EnumMARKET_SYMBOLFilter<"Order"> | $Enums.MARKET_SYMBOL
   margin?: Prisma.DecimalFilter<"Order"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   price?: Prisma.DecimalFilter<"Order"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   filledQuantity?: Prisma.DecimalFilter<"Order"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   quantity?: Prisma.DecimalFilter<"Order"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: Prisma.EnumORDER_STATUSFilter<"Order"> | $Enums.ORDER_STATUS
-  type?: Prisma.EnumTYPEFilter<"Order"> | $Enums.TYPE
+  ORDER_TYPE?: Prisma.EnumORDER_TYPEFilter<"Order"> | $Enums.ORDER_TYPE
   marginType?: Prisma.EnumMARGIN_TYPEFilter<"Order"> | $Enums.MARGIN_TYPE
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
   longFills?: Prisma.FillListRelationFilter
   shortFills?: Prisma.FillListRelationFilter
+  market?: Prisma.XOR<Prisma.MarketScalarRelationFilter, Prisma.MarketWhereInput>
 }, "id">
 
 export type OrderOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   userId?: Prisma.SortOrder
-  side?: Prisma.SortOrder
-  symbol?: Prisma.SortOrder
+  ORDER_SIDE?: Prisma.SortOrder
+  MARKET_SYMBOL?: Prisma.SortOrder
   margin?: Prisma.SortOrder
   price?: Prisma.SortOrder
   filledQuantity?: Prisma.SortOrder
   quantity?: Prisma.SortOrder
   status?: Prisma.SortOrder
-  type?: Prisma.SortOrder
+  ORDER_TYPE?: Prisma.SortOrder
   marginType?: Prisma.SortOrder
   _count?: Prisma.OrderCountOrderByAggregateInput
   _avg?: Prisma.OrderAvgOrderByAggregateInput
@@ -343,44 +346,44 @@ export type OrderScalarWhereWithAggregatesInput = {
   NOT?: Prisma.OrderScalarWhereWithAggregatesInput | Prisma.OrderScalarWhereWithAggregatesInput[]
   id?: Prisma.StringWithAggregatesFilter<"Order"> | string
   userId?: Prisma.StringWithAggregatesFilter<"Order"> | string
-  side?: Prisma.EnumSIDEWithAggregatesFilter<"Order"> | $Enums.SIDE
-  symbol?: Prisma.EnumSYMBOLWithAggregatesFilter<"Order"> | $Enums.SYMBOL
+  ORDER_SIDE?: Prisma.EnumORDER_SIDEWithAggregatesFilter<"Order"> | $Enums.ORDER_SIDE
+  MARKET_SYMBOL?: Prisma.EnumMARKET_SYMBOLWithAggregatesFilter<"Order"> | $Enums.MARKET_SYMBOL
   margin?: Prisma.DecimalWithAggregatesFilter<"Order"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   price?: Prisma.DecimalWithAggregatesFilter<"Order"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   filledQuantity?: Prisma.DecimalWithAggregatesFilter<"Order"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   quantity?: Prisma.DecimalWithAggregatesFilter<"Order"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: Prisma.EnumORDER_STATUSWithAggregatesFilter<"Order"> | $Enums.ORDER_STATUS
-  type?: Prisma.EnumTYPEWithAggregatesFilter<"Order"> | $Enums.TYPE
+  ORDER_TYPE?: Prisma.EnumORDER_TYPEWithAggregatesFilter<"Order"> | $Enums.ORDER_TYPE
   marginType?: Prisma.EnumMARGIN_TYPEWithAggregatesFilter<"Order"> | $Enums.MARGIN_TYPE
 }
 
 export type OrderCreateInput = {
   id?: string
-  side: $Enums.SIDE
-  symbol: $Enums.SYMBOL
+  ORDER_SIDE: $Enums.ORDER_SIDE
   margin: runtime.Decimal | runtime.DecimalJsLike | number | string
   price: runtime.Decimal | runtime.DecimalJsLike | number | string
   filledQuantity: runtime.Decimal | runtime.DecimalJsLike | number | string
   quantity: runtime.Decimal | runtime.DecimalJsLike | number | string
   status: $Enums.ORDER_STATUS
-  type: $Enums.TYPE
+  ORDER_TYPE: $Enums.ORDER_TYPE
   marginType: $Enums.MARGIN_TYPE
   user: Prisma.UserCreateNestedOneWithoutOrdersInput
   longFills?: Prisma.FillCreateNestedManyWithoutLongOrderInput
   shortFills?: Prisma.FillCreateNestedManyWithoutShortOrderInput
+  market: Prisma.MarketCreateNestedOneWithoutOrdersInput
 }
 
 export type OrderUncheckedCreateInput = {
   id?: string
   userId: string
-  side: $Enums.SIDE
-  symbol: $Enums.SYMBOL
+  ORDER_SIDE: $Enums.ORDER_SIDE
+  MARKET_SYMBOL: $Enums.MARKET_SYMBOL
   margin: runtime.Decimal | runtime.DecimalJsLike | number | string
   price: runtime.Decimal | runtime.DecimalJsLike | number | string
   filledQuantity: runtime.Decimal | runtime.DecimalJsLike | number | string
   quantity: runtime.Decimal | runtime.DecimalJsLike | number | string
   status: $Enums.ORDER_STATUS
-  type: $Enums.TYPE
+  ORDER_TYPE: $Enums.ORDER_TYPE
   marginType: $Enums.MARGIN_TYPE
   longFills?: Prisma.FillUncheckedCreateNestedManyWithoutLongOrderInput
   shortFills?: Prisma.FillUncheckedCreateNestedManyWithoutShortOrderInput
@@ -388,31 +391,31 @@ export type OrderUncheckedCreateInput = {
 
 export type OrderUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  side?: Prisma.EnumSIDEFieldUpdateOperationsInput | $Enums.SIDE
-  symbol?: Prisma.EnumSYMBOLFieldUpdateOperationsInput | $Enums.SYMBOL
+  ORDER_SIDE?: Prisma.EnumORDER_SIDEFieldUpdateOperationsInput | $Enums.ORDER_SIDE
   margin?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   price?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   filledQuantity?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   quantity?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: Prisma.EnumORDER_STATUSFieldUpdateOperationsInput | $Enums.ORDER_STATUS
-  type?: Prisma.EnumTYPEFieldUpdateOperationsInput | $Enums.TYPE
+  ORDER_TYPE?: Prisma.EnumORDER_TYPEFieldUpdateOperationsInput | $Enums.ORDER_TYPE
   marginType?: Prisma.EnumMARGIN_TYPEFieldUpdateOperationsInput | $Enums.MARGIN_TYPE
   user?: Prisma.UserUpdateOneRequiredWithoutOrdersNestedInput
   longFills?: Prisma.FillUpdateManyWithoutLongOrderNestedInput
   shortFills?: Prisma.FillUpdateManyWithoutShortOrderNestedInput
+  market?: Prisma.MarketUpdateOneRequiredWithoutOrdersNestedInput
 }
 
 export type OrderUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
-  side?: Prisma.EnumSIDEFieldUpdateOperationsInput | $Enums.SIDE
-  symbol?: Prisma.EnumSYMBOLFieldUpdateOperationsInput | $Enums.SYMBOL
+  ORDER_SIDE?: Prisma.EnumORDER_SIDEFieldUpdateOperationsInput | $Enums.ORDER_SIDE
+  MARKET_SYMBOL?: Prisma.EnumMARKET_SYMBOLFieldUpdateOperationsInput | $Enums.MARKET_SYMBOL
   margin?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   price?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   filledQuantity?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   quantity?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: Prisma.EnumORDER_STATUSFieldUpdateOperationsInput | $Enums.ORDER_STATUS
-  type?: Prisma.EnumTYPEFieldUpdateOperationsInput | $Enums.TYPE
+  ORDER_TYPE?: Prisma.EnumORDER_TYPEFieldUpdateOperationsInput | $Enums.ORDER_TYPE
   marginType?: Prisma.EnumMARGIN_TYPEFieldUpdateOperationsInput | $Enums.MARGIN_TYPE
   longFills?: Prisma.FillUncheckedUpdateManyWithoutLongOrderNestedInput
   shortFills?: Prisma.FillUncheckedUpdateManyWithoutShortOrderNestedInput
@@ -421,41 +424,40 @@ export type OrderUncheckedUpdateInput = {
 export type OrderCreateManyInput = {
   id?: string
   userId: string
-  side: $Enums.SIDE
-  symbol: $Enums.SYMBOL
+  ORDER_SIDE: $Enums.ORDER_SIDE
+  MARKET_SYMBOL: $Enums.MARKET_SYMBOL
   margin: runtime.Decimal | runtime.DecimalJsLike | number | string
   price: runtime.Decimal | runtime.DecimalJsLike | number | string
   filledQuantity: runtime.Decimal | runtime.DecimalJsLike | number | string
   quantity: runtime.Decimal | runtime.DecimalJsLike | number | string
   status: $Enums.ORDER_STATUS
-  type: $Enums.TYPE
+  ORDER_TYPE: $Enums.ORDER_TYPE
   marginType: $Enums.MARGIN_TYPE
 }
 
 export type OrderUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  side?: Prisma.EnumSIDEFieldUpdateOperationsInput | $Enums.SIDE
-  symbol?: Prisma.EnumSYMBOLFieldUpdateOperationsInput | $Enums.SYMBOL
+  ORDER_SIDE?: Prisma.EnumORDER_SIDEFieldUpdateOperationsInput | $Enums.ORDER_SIDE
   margin?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   price?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   filledQuantity?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   quantity?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: Prisma.EnumORDER_STATUSFieldUpdateOperationsInput | $Enums.ORDER_STATUS
-  type?: Prisma.EnumTYPEFieldUpdateOperationsInput | $Enums.TYPE
+  ORDER_TYPE?: Prisma.EnumORDER_TYPEFieldUpdateOperationsInput | $Enums.ORDER_TYPE
   marginType?: Prisma.EnumMARGIN_TYPEFieldUpdateOperationsInput | $Enums.MARGIN_TYPE
 }
 
 export type OrderUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
-  side?: Prisma.EnumSIDEFieldUpdateOperationsInput | $Enums.SIDE
-  symbol?: Prisma.EnumSYMBOLFieldUpdateOperationsInput | $Enums.SYMBOL
+  ORDER_SIDE?: Prisma.EnumORDER_SIDEFieldUpdateOperationsInput | $Enums.ORDER_SIDE
+  MARKET_SYMBOL?: Prisma.EnumMARKET_SYMBOLFieldUpdateOperationsInput | $Enums.MARKET_SYMBOL
   margin?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   price?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   filledQuantity?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   quantity?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: Prisma.EnumORDER_STATUSFieldUpdateOperationsInput | $Enums.ORDER_STATUS
-  type?: Prisma.EnumTYPEFieldUpdateOperationsInput | $Enums.TYPE
+  ORDER_TYPE?: Prisma.EnumORDER_TYPEFieldUpdateOperationsInput | $Enums.ORDER_TYPE
   marginType?: Prisma.EnumMARGIN_TYPEFieldUpdateOperationsInput | $Enums.MARGIN_TYPE
 }
 
@@ -472,14 +474,14 @@ export type OrderOrderByRelationAggregateInput = {
 export type OrderCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   userId?: Prisma.SortOrder
-  side?: Prisma.SortOrder
-  symbol?: Prisma.SortOrder
+  ORDER_SIDE?: Prisma.SortOrder
+  MARKET_SYMBOL?: Prisma.SortOrder
   margin?: Prisma.SortOrder
   price?: Prisma.SortOrder
   filledQuantity?: Prisma.SortOrder
   quantity?: Prisma.SortOrder
   status?: Prisma.SortOrder
-  type?: Prisma.SortOrder
+  ORDER_TYPE?: Prisma.SortOrder
   marginType?: Prisma.SortOrder
 }
 
@@ -493,28 +495,28 @@ export type OrderAvgOrderByAggregateInput = {
 export type OrderMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   userId?: Prisma.SortOrder
-  side?: Prisma.SortOrder
-  symbol?: Prisma.SortOrder
+  ORDER_SIDE?: Prisma.SortOrder
+  MARKET_SYMBOL?: Prisma.SortOrder
   margin?: Prisma.SortOrder
   price?: Prisma.SortOrder
   filledQuantity?: Prisma.SortOrder
   quantity?: Prisma.SortOrder
   status?: Prisma.SortOrder
-  type?: Prisma.SortOrder
+  ORDER_TYPE?: Prisma.SortOrder
   marginType?: Prisma.SortOrder
 }
 
 export type OrderMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   userId?: Prisma.SortOrder
-  side?: Prisma.SortOrder
-  symbol?: Prisma.SortOrder
+  ORDER_SIDE?: Prisma.SortOrder
+  MARKET_SYMBOL?: Prisma.SortOrder
   margin?: Prisma.SortOrder
   price?: Prisma.SortOrder
   filledQuantity?: Prisma.SortOrder
   quantity?: Prisma.SortOrder
   status?: Prisma.SortOrder
-  type?: Prisma.SortOrder
+  ORDER_TYPE?: Prisma.SortOrder
   marginType?: Prisma.SortOrder
 }
 
@@ -528,6 +530,48 @@ export type OrderSumOrderByAggregateInput = {
 export type OrderScalarRelationFilter = {
   is?: Prisma.OrderWhereInput
   isNot?: Prisma.OrderWhereInput
+}
+
+export type OrderCreateNestedManyWithoutMarketInput = {
+  create?: Prisma.XOR<Prisma.OrderCreateWithoutMarketInput, Prisma.OrderUncheckedCreateWithoutMarketInput> | Prisma.OrderCreateWithoutMarketInput[] | Prisma.OrderUncheckedCreateWithoutMarketInput[]
+  connectOrCreate?: Prisma.OrderCreateOrConnectWithoutMarketInput | Prisma.OrderCreateOrConnectWithoutMarketInput[]
+  createMany?: Prisma.OrderCreateManyMarketInputEnvelope
+  connect?: Prisma.OrderWhereUniqueInput | Prisma.OrderWhereUniqueInput[]
+}
+
+export type OrderUncheckedCreateNestedManyWithoutMarketInput = {
+  create?: Prisma.XOR<Prisma.OrderCreateWithoutMarketInput, Prisma.OrderUncheckedCreateWithoutMarketInput> | Prisma.OrderCreateWithoutMarketInput[] | Prisma.OrderUncheckedCreateWithoutMarketInput[]
+  connectOrCreate?: Prisma.OrderCreateOrConnectWithoutMarketInput | Prisma.OrderCreateOrConnectWithoutMarketInput[]
+  createMany?: Prisma.OrderCreateManyMarketInputEnvelope
+  connect?: Prisma.OrderWhereUniqueInput | Prisma.OrderWhereUniqueInput[]
+}
+
+export type OrderUpdateManyWithoutMarketNestedInput = {
+  create?: Prisma.XOR<Prisma.OrderCreateWithoutMarketInput, Prisma.OrderUncheckedCreateWithoutMarketInput> | Prisma.OrderCreateWithoutMarketInput[] | Prisma.OrderUncheckedCreateWithoutMarketInput[]
+  connectOrCreate?: Prisma.OrderCreateOrConnectWithoutMarketInput | Prisma.OrderCreateOrConnectWithoutMarketInput[]
+  upsert?: Prisma.OrderUpsertWithWhereUniqueWithoutMarketInput | Prisma.OrderUpsertWithWhereUniqueWithoutMarketInput[]
+  createMany?: Prisma.OrderCreateManyMarketInputEnvelope
+  set?: Prisma.OrderWhereUniqueInput | Prisma.OrderWhereUniqueInput[]
+  disconnect?: Prisma.OrderWhereUniqueInput | Prisma.OrderWhereUniqueInput[]
+  delete?: Prisma.OrderWhereUniqueInput | Prisma.OrderWhereUniqueInput[]
+  connect?: Prisma.OrderWhereUniqueInput | Prisma.OrderWhereUniqueInput[]
+  update?: Prisma.OrderUpdateWithWhereUniqueWithoutMarketInput | Prisma.OrderUpdateWithWhereUniqueWithoutMarketInput[]
+  updateMany?: Prisma.OrderUpdateManyWithWhereWithoutMarketInput | Prisma.OrderUpdateManyWithWhereWithoutMarketInput[]
+  deleteMany?: Prisma.OrderScalarWhereInput | Prisma.OrderScalarWhereInput[]
+}
+
+export type OrderUncheckedUpdateManyWithoutMarketNestedInput = {
+  create?: Prisma.XOR<Prisma.OrderCreateWithoutMarketInput, Prisma.OrderUncheckedCreateWithoutMarketInput> | Prisma.OrderCreateWithoutMarketInput[] | Prisma.OrderUncheckedCreateWithoutMarketInput[]
+  connectOrCreate?: Prisma.OrderCreateOrConnectWithoutMarketInput | Prisma.OrderCreateOrConnectWithoutMarketInput[]
+  upsert?: Prisma.OrderUpsertWithWhereUniqueWithoutMarketInput | Prisma.OrderUpsertWithWhereUniqueWithoutMarketInput[]
+  createMany?: Prisma.OrderCreateManyMarketInputEnvelope
+  set?: Prisma.OrderWhereUniqueInput | Prisma.OrderWhereUniqueInput[]
+  disconnect?: Prisma.OrderWhereUniqueInput | Prisma.OrderWhereUniqueInput[]
+  delete?: Prisma.OrderWhereUniqueInput | Prisma.OrderWhereUniqueInput[]
+  connect?: Prisma.OrderWhereUniqueInput | Prisma.OrderWhereUniqueInput[]
+  update?: Prisma.OrderUpdateWithWhereUniqueWithoutMarketInput | Prisma.OrderUpdateWithWhereUniqueWithoutMarketInput[]
+  updateMany?: Prisma.OrderUpdateManyWithWhereWithoutMarketInput | Prisma.OrderUpdateManyWithWhereWithoutMarketInput[]
+  deleteMany?: Prisma.OrderScalarWhereInput | Prisma.OrderScalarWhereInput[]
 }
 
 export type OrderCreateNestedManyWithoutUserInput = {
@@ -572,12 +616,8 @@ export type OrderUncheckedUpdateManyWithoutUserNestedInput = {
   deleteMany?: Prisma.OrderScalarWhereInput | Prisma.OrderScalarWhereInput[]
 }
 
-export type EnumSIDEFieldUpdateOperationsInput = {
-  set?: $Enums.SIDE
-}
-
-export type EnumSYMBOLFieldUpdateOperationsInput = {
-  set?: $Enums.SYMBOL
+export type EnumORDER_SIDEFieldUpdateOperationsInput = {
+  set?: $Enums.ORDER_SIDE
 }
 
 export type DecimalFieldUpdateOperationsInput = {
@@ -592,8 +632,8 @@ export type EnumORDER_STATUSFieldUpdateOperationsInput = {
   set?: $Enums.ORDER_STATUS
 }
 
-export type EnumTYPEFieldUpdateOperationsInput = {
-  set?: $Enums.TYPE
+export type EnumORDER_TYPEFieldUpdateOperationsInput = {
+  set?: $Enums.ORDER_TYPE
 }
 
 export type EnumMARGIN_TYPEFieldUpdateOperationsInput = {
@@ -628,31 +668,104 @@ export type OrderUpdateOneRequiredWithoutShortFillsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.OrderUpdateToOneWithWhereWithoutShortFillsInput, Prisma.OrderUpdateWithoutShortFillsInput>, Prisma.OrderUncheckedUpdateWithoutShortFillsInput>
 }
 
-export type OrderCreateWithoutUserInput = {
+export type OrderCreateWithoutMarketInput = {
   id?: string
-  side: $Enums.SIDE
-  symbol: $Enums.SYMBOL
+  ORDER_SIDE: $Enums.ORDER_SIDE
   margin: runtime.Decimal | runtime.DecimalJsLike | number | string
   price: runtime.Decimal | runtime.DecimalJsLike | number | string
   filledQuantity: runtime.Decimal | runtime.DecimalJsLike | number | string
   quantity: runtime.Decimal | runtime.DecimalJsLike | number | string
   status: $Enums.ORDER_STATUS
-  type: $Enums.TYPE
+  ORDER_TYPE: $Enums.ORDER_TYPE
   marginType: $Enums.MARGIN_TYPE
+  user: Prisma.UserCreateNestedOneWithoutOrdersInput
   longFills?: Prisma.FillCreateNestedManyWithoutLongOrderInput
   shortFills?: Prisma.FillCreateNestedManyWithoutShortOrderInput
 }
 
-export type OrderUncheckedCreateWithoutUserInput = {
+export type OrderUncheckedCreateWithoutMarketInput = {
   id?: string
-  side: $Enums.SIDE
-  symbol: $Enums.SYMBOL
+  userId: string
+  ORDER_SIDE: $Enums.ORDER_SIDE
   margin: runtime.Decimal | runtime.DecimalJsLike | number | string
   price: runtime.Decimal | runtime.DecimalJsLike | number | string
   filledQuantity: runtime.Decimal | runtime.DecimalJsLike | number | string
   quantity: runtime.Decimal | runtime.DecimalJsLike | number | string
   status: $Enums.ORDER_STATUS
-  type: $Enums.TYPE
+  ORDER_TYPE: $Enums.ORDER_TYPE
+  marginType: $Enums.MARGIN_TYPE
+  longFills?: Prisma.FillUncheckedCreateNestedManyWithoutLongOrderInput
+  shortFills?: Prisma.FillUncheckedCreateNestedManyWithoutShortOrderInput
+}
+
+export type OrderCreateOrConnectWithoutMarketInput = {
+  where: Prisma.OrderWhereUniqueInput
+  create: Prisma.XOR<Prisma.OrderCreateWithoutMarketInput, Prisma.OrderUncheckedCreateWithoutMarketInput>
+}
+
+export type OrderCreateManyMarketInputEnvelope = {
+  data: Prisma.OrderCreateManyMarketInput | Prisma.OrderCreateManyMarketInput[]
+  skipDuplicates?: boolean
+}
+
+export type OrderUpsertWithWhereUniqueWithoutMarketInput = {
+  where: Prisma.OrderWhereUniqueInput
+  update: Prisma.XOR<Prisma.OrderUpdateWithoutMarketInput, Prisma.OrderUncheckedUpdateWithoutMarketInput>
+  create: Prisma.XOR<Prisma.OrderCreateWithoutMarketInput, Prisma.OrderUncheckedCreateWithoutMarketInput>
+}
+
+export type OrderUpdateWithWhereUniqueWithoutMarketInput = {
+  where: Prisma.OrderWhereUniqueInput
+  data: Prisma.XOR<Prisma.OrderUpdateWithoutMarketInput, Prisma.OrderUncheckedUpdateWithoutMarketInput>
+}
+
+export type OrderUpdateManyWithWhereWithoutMarketInput = {
+  where: Prisma.OrderScalarWhereInput
+  data: Prisma.XOR<Prisma.OrderUpdateManyMutationInput, Prisma.OrderUncheckedUpdateManyWithoutMarketInput>
+}
+
+export type OrderScalarWhereInput = {
+  AND?: Prisma.OrderScalarWhereInput | Prisma.OrderScalarWhereInput[]
+  OR?: Prisma.OrderScalarWhereInput[]
+  NOT?: Prisma.OrderScalarWhereInput | Prisma.OrderScalarWhereInput[]
+  id?: Prisma.StringFilter<"Order"> | string
+  userId?: Prisma.StringFilter<"Order"> | string
+  ORDER_SIDE?: Prisma.EnumORDER_SIDEFilter<"Order"> | $Enums.ORDER_SIDE
+  MARKET_SYMBOL?: Prisma.EnumMARKET_SYMBOLFilter<"Order"> | $Enums.MARKET_SYMBOL
+  margin?: Prisma.DecimalFilter<"Order"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  price?: Prisma.DecimalFilter<"Order"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  filledQuantity?: Prisma.DecimalFilter<"Order"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  quantity?: Prisma.DecimalFilter<"Order"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  status?: Prisma.EnumORDER_STATUSFilter<"Order"> | $Enums.ORDER_STATUS
+  ORDER_TYPE?: Prisma.EnumORDER_TYPEFilter<"Order"> | $Enums.ORDER_TYPE
+  marginType?: Prisma.EnumMARGIN_TYPEFilter<"Order"> | $Enums.MARGIN_TYPE
+}
+
+export type OrderCreateWithoutUserInput = {
+  id?: string
+  ORDER_SIDE: $Enums.ORDER_SIDE
+  margin: runtime.Decimal | runtime.DecimalJsLike | number | string
+  price: runtime.Decimal | runtime.DecimalJsLike | number | string
+  filledQuantity: runtime.Decimal | runtime.DecimalJsLike | number | string
+  quantity: runtime.Decimal | runtime.DecimalJsLike | number | string
+  status: $Enums.ORDER_STATUS
+  ORDER_TYPE: $Enums.ORDER_TYPE
+  marginType: $Enums.MARGIN_TYPE
+  longFills?: Prisma.FillCreateNestedManyWithoutLongOrderInput
+  shortFills?: Prisma.FillCreateNestedManyWithoutShortOrderInput
+  market: Prisma.MarketCreateNestedOneWithoutOrdersInput
+}
+
+export type OrderUncheckedCreateWithoutUserInput = {
+  id?: string
+  ORDER_SIDE: $Enums.ORDER_SIDE
+  MARKET_SYMBOL: $Enums.MARKET_SYMBOL
+  margin: runtime.Decimal | runtime.DecimalJsLike | number | string
+  price: runtime.Decimal | runtime.DecimalJsLike | number | string
+  filledQuantity: runtime.Decimal | runtime.DecimalJsLike | number | string
+  quantity: runtime.Decimal | runtime.DecimalJsLike | number | string
+  status: $Enums.ORDER_STATUS
+  ORDER_TYPE: $Enums.ORDER_TYPE
   marginType: $Enums.MARGIN_TYPE
   longFills?: Prisma.FillUncheckedCreateNestedManyWithoutLongOrderInput
   shortFills?: Prisma.FillUncheckedCreateNestedManyWithoutShortOrderInput
@@ -684,49 +797,32 @@ export type OrderUpdateManyWithWhereWithoutUserInput = {
   data: Prisma.XOR<Prisma.OrderUpdateManyMutationInput, Prisma.OrderUncheckedUpdateManyWithoutUserInput>
 }
 
-export type OrderScalarWhereInput = {
-  AND?: Prisma.OrderScalarWhereInput | Prisma.OrderScalarWhereInput[]
-  OR?: Prisma.OrderScalarWhereInput[]
-  NOT?: Prisma.OrderScalarWhereInput | Prisma.OrderScalarWhereInput[]
-  id?: Prisma.StringFilter<"Order"> | string
-  userId?: Prisma.StringFilter<"Order"> | string
-  side?: Prisma.EnumSIDEFilter<"Order"> | $Enums.SIDE
-  symbol?: Prisma.EnumSYMBOLFilter<"Order"> | $Enums.SYMBOL
-  margin?: Prisma.DecimalFilter<"Order"> | runtime.Decimal | runtime.DecimalJsLike | number | string
-  price?: Prisma.DecimalFilter<"Order"> | runtime.Decimal | runtime.DecimalJsLike | number | string
-  filledQuantity?: Prisma.DecimalFilter<"Order"> | runtime.Decimal | runtime.DecimalJsLike | number | string
-  quantity?: Prisma.DecimalFilter<"Order"> | runtime.Decimal | runtime.DecimalJsLike | number | string
-  status?: Prisma.EnumORDER_STATUSFilter<"Order"> | $Enums.ORDER_STATUS
-  type?: Prisma.EnumTYPEFilter<"Order"> | $Enums.TYPE
-  marginType?: Prisma.EnumMARGIN_TYPEFilter<"Order"> | $Enums.MARGIN_TYPE
-}
-
 export type OrderCreateWithoutLongFillsInput = {
   id?: string
-  side: $Enums.SIDE
-  symbol: $Enums.SYMBOL
+  ORDER_SIDE: $Enums.ORDER_SIDE
   margin: runtime.Decimal | runtime.DecimalJsLike | number | string
   price: runtime.Decimal | runtime.DecimalJsLike | number | string
   filledQuantity: runtime.Decimal | runtime.DecimalJsLike | number | string
   quantity: runtime.Decimal | runtime.DecimalJsLike | number | string
   status: $Enums.ORDER_STATUS
-  type: $Enums.TYPE
+  ORDER_TYPE: $Enums.ORDER_TYPE
   marginType: $Enums.MARGIN_TYPE
   user: Prisma.UserCreateNestedOneWithoutOrdersInput
   shortFills?: Prisma.FillCreateNestedManyWithoutShortOrderInput
+  market: Prisma.MarketCreateNestedOneWithoutOrdersInput
 }
 
 export type OrderUncheckedCreateWithoutLongFillsInput = {
   id?: string
   userId: string
-  side: $Enums.SIDE
-  symbol: $Enums.SYMBOL
+  ORDER_SIDE: $Enums.ORDER_SIDE
+  MARKET_SYMBOL: $Enums.MARKET_SYMBOL
   margin: runtime.Decimal | runtime.DecimalJsLike | number | string
   price: runtime.Decimal | runtime.DecimalJsLike | number | string
   filledQuantity: runtime.Decimal | runtime.DecimalJsLike | number | string
   quantity: runtime.Decimal | runtime.DecimalJsLike | number | string
   status: $Enums.ORDER_STATUS
-  type: $Enums.TYPE
+  ORDER_TYPE: $Enums.ORDER_TYPE
   marginType: $Enums.MARGIN_TYPE
   shortFills?: Prisma.FillUncheckedCreateNestedManyWithoutShortOrderInput
 }
@@ -738,30 +834,30 @@ export type OrderCreateOrConnectWithoutLongFillsInput = {
 
 export type OrderCreateWithoutShortFillsInput = {
   id?: string
-  side: $Enums.SIDE
-  symbol: $Enums.SYMBOL
+  ORDER_SIDE: $Enums.ORDER_SIDE
   margin: runtime.Decimal | runtime.DecimalJsLike | number | string
   price: runtime.Decimal | runtime.DecimalJsLike | number | string
   filledQuantity: runtime.Decimal | runtime.DecimalJsLike | number | string
   quantity: runtime.Decimal | runtime.DecimalJsLike | number | string
   status: $Enums.ORDER_STATUS
-  type: $Enums.TYPE
+  ORDER_TYPE: $Enums.ORDER_TYPE
   marginType: $Enums.MARGIN_TYPE
   user: Prisma.UserCreateNestedOneWithoutOrdersInput
   longFills?: Prisma.FillCreateNestedManyWithoutLongOrderInput
+  market: Prisma.MarketCreateNestedOneWithoutOrdersInput
 }
 
 export type OrderUncheckedCreateWithoutShortFillsInput = {
   id?: string
   userId: string
-  side: $Enums.SIDE
-  symbol: $Enums.SYMBOL
+  ORDER_SIDE: $Enums.ORDER_SIDE
+  MARKET_SYMBOL: $Enums.MARKET_SYMBOL
   margin: runtime.Decimal | runtime.DecimalJsLike | number | string
   price: runtime.Decimal | runtime.DecimalJsLike | number | string
   filledQuantity: runtime.Decimal | runtime.DecimalJsLike | number | string
   quantity: runtime.Decimal | runtime.DecimalJsLike | number | string
   status: $Enums.ORDER_STATUS
-  type: $Enums.TYPE
+  ORDER_TYPE: $Enums.ORDER_TYPE
   marginType: $Enums.MARGIN_TYPE
   longFills?: Prisma.FillUncheckedCreateNestedManyWithoutLongOrderInput
 }
@@ -784,30 +880,30 @@ export type OrderUpdateToOneWithWhereWithoutLongFillsInput = {
 
 export type OrderUpdateWithoutLongFillsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  side?: Prisma.EnumSIDEFieldUpdateOperationsInput | $Enums.SIDE
-  symbol?: Prisma.EnumSYMBOLFieldUpdateOperationsInput | $Enums.SYMBOL
+  ORDER_SIDE?: Prisma.EnumORDER_SIDEFieldUpdateOperationsInput | $Enums.ORDER_SIDE
   margin?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   price?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   filledQuantity?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   quantity?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: Prisma.EnumORDER_STATUSFieldUpdateOperationsInput | $Enums.ORDER_STATUS
-  type?: Prisma.EnumTYPEFieldUpdateOperationsInput | $Enums.TYPE
+  ORDER_TYPE?: Prisma.EnumORDER_TYPEFieldUpdateOperationsInput | $Enums.ORDER_TYPE
   marginType?: Prisma.EnumMARGIN_TYPEFieldUpdateOperationsInput | $Enums.MARGIN_TYPE
   user?: Prisma.UserUpdateOneRequiredWithoutOrdersNestedInput
   shortFills?: Prisma.FillUpdateManyWithoutShortOrderNestedInput
+  market?: Prisma.MarketUpdateOneRequiredWithoutOrdersNestedInput
 }
 
 export type OrderUncheckedUpdateWithoutLongFillsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
-  side?: Prisma.EnumSIDEFieldUpdateOperationsInput | $Enums.SIDE
-  symbol?: Prisma.EnumSYMBOLFieldUpdateOperationsInput | $Enums.SYMBOL
+  ORDER_SIDE?: Prisma.EnumORDER_SIDEFieldUpdateOperationsInput | $Enums.ORDER_SIDE
+  MARKET_SYMBOL?: Prisma.EnumMARKET_SYMBOLFieldUpdateOperationsInput | $Enums.MARKET_SYMBOL
   margin?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   price?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   filledQuantity?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   quantity?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: Prisma.EnumORDER_STATUSFieldUpdateOperationsInput | $Enums.ORDER_STATUS
-  type?: Prisma.EnumTYPEFieldUpdateOperationsInput | $Enums.TYPE
+  ORDER_TYPE?: Prisma.EnumORDER_TYPEFieldUpdateOperationsInput | $Enums.ORDER_TYPE
   marginType?: Prisma.EnumMARGIN_TYPEFieldUpdateOperationsInput | $Enums.MARGIN_TYPE
   shortFills?: Prisma.FillUncheckedUpdateManyWithoutShortOrderNestedInput
 }
@@ -825,72 +921,128 @@ export type OrderUpdateToOneWithWhereWithoutShortFillsInput = {
 
 export type OrderUpdateWithoutShortFillsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  side?: Prisma.EnumSIDEFieldUpdateOperationsInput | $Enums.SIDE
-  symbol?: Prisma.EnumSYMBOLFieldUpdateOperationsInput | $Enums.SYMBOL
+  ORDER_SIDE?: Prisma.EnumORDER_SIDEFieldUpdateOperationsInput | $Enums.ORDER_SIDE
   margin?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   price?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   filledQuantity?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   quantity?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: Prisma.EnumORDER_STATUSFieldUpdateOperationsInput | $Enums.ORDER_STATUS
-  type?: Prisma.EnumTYPEFieldUpdateOperationsInput | $Enums.TYPE
+  ORDER_TYPE?: Prisma.EnumORDER_TYPEFieldUpdateOperationsInput | $Enums.ORDER_TYPE
   marginType?: Prisma.EnumMARGIN_TYPEFieldUpdateOperationsInput | $Enums.MARGIN_TYPE
   user?: Prisma.UserUpdateOneRequiredWithoutOrdersNestedInput
   longFills?: Prisma.FillUpdateManyWithoutLongOrderNestedInput
+  market?: Prisma.MarketUpdateOneRequiredWithoutOrdersNestedInput
 }
 
 export type OrderUncheckedUpdateWithoutShortFillsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
-  side?: Prisma.EnumSIDEFieldUpdateOperationsInput | $Enums.SIDE
-  symbol?: Prisma.EnumSYMBOLFieldUpdateOperationsInput | $Enums.SYMBOL
+  ORDER_SIDE?: Prisma.EnumORDER_SIDEFieldUpdateOperationsInput | $Enums.ORDER_SIDE
+  MARKET_SYMBOL?: Prisma.EnumMARKET_SYMBOLFieldUpdateOperationsInput | $Enums.MARKET_SYMBOL
   margin?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   price?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   filledQuantity?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   quantity?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: Prisma.EnumORDER_STATUSFieldUpdateOperationsInput | $Enums.ORDER_STATUS
-  type?: Prisma.EnumTYPEFieldUpdateOperationsInput | $Enums.TYPE
+  ORDER_TYPE?: Prisma.EnumORDER_TYPEFieldUpdateOperationsInput | $Enums.ORDER_TYPE
   marginType?: Prisma.EnumMARGIN_TYPEFieldUpdateOperationsInput | $Enums.MARGIN_TYPE
   longFills?: Prisma.FillUncheckedUpdateManyWithoutLongOrderNestedInput
 }
 
-export type OrderCreateManyUserInput = {
+export type OrderCreateManyMarketInput = {
   id?: string
-  side: $Enums.SIDE
-  symbol: $Enums.SYMBOL
+  userId: string
+  ORDER_SIDE: $Enums.ORDER_SIDE
   margin: runtime.Decimal | runtime.DecimalJsLike | number | string
   price: runtime.Decimal | runtime.DecimalJsLike | number | string
   filledQuantity: runtime.Decimal | runtime.DecimalJsLike | number | string
   quantity: runtime.Decimal | runtime.DecimalJsLike | number | string
   status: $Enums.ORDER_STATUS
-  type: $Enums.TYPE
+  ORDER_TYPE: $Enums.ORDER_TYPE
+  marginType: $Enums.MARGIN_TYPE
+}
+
+export type OrderUpdateWithoutMarketInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  ORDER_SIDE?: Prisma.EnumORDER_SIDEFieldUpdateOperationsInput | $Enums.ORDER_SIDE
+  margin?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  price?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  filledQuantity?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  quantity?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  status?: Prisma.EnumORDER_STATUSFieldUpdateOperationsInput | $Enums.ORDER_STATUS
+  ORDER_TYPE?: Prisma.EnumORDER_TYPEFieldUpdateOperationsInput | $Enums.ORDER_TYPE
+  marginType?: Prisma.EnumMARGIN_TYPEFieldUpdateOperationsInput | $Enums.MARGIN_TYPE
+  user?: Prisma.UserUpdateOneRequiredWithoutOrdersNestedInput
+  longFills?: Prisma.FillUpdateManyWithoutLongOrderNestedInput
+  shortFills?: Prisma.FillUpdateManyWithoutShortOrderNestedInput
+}
+
+export type OrderUncheckedUpdateWithoutMarketInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  userId?: Prisma.StringFieldUpdateOperationsInput | string
+  ORDER_SIDE?: Prisma.EnumORDER_SIDEFieldUpdateOperationsInput | $Enums.ORDER_SIDE
+  margin?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  price?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  filledQuantity?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  quantity?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  status?: Prisma.EnumORDER_STATUSFieldUpdateOperationsInput | $Enums.ORDER_STATUS
+  ORDER_TYPE?: Prisma.EnumORDER_TYPEFieldUpdateOperationsInput | $Enums.ORDER_TYPE
+  marginType?: Prisma.EnumMARGIN_TYPEFieldUpdateOperationsInput | $Enums.MARGIN_TYPE
+  longFills?: Prisma.FillUncheckedUpdateManyWithoutLongOrderNestedInput
+  shortFills?: Prisma.FillUncheckedUpdateManyWithoutShortOrderNestedInput
+}
+
+export type OrderUncheckedUpdateManyWithoutMarketInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  userId?: Prisma.StringFieldUpdateOperationsInput | string
+  ORDER_SIDE?: Prisma.EnumORDER_SIDEFieldUpdateOperationsInput | $Enums.ORDER_SIDE
+  margin?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  price?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  filledQuantity?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  quantity?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  status?: Prisma.EnumORDER_STATUSFieldUpdateOperationsInput | $Enums.ORDER_STATUS
+  ORDER_TYPE?: Prisma.EnumORDER_TYPEFieldUpdateOperationsInput | $Enums.ORDER_TYPE
+  marginType?: Prisma.EnumMARGIN_TYPEFieldUpdateOperationsInput | $Enums.MARGIN_TYPE
+}
+
+export type OrderCreateManyUserInput = {
+  id?: string
+  ORDER_SIDE: $Enums.ORDER_SIDE
+  MARKET_SYMBOL: $Enums.MARKET_SYMBOL
+  margin: runtime.Decimal | runtime.DecimalJsLike | number | string
+  price: runtime.Decimal | runtime.DecimalJsLike | number | string
+  filledQuantity: runtime.Decimal | runtime.DecimalJsLike | number | string
+  quantity: runtime.Decimal | runtime.DecimalJsLike | number | string
+  status: $Enums.ORDER_STATUS
+  ORDER_TYPE: $Enums.ORDER_TYPE
   marginType: $Enums.MARGIN_TYPE
 }
 
 export type OrderUpdateWithoutUserInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  side?: Prisma.EnumSIDEFieldUpdateOperationsInput | $Enums.SIDE
-  symbol?: Prisma.EnumSYMBOLFieldUpdateOperationsInput | $Enums.SYMBOL
+  ORDER_SIDE?: Prisma.EnumORDER_SIDEFieldUpdateOperationsInput | $Enums.ORDER_SIDE
   margin?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   price?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   filledQuantity?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   quantity?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: Prisma.EnumORDER_STATUSFieldUpdateOperationsInput | $Enums.ORDER_STATUS
-  type?: Prisma.EnumTYPEFieldUpdateOperationsInput | $Enums.TYPE
+  ORDER_TYPE?: Prisma.EnumORDER_TYPEFieldUpdateOperationsInput | $Enums.ORDER_TYPE
   marginType?: Prisma.EnumMARGIN_TYPEFieldUpdateOperationsInput | $Enums.MARGIN_TYPE
   longFills?: Prisma.FillUpdateManyWithoutLongOrderNestedInput
   shortFills?: Prisma.FillUpdateManyWithoutShortOrderNestedInput
+  market?: Prisma.MarketUpdateOneRequiredWithoutOrdersNestedInput
 }
 
 export type OrderUncheckedUpdateWithoutUserInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  side?: Prisma.EnumSIDEFieldUpdateOperationsInput | $Enums.SIDE
-  symbol?: Prisma.EnumSYMBOLFieldUpdateOperationsInput | $Enums.SYMBOL
+  ORDER_SIDE?: Prisma.EnumORDER_SIDEFieldUpdateOperationsInput | $Enums.ORDER_SIDE
+  MARKET_SYMBOL?: Prisma.EnumMARKET_SYMBOLFieldUpdateOperationsInput | $Enums.MARKET_SYMBOL
   margin?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   price?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   filledQuantity?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   quantity?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: Prisma.EnumORDER_STATUSFieldUpdateOperationsInput | $Enums.ORDER_STATUS
-  type?: Prisma.EnumTYPEFieldUpdateOperationsInput | $Enums.TYPE
+  ORDER_TYPE?: Prisma.EnumORDER_TYPEFieldUpdateOperationsInput | $Enums.ORDER_TYPE
   marginType?: Prisma.EnumMARGIN_TYPEFieldUpdateOperationsInput | $Enums.MARGIN_TYPE
   longFills?: Prisma.FillUncheckedUpdateManyWithoutLongOrderNestedInput
   shortFills?: Prisma.FillUncheckedUpdateManyWithoutShortOrderNestedInput
@@ -898,14 +1050,14 @@ export type OrderUncheckedUpdateWithoutUserInput = {
 
 export type OrderUncheckedUpdateManyWithoutUserInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  side?: Prisma.EnumSIDEFieldUpdateOperationsInput | $Enums.SIDE
-  symbol?: Prisma.EnumSYMBOLFieldUpdateOperationsInput | $Enums.SYMBOL
+  ORDER_SIDE?: Prisma.EnumORDER_SIDEFieldUpdateOperationsInput | $Enums.ORDER_SIDE
+  MARKET_SYMBOL?: Prisma.EnumMARKET_SYMBOLFieldUpdateOperationsInput | $Enums.MARKET_SYMBOL
   margin?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   price?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   filledQuantity?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   quantity?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: Prisma.EnumORDER_STATUSFieldUpdateOperationsInput | $Enums.ORDER_STATUS
-  type?: Prisma.EnumTYPEFieldUpdateOperationsInput | $Enums.TYPE
+  ORDER_TYPE?: Prisma.EnumORDER_TYPEFieldUpdateOperationsInput | $Enums.ORDER_TYPE
   marginType?: Prisma.EnumMARGIN_TYPEFieldUpdateOperationsInput | $Enums.MARGIN_TYPE
 }
 
@@ -952,77 +1104,83 @@ export type OrderCountOutputTypeCountShortFillsArgs<ExtArgs extends runtime.Type
 export type OrderSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   userId?: boolean
-  side?: boolean
-  symbol?: boolean
+  ORDER_SIDE?: boolean
+  MARKET_SYMBOL?: boolean
   margin?: boolean
   price?: boolean
   filledQuantity?: boolean
   quantity?: boolean
   status?: boolean
-  type?: boolean
+  ORDER_TYPE?: boolean
   marginType?: boolean
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   longFills?: boolean | Prisma.Order$longFillsArgs<ExtArgs>
   shortFills?: boolean | Prisma.Order$shortFillsArgs<ExtArgs>
+  market?: boolean | Prisma.MarketDefaultArgs<ExtArgs>
   _count?: boolean | Prisma.OrderCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["order"]>
 
 export type OrderSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   userId?: boolean
-  side?: boolean
-  symbol?: boolean
+  ORDER_SIDE?: boolean
+  MARKET_SYMBOL?: boolean
   margin?: boolean
   price?: boolean
   filledQuantity?: boolean
   quantity?: boolean
   status?: boolean
-  type?: boolean
+  ORDER_TYPE?: boolean
   marginType?: boolean
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
+  market?: boolean | Prisma.MarketDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["order"]>
 
 export type OrderSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   userId?: boolean
-  side?: boolean
-  symbol?: boolean
+  ORDER_SIDE?: boolean
+  MARKET_SYMBOL?: boolean
   margin?: boolean
   price?: boolean
   filledQuantity?: boolean
   quantity?: boolean
   status?: boolean
-  type?: boolean
+  ORDER_TYPE?: boolean
   marginType?: boolean
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
+  market?: boolean | Prisma.MarketDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["order"]>
 
 export type OrderSelectScalar = {
   id?: boolean
   userId?: boolean
-  side?: boolean
-  symbol?: boolean
+  ORDER_SIDE?: boolean
+  MARKET_SYMBOL?: boolean
   margin?: boolean
   price?: boolean
   filledQuantity?: boolean
   quantity?: boolean
   status?: boolean
-  type?: boolean
+  ORDER_TYPE?: boolean
   marginType?: boolean
 }
 
-export type OrderOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "side" | "symbol" | "margin" | "price" | "filledQuantity" | "quantity" | "status" | "type" | "marginType", ExtArgs["result"]["order"]>
+export type OrderOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "ORDER_SIDE" | "MARKET_SYMBOL" | "margin" | "price" | "filledQuantity" | "quantity" | "status" | "ORDER_TYPE" | "marginType", ExtArgs["result"]["order"]>
 export type OrderInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   longFills?: boolean | Prisma.Order$longFillsArgs<ExtArgs>
   shortFills?: boolean | Prisma.Order$shortFillsArgs<ExtArgs>
+  market?: boolean | Prisma.MarketDefaultArgs<ExtArgs>
   _count?: boolean | Prisma.OrderCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type OrderIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
+  market?: boolean | Prisma.MarketDefaultArgs<ExtArgs>
 }
 export type OrderIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
+  market?: boolean | Prisma.MarketDefaultArgs<ExtArgs>
 }
 
 export type $OrderPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1031,18 +1189,19 @@ export type $OrderPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs 
     user: Prisma.$UserPayload<ExtArgs>
     longFills: Prisma.$FillPayload<ExtArgs>[]
     shortFills: Prisma.$FillPayload<ExtArgs>[]
+    market: Prisma.$MarketPayload<ExtArgs>
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
     userId: string
-    side: $Enums.SIDE
-    symbol: $Enums.SYMBOL
+    ORDER_SIDE: $Enums.ORDER_SIDE
+    MARKET_SYMBOL: $Enums.MARKET_SYMBOL
     margin: runtime.Decimal
     price: runtime.Decimal
     filledQuantity: runtime.Decimal
     quantity: runtime.Decimal
     status: $Enums.ORDER_STATUS
-    type: $Enums.TYPE
+    ORDER_TYPE: $Enums.ORDER_TYPE
     marginType: $Enums.MARGIN_TYPE
   }, ExtArgs["result"]["order"]>
   composites: {}
@@ -1441,6 +1600,7 @@ export interface Prisma__OrderClient<T, Null = never, ExtArgs extends runtime.Ty
   user<T extends Prisma.UserDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.UserDefaultArgs<ExtArgs>>): Prisma.Prisma__UserClient<runtime.Types.Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   longFills<T extends Prisma.Order$longFillsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Order$longFillsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$FillPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   shortFills<T extends Prisma.Order$shortFillsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Order$shortFillsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$FillPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  market<T extends Prisma.MarketDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.MarketDefaultArgs<ExtArgs>>): Prisma.Prisma__MarketClient<runtime.Types.Result.GetResult<Prisma.$MarketPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1472,14 +1632,14 @@ export interface Prisma__OrderClient<T, Null = never, ExtArgs extends runtime.Ty
 export interface OrderFieldRefs {
   readonly id: Prisma.FieldRef<"Order", 'String'>
   readonly userId: Prisma.FieldRef<"Order", 'String'>
-  readonly side: Prisma.FieldRef<"Order", 'SIDE'>
-  readonly symbol: Prisma.FieldRef<"Order", 'SYMBOL'>
+  readonly ORDER_SIDE: Prisma.FieldRef<"Order", 'ORDER_SIDE'>
+  readonly MARKET_SYMBOL: Prisma.FieldRef<"Order", 'MARKET_SYMBOL'>
   readonly margin: Prisma.FieldRef<"Order", 'Decimal'>
   readonly price: Prisma.FieldRef<"Order", 'Decimal'>
   readonly filledQuantity: Prisma.FieldRef<"Order", 'Decimal'>
   readonly quantity: Prisma.FieldRef<"Order", 'Decimal'>
   readonly status: Prisma.FieldRef<"Order", 'ORDER_STATUS'>
-  readonly type: Prisma.FieldRef<"Order", 'TYPE'>
+  readonly ORDER_TYPE: Prisma.FieldRef<"Order", 'ORDER_TYPE'>
   readonly marginType: Prisma.FieldRef<"Order", 'MARGIN_TYPE'>
 }
     

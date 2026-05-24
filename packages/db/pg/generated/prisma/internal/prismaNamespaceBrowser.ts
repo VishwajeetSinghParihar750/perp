@@ -51,6 +51,7 @@ export const AnyNull = runtime.AnyNull
 
 
 export const ModelName = {
+  Market: 'Market',
   User: 'User',
   Order: 'Order',
   Fill: 'Fill'
@@ -72,6 +73,14 @@ export const TransactionIsolationLevel = runtime.makeStrictEnum({
 export type TransactionIsolationLevel = (typeof TransactionIsolationLevel)[keyof typeof TransactionIsolationLevel]
 
 
+export const MarketScalarFieldEnum = {
+  id: 'id',
+  MARKET_SYMBOL: 'MARKET_SYMBOL'
+} as const
+
+export type MarketScalarFieldEnum = (typeof MarketScalarFieldEnum)[keyof typeof MarketScalarFieldEnum]
+
+
 export const UserScalarFieldEnum = {
   id: 'id',
   username: 'username',
@@ -85,14 +94,14 @@ export type UserScalarFieldEnum = (typeof UserScalarFieldEnum)[keyof typeof User
 export const OrderScalarFieldEnum = {
   id: 'id',
   userId: 'userId',
-  side: 'side',
-  symbol: 'symbol',
+  ORDER_SIDE: 'ORDER_SIDE',
+  MARKET_SYMBOL: 'MARKET_SYMBOL',
   margin: 'margin',
   price: 'price',
   filledQuantity: 'filledQuantity',
   quantity: 'quantity',
   status: 'status',
-  type: 'type',
+  ORDER_TYPE: 'ORDER_TYPE',
   marginType: 'marginType'
 } as const
 
@@ -101,7 +110,7 @@ export type OrderScalarFieldEnum = (typeof OrderScalarFieldEnum)[keyof typeof Or
 
 export const FillScalarFieldEnum = {
   id: 'id',
-  symbol: 'symbol',
+  MARKET_SYMBOL: 'MARKET_SYMBOL',
   quantity: 'quantity',
   price: 'price',
   bidPrice: 'bidPrice',

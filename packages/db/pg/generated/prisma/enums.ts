@@ -9,29 +9,29 @@
 * 🟢 You can import this file directly.
 */
 
-export const SIDE = {
+export const ORDER_SIDE = {
   LONG: 'LONG',
   SHORT: 'SHORT'
 } as const
 
-export type SIDE = (typeof SIDE)[keyof typeof SIDE]
+export type ORDER_SIDE = (typeof ORDER_SIDE)[keyof typeof ORDER_SIDE]
 
 
-export const SYMBOL = {
+export const MARKET_SYMBOL = {
   ETHUSD: 'ETHUSD',
   BTCUSD: 'BTCUSD',
   SOLUSD: 'SOLUSD'
 } as const
 
-export type SYMBOL = (typeof SYMBOL)[keyof typeof SYMBOL]
+export type MARKET_SYMBOL = (typeof MARKET_SYMBOL)[keyof typeof MARKET_SYMBOL]
 
 
-export const TYPE = {
+export const ORDER_TYPE = {
   MARKET: 'MARKET',
   LIMIT: 'LIMIT'
 } as const
 
-export type TYPE = (typeof TYPE)[keyof typeof TYPE]
+export type ORDER_TYPE = (typeof ORDER_TYPE)[keyof typeof ORDER_TYPE]
 
 
 export const MARGIN_TYPE = {

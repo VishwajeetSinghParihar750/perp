@@ -7,6 +7,7 @@ type BALANCE_SNAPSHOT = {
   perSymbolBalances: Record<string, Partial<Record<CURRENCY_SYMBOL, number>>>;
   lockedAccounts: Partial<Record<CURRENCY_SYMBOL, string[]>>;
 };
+
 export default class BalanceManager implements Snapshotable<BALANCE_SNAPSHOT> {
   private perSymbolBalances: Record<
     string,

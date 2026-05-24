@@ -1,7 +1,6 @@
 import { type NextFunction, type Request, type Response } from "express";
 import z from "zod";
 import { sendMessageOnWebSocket } from "../ws/utils/messaging.js";
-import type { WS_REQUEST } from "../types/wsServer.js";
 import WebSocket from "ws";
 import type { BackendRequest } from "@repo/shared-backend-types";
 

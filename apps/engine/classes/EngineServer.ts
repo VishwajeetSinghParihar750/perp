@@ -1,4 +1,5 @@
 import "dotenv/config";
+import z from "zod";
 import { createClient, type RedisClientType } from "redis";
 import EventBus from "./EventBus.js";
 import Exchange from "./Exchange.js";
@@ -41,27 +42,24 @@ class EngineServer {
         if (perStreamRespone.name == process.env.REDIS_ENGINE_STREAM) {
           for (let { id, message } of perStreamRespone.messages) {
             try {
-              let request: EngineRequest.ENGINE_REQUEST | ENGINE_INFO_REQUEST =
-                JSON.parse(message.data!);
+              // json parsing
+              let request: EngineRequest.ENGINE_REQUEST = JSON.parse(
+                message.data!,
+              );
+
+              // zod validation
+              EngineRequest.ENGINE_REQUEST_SCHEMA.parse(request);
+
               // here switch based on info types
               if (request.type == "markprice_updated") {
                 this.handleEngineInfoRequest(request);
               } else {
-                // later TODO : add zod here maybe, to check this
-                // let { requestId, stream, type, payload } = request;
-
                 // here sned to request handler
                 let result = this.handleEngineRequest(request);
-
-                if (result)
-                  // send back this result
-                  await redisClient.xAdd(request.stream, "*", {
-                    data: JSON.stringify({
-                      requestId: request.requestId,
-                      type: result.type,
-                      payload: result.payload,
-                    }),
-                  });
+                // send back this result
+                await redisClient.xAdd(request.stream, "*", {
+                  data: JSON.stringify(result),
+                });
               }
             } catch (error) {
               console.log(
@@ -110,8 +108,11 @@ class EngineServer {
     engineRequest: EngineRequest.SUBSCRIBE_EVENT_REQUEST,
   ): EngineResponse.ENGINE_RESPONSE => {
     try {
-      const { event, stream } = engineRequest.payload;
-      this.eventPublisher.subscribeEvent(event, stream);
+      const { events } = engineRequest.payload;
+
+      events.forEach((event) =>
+        this.eventPublisher.subscribeEvent(event, engineRequest.stream),
+      );
       return {
         requestId: engineRequest.requestId,
         type: "event_subscribed",
@@ -129,8 +130,11 @@ class EngineServer {
     engineRequest: EngineRequest.UNSUBSCRIBE_EVENT_REQUEST,
   ): EngineResponse.ENGINE_RESPONSE => {
     try {
-      const { event, stream } = engineRequest.payload;
-      this.eventPublisher.unsubscribeEvent(event, stream);
+      const { events } = engineRequest.payload;
+
+      events.forEach((event) =>
+        this.eventPublisher.unsubscribeEvent(event, engineRequest.stream),
+      );
       return {
         requestId: engineRequest.requestId,
         type: "event_unsubscribed",
@@ -266,14 +270,12 @@ class EngineServer {
   };
 
   private handleUpdateMarkPriceRequest = (
-    engineRequest: ENGINE_INFO_REQUEST,
+    engineRequest: EngineRequest.MARK_PRICE_UDPATED_REQUEST,
   ) => {
     try {
-      let { i: symbol, p: newPrice } = engineRequest.payload;
+      let { price, symbol } = engineRequest.payload;
 
-      newPrice = +newPrice;
-      //
-      this.exchange.handleMarkPriceUpdate({ newPrice, symbol });
+      this.exchange.handleMarkPriceUpdate({ newPrice: +price, symbol });
     } catch (error) {
       console.error("error in hanlding mark price update ", error);
     }
@@ -317,12 +319,12 @@ class EngineServer {
   };
 
   private handleEngineRequest = (
-    engineRequest: EngineRequest.ENGINE_REQUEST,
+    engineRequest: EngineRequest.ENGINE_REQUEST_FROM_BACKEND,
   ): EngineResponse.ENGINE_RESPONSE => {
     let { success, data } =
       EngineRequest.ENGINE_REQUEST_SCHEMA.safeParse(engineRequest);
 
-    if (!success) {
+    if (!success && "requestId" in engineRequest) {
       return {
         type: "error",
         requestId: engineRequest.requestId,
@@ -368,12 +370,13 @@ class EngineServer {
     return response;
   };
 
-  private handleEngineInfoRequest = (engineRequest: ENGINE_INFO_REQUEST) => {
+  private handleEngineInfoRequest = (
+    engineRequest: EngineRequest.ENGINE_INFO_REQUEST,
+  ) => {
     switch (engineRequest.type) {
       case "markprice_updated":
         this.handleUpdateMarkPriceRequest(engineRequest);
         break;
-
       default:
         throw new Error("invalid engine request type ");
     }

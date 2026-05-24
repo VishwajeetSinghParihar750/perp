@@ -16,7 +16,7 @@ httpServer.on("upgrade", (req, socket, head) => {
 
 wss.on("connection", (ws, req) => {
   if (!verifyJwtToken(ws, req)) {
-    ws.close(400, "BAD_CONNECTION_URL");
+    ws.close();
     return;
   }
 

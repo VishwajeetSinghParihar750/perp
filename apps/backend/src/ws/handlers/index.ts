@@ -2,13 +2,7 @@ import { zodBodyVerificationWebSocket } from "../../middlewares/zodBodyVerificat
 
 import WebSocket from "ws";
 
-import {
-  BackendRequest,
-  BackendEvent,
-  BackendResponse,
-  EngineEvent,
-  EngineRequest,
-} from "@repo/shared-types";
+import { BackendRequest } from "@repo/shared-types";
 
 import EngineInterface from "../../engineInterface.js";
 import { sendMessageOnWebSocket } from "../utils/messaging.js";
@@ -167,6 +161,7 @@ async function handleEngineRequest(
         sendMessageOnWebSocket(ws, res);
       }
     } catch (error) {
+      console.log(error);
       sendMessageOnWebSocket(ws, {
         type: "error",
         payload: "INTERNAL_SERVER_ERROR",
@@ -181,8 +176,16 @@ const handleWebSocketMessage = async (
   request: BackendRequest.BACKEND_REQUEST,
 ) => {
   console.log(request);
-  if (BackendRequest.isEngineRequset(request)) {
-    await handleEngineRequest(request, ws);
+  if (
+    zodBodyVerificationWebSocket(
+      BackendRequest.ENGINE_REQUEST_SCHEMA,
+      request,
+      ws,
+    )
+  ) {
+    if (BackendRequest.isEngineRequset(request)) {
+      await handleEngineRequest(request, ws);
+    }
   }
 };
 

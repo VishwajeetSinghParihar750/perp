@@ -20,8 +20,10 @@ const zodBodyVerificationWebSocket = (
   request: BackendRequest.BACKEND_REQUEST,
   ws: WebSocket,
 ): boolean => {
-  const { success } = schema.safeParse(request.payload);
+  const { success, error } = schema.safeParse(request);
+
   if (!success) {
+    console.log(request, error);
     sendMessageOnWebSocket(ws, {
       requestId: request.requestId,
       type: "error",

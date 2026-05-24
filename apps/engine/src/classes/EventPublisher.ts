@@ -64,7 +64,9 @@ class EventPublisher implements Snapshotable<EVENT_SUBSCRIPTIONS_SNAPSHOT> {
 
   subscribeEvent(event: EngineEvent.ENGINE_EVENT_TYPE, stream: string) {
     // later TOOD: ideally should limit what outsiders can sub to
-    let subs = this.subscriptions.getOrInsert(event, new Set());
+    let subs = this.subscriptions.get(event);
+    if (!subs) subs = new Set();
+
     subs.add(stream);
     this.subscriptions.set(event, subs);
   }

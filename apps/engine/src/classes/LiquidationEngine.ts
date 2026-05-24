@@ -102,10 +102,8 @@ class LiquidationEngine implements Snapshotable<LIQUIDATION_SNAPSHOT> {
       );
 
       // add to poistions being lqiduaited
-      let byUserIdInit = this.positionsBeingLiquidated.getOrInsert(
-        position.userId,
-        new Map(),
-      );
+      let byUserIdInit = this.positionsBeingLiquidated.get(position.userId);
+      if (!byUserIdInit) byUserIdInit = new Map();
 
       byUserIdInit.set(position.symbol, position);
       this.positionsBeingLiquidated.set(position.userId, byUserIdInit);
@@ -164,10 +162,11 @@ class LiquidationEngine implements Snapshotable<LIQUIDATION_SNAPSHOT> {
 
     positionSet.delete(position.positionId);
 
-    this.positionsBeingLiquidated.getOrInsert(
-      position.userId,
-      new Map([[position.symbol, position]]),
-    );
+    let curBeingLiquidated = this.positionsBeingLiquidated.get(position.userId);
+    if (!curBeingLiquidated) {
+      curBeingLiquidated = new Map([[position.symbol, position]]);
+    }
+    this.positionsBeingLiquidated.set(position.userId, curBeingLiquidated);
 
     // place a margin order for liuqidation
     this.requestLiquidation({

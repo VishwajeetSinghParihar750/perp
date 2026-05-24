@@ -17,7 +17,7 @@ const zodBodyVerification =
 
 const zodBodyVerificationWebSocket = (
   schema: z.ZodType,
-  request: BackendRequest.BACKEND_REQUEST,
+  request: BackendRequest.ENGINE_REQUEST,
   ws: WebSocket,
 ): boolean => {
   const { success, error } = schema.safeParse(request);

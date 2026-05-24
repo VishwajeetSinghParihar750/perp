@@ -9,14 +9,14 @@ router.post("/signup", zodBodyVerification(SIGNUP_SCHEMA), async (req, res) => {
   //
   try {
     const { username, password } = req.body;
-    const findUser = await prisma.users.findUnique({
+    const findUser = await prisma.user.findUnique({
       where: { username },
     });
     if (findUser) {
       res.status(403).json({ error: true, payload: "username already exists" });
       return;
     }
-    const user = await prisma.users.create({ data: { username, password } });
+    const user = await prisma.user.create({ data: { username, password } });
 
     res.status(201).json({ error: false, payload: user.id });
   } catch (e) {
@@ -29,7 +29,7 @@ router.post("/signin", zodBodyVerification(SIGNIN_SCHEMA), async (req, res) => {
   try {
     const { username, password } = req.body;
 
-    const user = await prisma.users.findUnique({
+    const user = await prisma.user.findUnique({
       where: { username },
     });
     if (!user || user.password != password) {

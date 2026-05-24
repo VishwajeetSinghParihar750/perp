@@ -51,10 +51,9 @@ export const AnyNull = runtime.AnyNull
 
 
 export const ModelName = {
-  Users: 'Users',
-  Stocks: 'Stocks',
-  Orders: 'Orders',
-  Fills: 'Fills'
+  User: 'User',
+  Order: 'Order',
+  Fill: 'Fill'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -73,49 +72,46 @@ export const TransactionIsolationLevel = runtime.makeStrictEnum({
 export type TransactionIsolationLevel = (typeof TransactionIsolationLevel)[keyof typeof TransactionIsolationLevel]
 
 
-export const UsersScalarFieldEnum = {
+export const UserScalarFieldEnum = {
   id: 'id',
   username: 'username',
-  password: 'password'
+  password: 'password',
+  createdAt: 'createdAt'
 } as const
 
-export type UsersScalarFieldEnum = (typeof UsersScalarFieldEnum)[keyof typeof UsersScalarFieldEnum]
+export type UserScalarFieldEnum = (typeof UserScalarFieldEnum)[keyof typeof UserScalarFieldEnum]
 
 
-export const StocksScalarFieldEnum = {
-  id: 'id',
-  title: 'title',
-  symbol: 'symbol'
-} as const
-
-export type StocksScalarFieldEnum = (typeof StocksScalarFieldEnum)[keyof typeof StocksScalarFieldEnum]
-
-
-export const OrdersScalarFieldEnum = {
+export const OrderScalarFieldEnum = {
   id: 'id',
   userId: 'userId',
   side: 'side',
-  type: 'type',
-  stockId: 'stockId',
+  symbol: 'symbol',
+  margin: 'margin',
   price: 'price',
-  quantity: 'quantity',
   filledQuantity: 'filledQuantity',
-  status: 'status'
-} as const
-
-export type OrdersScalarFieldEnum = (typeof OrdersScalarFieldEnum)[keyof typeof OrdersScalarFieldEnum]
-
-
-export const FillsScalarFieldEnum = {
-  id: 'id',
-  stockId: 'stockId',
-  price: 'price',
   quantity: 'quantity',
-  buyOrderId: 'buyOrderId',
-  sellOrderId: 'sellOrderId'
+  status: 'status',
+  type: 'type',
+  marginType: 'marginType'
 } as const
 
-export type FillsScalarFieldEnum = (typeof FillsScalarFieldEnum)[keyof typeof FillsScalarFieldEnum]
+export type OrderScalarFieldEnum = (typeof OrderScalarFieldEnum)[keyof typeof OrderScalarFieldEnum]
+
+
+export const FillScalarFieldEnum = {
+  id: 'id',
+  symbol: 'symbol',
+  quantity: 'quantity',
+  price: 'price',
+  bidPrice: 'bidPrice',
+  longUserId: 'longUserId',
+  shortUserId: 'shortUserId',
+  longOrderId: 'longOrderId',
+  shortOrderId: 'shortOrderId'
+} as const
+
+export type FillScalarFieldEnum = (typeof FillScalarFieldEnum)[keyof typeof FillScalarFieldEnum]
 
 
 export const SortOrder = {

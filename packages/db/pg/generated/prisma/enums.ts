@@ -9,26 +9,44 @@
 * 🟢 You can import this file directly.
 */
 
-export const OrderSide = {
-  BUY: 'BUY',
-  SELL: 'SELL'
+export const SIDE = {
+  LONG: 'LONG',
+  SHORT: 'SHORT'
 } as const
 
-export type OrderSide = (typeof OrderSide)[keyof typeof OrderSide]
+export type SIDE = (typeof SIDE)[keyof typeof SIDE]
 
 
-export const OrderType = {
-  LIMIT: 'LIMIT',
-  MARKET: 'MARKET'
+export const SYMBOL = {
+  ETHUSD: 'ETHUSD',
+  BTCUSD: 'BTCUSD',
+  SOLUSD: 'SOLUSD'
 } as const
 
-export type OrderType = (typeof OrderType)[keyof typeof OrderType]
+export type SYMBOL = (typeof SYMBOL)[keyof typeof SYMBOL]
 
 
-export const OrderStatus = {
+export const TYPE = {
+  MARKET: 'MARKET',
+  LIMIT: 'LIMIT'
+} as const
+
+export type TYPE = (typeof TYPE)[keyof typeof TYPE]
+
+
+export const MARGIN_TYPE = {
+  ISOLATED: 'ISOLATED',
+  CROSS: 'CROSS'
+} as const
+
+export type MARGIN_TYPE = (typeof MARGIN_TYPE)[keyof typeof MARGIN_TYPE]
+
+
+export const ORDER_STATUS = {
   OPEN: 'OPEN',
-  CANCELLED: 'CANCELLED',
-  FILLED: 'FILLED'
+  FILLED: 'FILLED',
+  PARTIALLY_FILLED: 'PARTIALLY_FILLED',
+  CANCELLED: 'CANCELLED'
 } as const
 
-export type OrderStatus = (typeof OrderStatus)[keyof typeof OrderStatus]
+export type ORDER_STATUS = (typeof ORDER_STATUS)[keyof typeof ORDER_STATUS]

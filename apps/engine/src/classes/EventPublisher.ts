@@ -6,6 +6,8 @@ import type { Snapshotable } from "./SnapshotManger.js";
 
 type EVENT_PUBLISHER_SNAPSHOT = {
   subscriptions: Record<EngineEvent.ENGINE_EVENT_TYPE, string[]>;
+  idempotencyNumber: Partial<Record<EngineEvent.ENGINE_EVENT_TYPE, number>>;
+  globalIdempotencyNumber: number;
 };
 
 class EventPublisher implements Snapshotable<EVENT_PUBLISHER_SNAPSHOT> {
@@ -14,11 +16,14 @@ class EventPublisher implements Snapshotable<EVENT_PUBLISHER_SNAPSHOT> {
 
   idempotencyNumber: Partial<Record<EngineEvent.ENGINE_EVENT_TYPE, number>> =
     {};
+  globalIdempotencyNumber: number = 0;
 
   eventBus: EventBus;
 
   getSnapshot(): EVENT_PUBLISHER_SNAPSHOT {
     return {
+      idempotencyNumber: this.idempotencyNumber,
+      globalIdempotencyNumber: this.globalIdempotencyNumber,
       subscriptions: this.subscriptions.keys().reduce((obj, curKey) => {
         obj[curKey] = [...this.subscriptions.get(curKey)!];
         return obj;
@@ -27,6 +32,8 @@ class EventPublisher implements Snapshotable<EVENT_PUBLISHER_SNAPSHOT> {
   }
 
   loadSnapshot(data: EVENT_PUBLISHER_SNAPSHOT) {
+    this.idempotencyNumber = data.idempotencyNumber;
+    this.globalIdempotencyNumber = data.globalIdempotencyNumber;
     this.subscriptions = new Map();
     Object.entries(data.subscriptions).forEach(([key, sub]) => {
       this.subscriptions.set(
@@ -39,7 +46,10 @@ class EventPublisher implements Snapshotable<EVENT_PUBLISHER_SNAPSHOT> {
   handleEvent = async (event: EngineEvent.ENGINE_EVENT) => {
     if (event.payload.type != "markprice.updated") console.log(event);
     let idempotencyNumber = (this.idempotencyNumber[event.payload.type] ??= 0);
+    let globalIdemNumber = this.globalIdempotencyNumber;
+
     this.idempotencyNumber[event.payload.type]++;
+    this.globalIdempotencyNumber++;
 
     // send to all backends who are subbed
     let streams = this.subscriptions.get(event.payload.type);
@@ -65,7 +75,7 @@ class EventPublisher implements Snapshotable<EVENT_PUBLISHER_SNAPSHOT> {
         "*",
         {
           data: JSON.stringify({
-            idempotencyNumber,
+            globalIdemNumber,
             event,
           }),
         },

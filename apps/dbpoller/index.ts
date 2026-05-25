@@ -54,23 +54,33 @@ const handleOrderCreated = async (event: ORDER_CREATED_EVENT) => {
     userId,
   } = event.event.payload.data;
 
-  //
-  let res = await prisma.order.create({
-    data: {
-      id: orderId,
-      userId,
-      side,
-      symbol,
-      margin,
-      price,
-      filledQuantity: filledQty,
-      quantity: qty,
-      status,
-      type,
-      marginType,
-    },
+  await prisma.$transaction(async (tx) => {
+    let exists = await tx.processedEvent.findFirst({
+      where: { id: String(idempotencyNumber) },
+    });
+
+    if (exists) return;
+
+    await tx.processedEvent.create({
+      data: { id: String(idempotencyNumber) },
+    });
+
+    await tx.order.create({
+      data: {
+        id: orderId,
+        userId,
+        side,
+        symbol,
+        margin,
+        price,
+        filledQuantity: filledQty,
+        quantity: qty,
+        status,
+        type,
+        marginType,
+      },
+    });
   });
-  console.log(res);
 };
 
 const handleEvent = async (passedEvent: any) => {

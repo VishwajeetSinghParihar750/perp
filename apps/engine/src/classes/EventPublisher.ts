@@ -75,7 +75,7 @@ class EventPublisher implements Snapshotable<EVENT_PUBLISHER_SNAPSHOT> {
         "*",
         {
           data: JSON.stringify({
-            globalIdemNumber,
+            idempotencyNumber: globalIdemNumber,
             event,
           }),
         },

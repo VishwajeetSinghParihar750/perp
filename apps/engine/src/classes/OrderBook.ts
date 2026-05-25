@@ -561,6 +561,15 @@ export default class OrderBook implements Snapshotable<ORDERBOOK_SNAPSHOT> {
       status: "OPEN",
     };
 
+    // emit  order created event
+    this.emitEvent({
+      type: "event",
+      payload: {
+        type: "order.created",
+        data: currentOrder,
+      },
+    });
+
     // create orderbook if not alreaddy
     this.createSymbolOrderbook(currentOrder.symbol);
 
@@ -571,6 +580,15 @@ export default class OrderBook implements Snapshotable<ORDERBOOK_SNAPSHOT> {
     } else {
       toReturn = this.placeLimitOrder(currentOrder);
     }
+
+    // emit fills created event
+    this.emitEvent({
+      type: "event",
+      payload: {
+        type: "fills.created",
+        data: toReturn.fills,
+      },
+    });
 
     return toReturn;
   };

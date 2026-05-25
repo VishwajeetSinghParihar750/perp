@@ -1,0 +1,38 @@
+{
+  "eventPublisher": {
+    "subscriptions": {}
+  },
+  "exchange": {
+    "balance": {
+      "exchangeBalance": 100000000,
+      "perSymbolBalances": {
+        "9f329592-b423-411f-8b59-44f681239736": {
+          "USD": 1000
+        }
+      },
+      "lockedAccounts": {}
+    },
+    "orderbook": {
+      "depthUpdateOffset": {
+        "USD": 0,
+        "SOLUSD": 0,
+        "ETHUSD": 0,
+        "BTCUSD": 0
+      },
+      "orders": {}
+    },
+    "position": {
+      "isolatedPositions": {}
+    },
+    "liquidation": {
+      "indexPrices": {
+        "BTCUSD": 77347.1890676,
+        "ETHUSD": 2113.32382752,
+        "SOLUSD": 85.9067977
+      },
+      "liquidationPrice": {},
+      "positions": {},
+      "positionsBeingLiquidated": []
+    }
+  }
+}

@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { createClient, type RedisClientType } from "redis";
+import { redisClient, type RedisClientType } from "@repo/db";
 import EventBus from "./EventBus.js";
 import Exchange, { type EXCHANGE_SNAPSHOT } from "./Exchange.js";
 import { EngineRequest, EngineResponse } from "@repo/shared-types";
@@ -109,7 +109,7 @@ class EngineServer implements Snapshotable<ENGINE_SERVER_SNAPSHOT> {
   constructor() {
     this.eventBus = new EventBus();
     this.snapshotManager = new SnapshotManager();
-    this.redisClient = createClient({ url: process.env.REDIS_URL! });
+    this.redisClient = redisClient.duplicate();
     this.exchange = new Exchange(this.eventBus);
     this.eventPublisher = new EventPublisher(
       this.eventBus,

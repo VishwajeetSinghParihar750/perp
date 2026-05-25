@@ -11,8 +11,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@repo/db": "*",
-    "@repo/shared-types": "*",
+    "@repo/db": "workspace:*",
+    "@repo/shared-types": "workspace:*",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "js-sdsl": "^4.4.2",

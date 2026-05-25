@@ -1,4 +1,4 @@
-import type { RedisClientType } from "redis";
+import type { RedisClientType } from "@repo/db";
 
 import { EngineEvent } from "@repo/shared-types";
 import type EventBus from "./EventBus.js";
@@ -11,6 +11,9 @@ type EVENT_PUBLISHER_SNAPSHOT = {
 class EventPublisher implements Snapshotable<EVENT_PUBLISHER_SNAPSHOT> {
   subscriptions: Map<EngineEvent.ENGINE_EVENT_TYPE, Set<string>> = new Map(); // string represents stream name that is subscribed to that event
   redisClient: RedisClientType;
+
+  idempotencyNumber: Partial<Record<EngineEvent.ENGINE_EVENT_TYPE, number>> =
+    {};
 
   eventBus: EventBus;
 
@@ -34,22 +37,35 @@ class EventPublisher implements Snapshotable<EVENT_PUBLISHER_SNAPSHOT> {
   }
 
   handleEvent = async (event: EngineEvent.ENGINE_EVENT) => {
+    let idempotencyNumber = (this.idempotencyNumber[event.payload.type] ??= 0);
+    this.idempotencyNumber[event.payload.type]++;
+
     // send to all backends who are subbed
-    let { data, type } = event.payload;
-    let streams = this.subscriptions.get(type);
+    let streams = this.subscriptions.get(event.payload.type);
     if (streams)
       await Promise.all(
         [...streams].map((stream) =>
           this.redisClient.xAdd(stream, "*", {
             data: JSON.stringify({
-              type: type,
-              payload: data,
+              idempotencyNumber,
+              payload: event.payload,
             }),
           }),
         ),
       );
 
-    // TODO : send to db poller main stream
+    // send to db poller main stream
+    if (
+      event.payload.type == "order.created" ||
+      event.payload.type == "fills.created"
+    ) {
+      await this.redisClient.xAdd(process.env.DB_POLLER_REDIS_STREAM!, "*", {
+        data: JSON.stringify({
+          idempotencyNumber,
+          payload: event.payload,
+        }),
+      });
+    }
   };
 
   async initialize() {

@@ -5,14 +5,8 @@ import {
   MARGIN_TYPE_SCHEMA,
 } from "../shared-backend-types/backendRequest.js";
 
-import { ENGINE_EVENT_SCHEMA } from "./engineEvent.js";
+import { ENGINE_EVENT_SCHEMA, ORDER_STATUS_SCHEMA } from "./engineEvent.js";
 
-const ORDER_STATUS_SCHEMA = z.union([
-  z.literal("OPEN"),
-  z.literal("CANCELLED"),
-  z.literal("PARTIALLY_FILLED"),
-  z.literal("FILLED"),
-]);
 const ORDER_TYPE_SCHEMA = z.union([z.literal("MARKET"), z.literal("LIMIT")]);
 const ORDER_SCHEMA = z.object({
   userId: z.string(),

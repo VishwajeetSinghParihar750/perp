@@ -20,34 +20,37 @@ class SnapshotManager {
   private setupSavingSnapshot(snapshotableClass: Snapshotable<any>) {
     let lastSnapshotSaved: string = "";
 
-    setInterval(async () => {
-      // make snapshot
+    setInterval(
+      async () => {
+        // make snapshot
 
-      if (lastSnapshotSaved < this.lastRedisStreamMessageId) {
-        let snapshotObject = snapshotableClass.getSnapshot();
-        let toSaveSnapshot = JSON.stringify(snapshotObject, null, 2);
-        console.log("saving engine snapshot ", toSaveSnapshot);
-        try {
-          await writeFile(
-            path.join(
-              process.cwd(),
-              `data/snapshots/${this.lastRedisStreamMessageId}.json`,
-            ),
-            toSaveSnapshot,
-          );
-          lastSnapshotSaved = this.lastRedisStreamMessageId;
-        } catch (error) {
-          console.log(
-            "saving snapshot to disk failed at redis message position ",
-            this.lastRedisStreamMessageId,
-          );
+        if (lastSnapshotSaved < this.lastRedisStreamMessageId) {
+          let snapshotObject = snapshotableClass.getSnapshot();
+          let toSaveSnapshot = JSON.stringify(snapshotObject, null, 2);
+          console.log("saving engine snapshot ", toSaveSnapshot);
+          try {
+            await writeFile(
+              path.join(
+                process.cwd(),
+                `data/snapshots/${this.lastRedisStreamMessageId}.json`,
+              ),
+              toSaveSnapshot,
+            );
+            lastSnapshotSaved = this.lastRedisStreamMessageId;
+          } catch (error) {
+            console.log(
+              "saving snapshot to disk failed at redis message position ",
+              this.lastRedisStreamMessageId,
+            );
+          }
+        } else {
+          console.log("not saving snaphsot coz no new redis messages parsed");
         }
-      } else {
-        console.log("not saving snaphsot coz no new redis messages parsed");
-      }
 
-      // save this to disk
-    }, 10 * 1000); // every 2 mins
+        // save this to disk
+      },
+      2 * 60 * 1000,
+    ); // every 2 mins
   }
   private loadSnapshot(snapshotableClass: Snapshotable<any>): string {
     // get max number redis messgae id snapshot

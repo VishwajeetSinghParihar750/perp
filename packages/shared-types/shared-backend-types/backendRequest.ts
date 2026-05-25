@@ -3,16 +3,10 @@ import {
   type CURRENCY_SYMBOL,
   CURRENCY_SYMBOL_SCHEMA,
   ENGINE_EVENT_TYPE_SCHEMA,
+  MARGIN_TYPE_SCHEMA,
+  SIDE_SCHEMA,
+  TYPE_SCHEMA,
 } from "../shared-engine-types/engineEvent.js";
-
-const SIDE_SCHEMA = z.union([z.literal("BUY"), z.literal("SELL")]);
-type SIDE = z.infer<typeof SIDE_SCHEMA>;
-
-const TYPE_SCHEMA = z.union([z.literal("MARKET"), z.literal("LIMIT")]);
-type TYPE = z.infer<typeof SIDE_SCHEMA>;
-
-const MARGIN_TYPE_SCHEMA = z.union([z.literal("ISOLATED"), z.literal("CROSS")]);
-type MARGIN_TYPE = z.infer<typeof MARGIN_TYPE_SCHEMA>;
 
 const ENGINE_REQUEST_TYPE_SCHEMA = z.union([
   z.literal("create_order"),
@@ -149,9 +143,6 @@ export type {
   UNSUBSCRIBE_EVENT_REQUEST,
   ENGINE_REQUEST,
   CURRENCY_SYMBOL,
-  MARGIN_TYPE,
-  SIDE,
-  TYPE,
   ENGINE_REQUEST_TYPE,
   DB_REQUEST,
   BACKEND_REQUEST,

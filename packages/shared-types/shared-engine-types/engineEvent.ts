@@ -24,6 +24,13 @@ const CURRENCY_SYMBOL_SCHEMA = z.union([
 ]);
 type CURRENCY_SYMBOL = z.infer<typeof CURRENCY_SYMBOL_SCHEMA>;
 
+const TRADBLE_SYMBOL_SCHEMA = z.union([
+  z.literal("BTCUSD"),
+  z.literal("SOLUSD"),
+  z.literal("ETHUSD"),
+]);
+type TRADABLE_SYMBOL = z.infer<typeof TRADBLE_SYMBOL_SCHEMA>;
+
 const ORDERBOOK_EVENT_TYPE = z.union([
   z.literal("depth.updated.sol_usd"),
   z.literal("depth.updated.eth_usd"),
@@ -69,7 +76,7 @@ const DEPTH_UPDATED_ETH_USD_SCHEMA = baseEventSchema.extend({
 const LIQUIDATION_STARTED_SCHEMA = baseEventSchema.extend({
   payload: z.object({
     type: z.literal("liquidation.started"),
-    data: z.object({ userId: z.string(), symbol: CURRENCY_SYMBOL_SCHEMA }),
+    data: z.object({ userId: z.string(), symbol: TRADBLE_SYMBOL_SCHEMA }),
   }),
 });
 type LIQUIDATION_STARTED_EVENT = z.infer<typeof LIQUIDATION_STARTED_SCHEMA>;
@@ -77,7 +84,7 @@ type LIQUIDATION_STARTED_EVENT = z.infer<typeof LIQUIDATION_STARTED_SCHEMA>;
 const LIQUIDATION_COMPLETED_SCHEMA = baseEventSchema.extend({
   payload: z.object({
     type: z.literal("liquidation.completed"),
-    data: z.object({ userId: z.string(), symbol: CURRENCY_SYMBOL_SCHEMA }),
+    data: z.object({ userId: z.string(), symbol: TRADBLE_SYMBOL_SCHEMA }),
   }),
 });
 type LIQUIDATION_COMPLETED_EVENT = z.infer<typeof LIQUIDATION_COMPLETED_SCHEMA>;
@@ -85,7 +92,7 @@ type LIQUIDATION_COMPLETED_EVENT = z.infer<typeof LIQUIDATION_COMPLETED_SCHEMA>;
 const MARKPRICE_UPDATED_SCHEMA = baseEventSchema.extend({
   payload: z.object({
     type: z.literal("markprice.updated"),
-    data: z.object({ price: z.number(), symbol: CURRENCY_SYMBOL_SCHEMA }),
+    data: z.object({ price: z.number(), symbol: TRADBLE_SYMBOL_SCHEMA }),
   }),
 });
 
@@ -103,7 +110,7 @@ const ORDER_CREATED_SCHEMA = baseEventSchema.extend({
       userId: z.string(),
       side: SIDE_SCHEMA,
       type: TYPE_SCHEMA,
-      symbol: CURRENCY_SYMBOL_SCHEMA,
+      symbol: TRADBLE_SYMBOL_SCHEMA,
       margin: z.number(),
       marginType: MARGIN_TYPE_SCHEMA,
       status: ORDER_STATUS_SCHEMA,
@@ -118,7 +125,7 @@ const FILLS_CREATED_SCHEMA = baseEventSchema.extend({
     data: z.array(
       z.object({
         fillId: z.string(),
-        symbol: CURRENCY_SYMBOL_SCHEMA,
+        symbol: TRADBLE_SYMBOL_SCHEMA,
         qty: z.number(),
         price: z.number(),
         bidPrice: z.number(),
@@ -163,9 +170,11 @@ export {
   ORDER_STATUS_SCHEMA,
   FILLS_CREATED_SCHEMA,
   ORDER_CREATED_SCHEMA,
+  TRADBLE_SYMBOL_SCHEMA,
 };
 export type {
   SIDE,
+  TRADABLE_SYMBOL,
   FILLS_CREATED_EVENT,
   ORDER_CREATED_EVENT,
   MARGIN_TYPE,

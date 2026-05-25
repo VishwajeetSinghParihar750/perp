@@ -1,5 +1,8 @@
 const CURRENCY_SYMBOL_ARRAY = ["USD", "SOLUSD", "ETHUSD", "BTCUSD"] as const;
 type CURRENCY_SYMBOL = (typeof CURRENCY_SYMBOL_ARRAY)[number];
+const TRADABLE_CURRENCY_SYMBOL_ARRAY = ["SOLUSD", "ETHUSD", "BTCUSD"] as const;
+type TRADABLE_CURRENCY_SYMBOL = (typeof TRADABLE_CURRENCY_SYMBOL_ARRAY)[number];
+
 type TYPE = "LIMIT" | "MARKET";
 type SIDE = "BUY" | "SELL";
 type ORDER_ID = string;
@@ -9,7 +12,7 @@ type ORDER_STATUS = "OPEN" | "PARTIALLY_FILLED" | "FILLED" | "CANCELLED";
 
 type FILL_INFO = {
   fillId: string;
-  symbol: CURRENCY_SYMBOL;
+  symbol: TRADABLE_CURRENCY_SYMBOL;
   qty: number;
   price: number;
   bidPrice: number;
@@ -37,7 +40,7 @@ type ORDER = {
   price: number;
   qty: number;
   side: SIDE;
-  symbol: CURRENCY_SYMBOL;
+  symbol: TRADABLE_CURRENCY_SYMBOL;
   type: TYPE;
   filledQty: number;
   orderId: string;
@@ -59,5 +62,7 @@ export type {
   ORDER,
   FILLS_INFO,
   FILL_INFO,
+  TRADABLE_CURRENCY_SYMBOL,
 };
-export { CURRENCY_SYMBOL_ARRAY };
+
+export { CURRENCY_SYMBOL_ARRAY, TRADABLE_CURRENCY_SYMBOL_ARRAY };

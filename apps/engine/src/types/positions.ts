@@ -1,4 +1,8 @@
-import type { CURRENCY_SYMBOL, MARGIN_TYPE } from "./order.js";
+import type {
+  CURRENCY_SYMBOL,
+  MARGIN_TYPE,
+  TRADABLE_CURRENCY_SYMBOL,
+} from "./order.js";
 
 type POSITION_TYPE = "SHORT" | "LONG";
 type POSITION = {
@@ -7,7 +11,7 @@ type POSITION = {
   price: number;
   qty: number;
   type: POSITION_TYPE;
-  symbol: CURRENCY_SYMBOL;
+  symbol: TRADABLE_CURRENCY_SYMBOL;
   createdAt: Date;
 
   //  for perp

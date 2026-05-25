@@ -4,6 +4,7 @@ import type {
   SIDE as ORDER_SIDE,
   TYPE as ORDER_TYPE,
   SIDE,
+  TRADABLE_CURRENCY_SYMBOL,
   TYPE,
 } from "../types/order.js";
 import type { POSITION } from "../types/positions.js";
@@ -199,7 +200,7 @@ class LiquidationEngine implements Snapshotable<LIQUIDATION_SNAPSHOT> {
     symbol,
     newPrice,
   }: {
-    symbol: CURRENCY_SYMBOL;
+    symbol: TRADABLE_CURRENCY_SYMBOL;
     newPrice: number;
   }) {
     // maybe TODO :  get initial prices first through http, then update prices with ws later,  wait for getting requests until your prices are  set up

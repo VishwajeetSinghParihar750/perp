@@ -27,6 +27,7 @@
     /* Modules */
     "module": "esnext" /* Specify what module code is generated. */,
     "moduleResolution": "bundler",
+    "rootDir": "./",
     // "baseUrl": "./",                                  /* Specify the base directory to resolve non-relative module names. */
     // "paths": {},                                      /* Specify a set of entries that re-map imports to additional lookup locations. */
     // "rootDirs": [],                                   /* Allow multiple folders to be treated as one when resolving modules. */
@@ -103,5 +104,12 @@
     /* Completeness */
     // "skipDefaultLibCheck": true,                      /* Skip type checking .d.ts files that are included with TypeScript. */
     "skipLibCheck": true /* Skip type checking all .d.ts files. */
-  }
+  },
+  "include": ["index.ts", "redis/index.ts", "pg/index.ts", "prisma.config.ts"],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "**/generated/**",
+    "**/prisma/generated/**"
+  ]
 }

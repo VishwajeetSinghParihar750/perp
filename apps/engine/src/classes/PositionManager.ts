@@ -1,4 +1,4 @@
-import type { CURRENCY_SYMBOL, MARGIN_TYPE } from "../types/order.js";
+import type { TRADABLE_CURRENCY_SYMBOL, MARGIN_TYPE } from "../types/order.js";
 import type { POSITION, POSITION_UPDATES } from "../types/positions.js";
 import type { Snapshotable } from "./SnapshotManger.js";
 import type { FILLS_INFO } from "../types/order.js";
@@ -10,7 +10,7 @@ type ORDER_UPDATES = Record<
     {
       positionUpdatePriceQtyProduct: number;
       positionUpdateQty: number;
-      symbol: CURRENCY_SYMBOL;
+      symbol: TRADABLE_CURRENCY_SYMBOL;
       totalQty: number;
       margin: number;
       marginType: MARGIN_TYPE;
@@ -20,7 +20,7 @@ type ORDER_UPDATES = Record<
 type POSITION_SNAPSHOT = {
   isolatedPositions: Record<
     string, // userid
-    Partial<Record<CURRENCY_SYMBOL, POSITION>>
+    Partial<Record<TRADABLE_CURRENCY_SYMBOL, POSITION>>
   >;
 };
 
@@ -28,7 +28,7 @@ class PositionManager implements Snapshotable<POSITION_SNAPSHOT> {
   // just isolated
   private isolatedPositions: Record<
     string, // userid
-    Partial<Record<CURRENCY_SYMBOL, POSITION>>
+    Partial<Record<TRADABLE_CURRENCY_SYMBOL, POSITION>>
   > = {}; // this is per user per symbol per price positions
 
   getSnapshot(): POSITION_SNAPSHOT {
@@ -37,7 +37,7 @@ class PositionManager implements Snapshotable<POSITION_SNAPSHOT> {
   loadSnapshot(data: POSITION_SNAPSHOT) {
     this.isolatedPositions = data.isolatedPositions;
   }
-  getPosition(userId: string, symbol?: CURRENCY_SYMBOL) {
+  getPosition(userId: string, symbol?: TRADABLE_CURRENCY_SYMBOL) {
     if (symbol) {
       return this.isolatedPositions[userId];
     }

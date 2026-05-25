@@ -1,5 +1,5 @@
 import OrderBook, { type ORDERBOOK_SNAPSHOT } from "./OrderBook.js";
-import type { FILLS_INFO } from "../types/order.js";
+import type { FILLS_INFO, TRADABLE_CURRENCY_SYMBOL } from "../types/order.js";
 import Balances, { type BALANCE_SNAPSHOT } from "./Balances.js";
 import type {
   CURRENCY_SYMBOL,
@@ -54,7 +54,7 @@ export default class Exchange implements Snapshotable<EXCHANGE_SNAPSHOT> {
   createOrder = (
     type: TYPE,
     side: SIDE,
-    symbol: CURRENCY_SYMBOL,
+    symbol: TRADABLE_CURRENCY_SYMBOL,
     qty: number,
 
     userId: string,
@@ -181,13 +181,13 @@ export default class Exchange implements Snapshotable<EXCHANGE_SNAPSHOT> {
     // u can only deposit usd
     this.balances.addBalance(userId, symbol, amount);
   }
-  getDepth(symbol: CURRENCY_SYMBOL) {
+  getDepth(symbol: TRADABLE_CURRENCY_SYMBOL) {
     return this.orderBook.getDepth(symbol);
   }
-  getPosition(userId: string, symbol?: CURRENCY_SYMBOL) {
+  getPosition(userId: string, symbol?: TRADABLE_CURRENCY_SYMBOL) {
     return this.positionManager.getPosition(userId, symbol);
   }
-  getOrderbookSnapshot(symbol: CURRENCY_SYMBOL) {
+  getOrderbookSnapshot(symbol: TRADABLE_CURRENCY_SYMBOL) {
     return this.orderBook.getOrderbookSnapshot(symbol);
   }
   handleMarkPriceUpdate({
@@ -195,7 +195,7 @@ export default class Exchange implements Snapshotable<EXCHANGE_SNAPSHOT> {
     symbol,
   }: {
     newPrice: number;
-    symbol: CURRENCY_SYMBOL;
+    symbol: TRADABLE_CURRENCY_SYMBOL;
   }) {
     this.liquidationEngine.handleMarkPriceUpdate({ symbol, newPrice });
   }

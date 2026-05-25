@@ -13,7 +13,7 @@ import type EventBus from "./EventBus.js";
 import type { Snapshotable } from "./SnapshotManger.js";
 import type { EngineEvent } from "@repo/shared-types";
 
-import type { FILLS_INFO } from "../types/order.js";
+import type { FILLS_INFO, TRADABLE_CURRENCY_SYMBOL } from "../types/order.js";
 
 type PRICE_LEVEL = { totalQuantity: number; orders: LinkList<ORDER> };
 
@@ -533,7 +533,7 @@ export default class OrderBook implements Snapshotable<ORDERBOOK_SNAPSHOT> {
   createOrder = (
     type: TYPE,
     side: SIDE,
-    symbol: CURRENCY_SYMBOL,
+    symbol: TRADABLE_CURRENCY_SYMBOL,
     qty: number,
     userId: string,
     margin: number,

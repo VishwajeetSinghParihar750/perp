@@ -12,7 +12,7 @@ const GET_POSITION_SCHEMA = BASE_REQUEST_SCHEMA.extend({
   type: z.literal("get_position"),
   payload: z.object({
     userId: z.string(),
-    symbol: BackendRequest.CURRENCY_SYMBOL_SCHEMA.optional(),
+    symbol: BackendRequest.TRADBLE_SYMBOL_SCHEMA.optional(),
   }),
 });
 

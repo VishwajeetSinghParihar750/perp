@@ -5,6 +5,7 @@ import {
   ENGINE_EVENT_TYPE_SCHEMA,
   MARGIN_TYPE_SCHEMA,
   SIDE_SCHEMA,
+  TRADBLE_SYMBOL_SCHEMA,
   TYPE_SCHEMA,
 } from "../shared-engine-types/engineEvent.js";
 
@@ -25,7 +26,7 @@ const CREATE_ORDER_PAYLOAD_SCHEMA = z.object({
   side: SIDE_SCHEMA,
   price: z.number(),
   qty: z.number(),
-  symbol: CURRENCY_SYMBOL_SCHEMA,
+  symbol: TRADBLE_SYMBOL_SCHEMA,
   margin: z.number(),
   marginType: MARGIN_TYPE_SCHEMA,
   type: TYPE_SCHEMA,
@@ -62,19 +63,19 @@ const ADD_BALANCE_SCHEMA = BASE_SCHEMA.extend({
 const GET_DEPTH_SCHEMA = BASE_SCHEMA.extend({
   type: z.literal("get_depth"),
   payload: z.object({
-    symbol: CURRENCY_SYMBOL_SCHEMA,
+    symbol: TRADBLE_SYMBOL_SCHEMA,
   }),
 });
 const GET_ORDERBOOK_SCHEMA = BASE_SCHEMA.extend({
   type: z.literal("get_orderbook"),
   payload: z.object({
-    symbol: CURRENCY_SYMBOL_SCHEMA,
+    symbol: TRADBLE_SYMBOL_SCHEMA,
   }),
 });
 const GET_POSITION_SCHEMA = BASE_SCHEMA.extend({
   type: z.literal("get_position"),
   payload: z.object({
-    symbol: CURRENCY_SYMBOL_SCHEMA.optional(),
+    symbol: TRADBLE_SYMBOL_SCHEMA.optional(),
   }),
 });
 const SUBSCRIBE_EVENT_SCHEMA = BASE_SCHEMA.extend({
@@ -164,6 +165,7 @@ export {
   GET_ORDERBOOK_SCHEMA,
   GET_POSITION_SCHEMA,
   SUBSCRIBE_EVENT_SCHEMA,
+  TRADBLE_SYMBOL_SCHEMA,
   UNSUBSCRIBE_EVENT_SCHEMA,
   ENGINE_REQUEST_SCHEMA,
   CURRENCY_SYMBOL_SCHEMA,

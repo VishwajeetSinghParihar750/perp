@@ -1,21 +1,40 @@
 import "dotenv/config";
 import { createClient, type RedisClientType } from "redis";
 import EventBus from "./EventBus.js";
-import Exchange from "./Exchange.js";
+import Exchange, { type EXCHANGE_SNAPSHOT } from "./Exchange.js";
 import { EngineRequest, EngineResponse } from "@repo/shared-types";
 
-import EventPublisher from "./EventPublisher.js";
+import EventPublisher, {
+  type EVENT_PUBLISHER_SNAPSHOT,
+} from "./EventPublisher.js";
 import MarkPriceObserver from "./MarkPriceObserver.js";
-import SnapshotManager from "./SnapshotManger.js";
+import SnapshotManager, { type Snapshotable } from "./SnapshotManger.js";
 import type { FILLS_INFO } from "../types/order.js";
 
-class EngineServer {
+type ENGINE_SERVER_SNAPSHOT = {
+  eventPublisher: EVENT_PUBLISHER_SNAPSHOT;
+  exchange: EXCHANGE_SNAPSHOT;
+};
+
+class EngineServer implements Snapshotable<ENGINE_SERVER_SNAPSHOT> {
   private redisClient: RedisClientType;
   private exchange: Exchange;
   private eventBus: EventBus;
   private eventPublisher: EventPublisher;
   private markpPriceObserver: MarkPriceObserver;
   private snapshotManager: SnapshotManager;
+
+  getSnapshot = (): ENGINE_SERVER_SNAPSHOT => {
+    return {
+      eventPublisher: this.eventPublisher.getSnapshot(),
+      exchange: this.exchange.getSnapshot(),
+    };
+  };
+  loadSnapshot = (snapshot: ENGINE_SERVER_SNAPSHOT) => {
+    const { eventPublisher, exchange } = snapshot;
+    this.eventPublisher.loadSnapshot(eventPublisher);
+    this.exchange.loadSnapshot(exchange);
+  };
 
   async handleClientRequsts(
     redisClient: RedisClientType,
@@ -77,7 +96,7 @@ class EngineServer {
   }
 
   async initialize() {
-    let lastRedisMessageId = this.snapshotManager.initialize(this.exchange);
+    let lastRedisMessageId = this.snapshotManager.initialize(this);
 
     await this.eventPublisher.initialize();
     await this.markpPriceObserver.initialize();

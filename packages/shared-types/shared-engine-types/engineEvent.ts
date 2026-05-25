@@ -1,4 +1,4 @@
-import z from "zod";
+import z, { symbol } from "zod";
 
 const CURRENCY_SYMBOL_SCHEMA = z.union([
   z.literal("USD"),
@@ -64,12 +64,21 @@ const LIQUIDATION_COMPLETED_SCHEMA = baseEventSchema.extend({
 });
 type LIQUIDATION_COMPLETED_EVENT = z.infer<typeof LIQUIDATION_COMPLETED_SCHEMA>;
 
+const MARKPRICE_UPDATED_SCHEMA = baseEventSchema.extend({
+  payload: z.object({
+    type: z.literal("markprice.updated"),
+    data: z.object({ price: z.number(), symbol: CURRENCY_SYMBOL_SCHEMA }),
+  }),
+});
+type MARKPRICE_UPDATED_EVENT = z.infer<typeof MARKPRICE_UPDATED_SCHEMA>;
+
 const ENGINE_EVENT_SCHEMA = z.union([
   DEPTH_UPDATED_BTC_USD_SCHEMA,
   DEPTH_UPDATED_SOL_USD_SCHEMA,
   DEPTH_UPDATED_ETH_USD_SCHEMA,
   LIQUIDATION_COMPLETED_SCHEMA,
   LIQUIDATION_STARTED_SCHEMA,
+  MARKPRICE_UPDATED_SCHEMA,
 ]);
 
 type ENGINE_EVENT = z.infer<typeof ENGINE_EVENT_SCHEMA>;
@@ -77,9 +86,11 @@ type ENGINE_EVENT = z.infer<typeof ENGINE_EVENT_SCHEMA>;
 export {
   ENGINE_EVENT_TYPE_SCHEMA,
   ENGINE_EVENT_SCHEMA,
+  MARKPRICE_UPDATED_SCHEMA,
   CURRENCY_SYMBOL_SCHEMA,
 };
 export type {
+  MARKPRICE_UPDATED_EVENT,
   ENGINE_EVENT_TYPE,
   ENGINE_EVENT,
   LIQUIDATION_STARTED_EVENT,

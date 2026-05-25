@@ -200,3 +200,5 @@ export default class Exchange implements Snapshotable<EXCHANGE_SNAPSHOT> {
     this.liquidationEngine.handleMarkPriceUpdate({ symbol, newPrice });
   }
 }
+
+export type { EXCHANGE_SNAPSHOT };

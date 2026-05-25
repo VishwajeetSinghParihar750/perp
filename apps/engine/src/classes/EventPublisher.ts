@@ -4,17 +4,17 @@ import { EngineEvent } from "@repo/shared-types";
 import type EventBus from "./EventBus.js";
 import type { Snapshotable } from "./SnapshotManger.js";
 
-type EVENT_SUBSCRIPTIONS_SNAPSHOT = {
+type EVENT_PUBLISHER_SNAPSHOT = {
   subscriptions: Record<EngineEvent.ENGINE_EVENT_TYPE, string[]>;
 };
 
-class EventPublisher implements Snapshotable<EVENT_SUBSCRIPTIONS_SNAPSHOT> {
+class EventPublisher implements Snapshotable<EVENT_PUBLISHER_SNAPSHOT> {
   subscriptions: Map<EngineEvent.ENGINE_EVENT_TYPE, Set<string>> = new Map(); // string represents stream name that is subscribed to that event
   redisClient: RedisClientType;
 
   eventBus: EventBus;
 
-  getSnapshot(): EVENT_SUBSCRIPTIONS_SNAPSHOT {
+  getSnapshot(): EVENT_PUBLISHER_SNAPSHOT {
     return {
       subscriptions: this.subscriptions.keys().reduce((obj, curKey) => {
         obj[curKey] = [...this.subscriptions.get(curKey)!];
@@ -23,7 +23,7 @@ class EventPublisher implements Snapshotable<EVENT_SUBSCRIPTIONS_SNAPSHOT> {
     };
   }
 
-  loadSnapshot(data: EVENT_SUBSCRIPTIONS_SNAPSHOT) {
+  loadSnapshot(data: EVENT_PUBLISHER_SNAPSHOT) {
     this.subscriptions = new Map();
     Object.entries(data.subscriptions).forEach(([key, sub]) => {
       this.subscriptions.set(
@@ -78,4 +78,4 @@ class EventPublisher implements Snapshotable<EVENT_SUBSCRIPTIONS_SNAPSHOT> {
 
 export default EventPublisher;
 
-export type { EVENT_SUBSCRIPTIONS_SNAPSHOT };
+export type { EVENT_PUBLISHER_SNAPSHOT };

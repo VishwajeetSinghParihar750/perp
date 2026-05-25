@@ -61,6 +61,13 @@ class LiquidationEngine implements Snapshotable<LIQUIDATION_SNAPSHOT> {
     liquidation?: boolean,
   ) => void;
 
+  private initializeLiquidPosition(symbol: CURRENCY_SYMBOL) {
+    this.liquidPositions[symbol] = {
+      LONG: new OrderedMap([], (x, y) => y - x),
+      SHORT: new OrderedMap(),
+    };
+  }
+
   getSnapshot(): LIQUIDATION_SNAPSHOT {
     return {
       indexPrices: this.indexPrices,
@@ -84,10 +91,7 @@ class LiquidationEngine implements Snapshotable<LIQUIDATION_SNAPSHOT> {
     Object.values(this.positions).forEach((position) => {
       // add to liquis positons
       if (!this.liquidPositions[position.symbol]) {
-        this.liquidPositions[position.symbol] = {
-          LONG: new OrderedMap(),
-          SHORT: new OrderedMap(),
-        };
+        this.initializeLiquidPosition(position.symbol);
       }
       let curVal =
         this.liquidPositions[position.symbol]![position.type].getElementByKey(
@@ -200,6 +204,19 @@ class LiquidationEngine implements Snapshotable<LIQUIDATION_SNAPSHOT> {
   }) {
     // maybe TODO :  get initial prices first through http, then update prices with ws later,  wait for getting requests until your prices are  set up
     // E is time thing, price is in string
+    // maybe let the server run for 2 mins, get mark price updates, then only start serving requests
+
+    // emit event
+    this.eventBus.emit({
+      type: "event",
+      payload: {
+        type: "markprice.updated",
+        data: {
+          price: newPrice,
+          symbol,
+        },
+      },
+    });
 
     console.log(symbol, newPrice);
     if (!this.indexPrices[symbol]) this.indexPrices[symbol] = newPrice;
@@ -209,12 +226,14 @@ class LiquidationEngine implements Snapshotable<LIQUIDATION_SNAPSHOT> {
 
       if (prevPrice == newPrice) return;
 
-      let positionsMap =
-        this.liquidPositions[symbol]?.[prevPrice < newPrice ? "SHORT" : "LONG"];
+      let sideToLiquidate: POSITION_TYPE =
+        prevPrice < newPrice ? "SHORT" : "LONG";
+      let positionsMap = this.liquidPositions[symbol]?.[sideToLiquidate];
 
       while (positionsMap && !positionsMap.empty()) {
         let [price, positions] = positionsMap.front()!;
-        if (price > newPrice) return;
+        if (sideToLiquidate == "LONG" ? price < newPrice : price > newPrice)
+          break;
 
         // liquidate all positions at this price
         positions.forEach((position) => this.liquidatePosition(position));
@@ -229,7 +248,10 @@ class LiquidationEngine implements Snapshotable<LIQUIDATION_SNAPSHOT> {
     side: ORDER_SIDE;
     price: number | undefined;
   }): number {
-    return 0;
+    if (order.price) return (order.price * order.qty) / 10;
+
+    // TODO : makr sure you have index prices before you start taking orders
+    return (this.indexPrices[order.symbol]! * order.qty) / 10;
   }
 
   //  remove all data strcures and clear empty ds, and similarly in normal position udpats

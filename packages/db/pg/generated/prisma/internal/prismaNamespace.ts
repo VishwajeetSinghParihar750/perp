@@ -386,6 +386,7 @@ type FieldRefInputType<Model, FieldType> = Model extends never ? never : FieldRe
 export const ModelName = {
   Market: 'Market',
   User: 'User',
+  processedEvent: 'processedEvent',
   Order: 'Order',
   Fill: 'Fill'
 } as const
@@ -403,7 +404,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "market" | "user" | "order" | "fill"
+    modelProps: "market" | "user" | "processedEvent" | "order" | "fill"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -552,6 +553,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.UserCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.UserCountAggregateOutputType> | number
+        }
+      }
+    }
+    processedEvent: {
+      payload: Prisma.$processedEventPayload<ExtArgs>
+      fields: Prisma.processedEventFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.processedEventFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$processedEventPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.processedEventFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$processedEventPayload>
+        }
+        findFirst: {
+          args: Prisma.processedEventFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$processedEventPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.processedEventFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$processedEventPayload>
+        }
+        findMany: {
+          args: Prisma.processedEventFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$processedEventPayload>[]
+        }
+        create: {
+          args: Prisma.processedEventCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$processedEventPayload>
+        }
+        createMany: {
+          args: Prisma.processedEventCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.processedEventCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$processedEventPayload>[]
+        }
+        delete: {
+          args: Prisma.processedEventDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$processedEventPayload>
+        }
+        update: {
+          args: Prisma.processedEventUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$processedEventPayload>
+        }
+        deleteMany: {
+          args: Prisma.processedEventDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.processedEventUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.processedEventUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$processedEventPayload>[]
+        }
+        upsert: {
+          args: Prisma.processedEventUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$processedEventPayload>
+        }
+        aggregate: {
+          args: Prisma.ProcessedEventAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateProcessedEvent>
+        }
+        groupBy: {
+          args: Prisma.processedEventGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ProcessedEventGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.processedEventCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ProcessedEventCountAggregateOutputType> | number
         }
       }
     }
@@ -758,6 +833,13 @@ export const UserScalarFieldEnum = {
 } as const
 
 export type UserScalarFieldEnum = (typeof UserScalarFieldEnum)[keyof typeof UserScalarFieldEnum]
+
+
+export const ProcessedEventScalarFieldEnum = {
+  id: 'id'
+} as const
+
+export type ProcessedEventScalarFieldEnum = (typeof ProcessedEventScalarFieldEnum)[keyof typeof ProcessedEventScalarFieldEnum]
 
 
 export const OrderScalarFieldEnum = {
@@ -1051,6 +1133,7 @@ export type PrismaClientOptions = ({
 export type GlobalOmitConfig = {
   market?: Prisma.MarketOmit
   user?: Prisma.UserOmit
+  processedEvent?: Prisma.processedEventOmit
   order?: Prisma.OrderOmit
   fill?: Prisma.FillOmit
 }

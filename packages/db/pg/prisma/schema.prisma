@@ -63,8 +63,12 @@ model User {
   
 }
 
+
+model processedEvent {
+  id String @id 
+}
+
 model Order {
-  idempotencyKey String 
   id String @id @default(uuid())
   userId String 
   side ORDER_SIDE

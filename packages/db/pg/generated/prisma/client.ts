@@ -52,6 +52,11 @@ export type Market = Prisma.MarketModel
  */
 export type User = Prisma.UserModel
 /**
+ * Model processedEvent
+ * 
+ */
+export type processedEvent = Prisma.processedEventModel
+/**
  * Model Order
  * 
  */

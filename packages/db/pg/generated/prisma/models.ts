@@ -10,6 +10,7 @@
  */
 export type * from './models/Market'
 export type * from './models/User'
+export type * from './models/processedEvent'
 export type * from './models/Order'
 export type * from './models/Fill'
 export type * from './commonInputTypes'

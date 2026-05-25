@@ -48,7 +48,7 @@ class EventPublisher implements Snapshotable<EVENT_PUBLISHER_SNAPSHOT> {
           this.redisClient.xAdd(stream, "*", {
             data: JSON.stringify({
               idempotencyNumber,
-              payload: event.payload,
+              event,
             }),
           }),
         ),
@@ -62,7 +62,7 @@ class EventPublisher implements Snapshotable<EVENT_PUBLISHER_SNAPSHOT> {
       await this.redisClient.xAdd(process.env.DB_POLLER_REDIS_STREAM!, "*", {
         data: JSON.stringify({
           idempotencyNumber,
-          payload: event.payload,
+          event,
         }),
       });
     }

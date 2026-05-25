@@ -4,9 +4,10 @@ import { SIGNIN_SCHEMA, SIGNUP_SCHEMA } from "../validations/auth.js";
 import { prisma } from "@repo/db";
 import jwt from "jsonwebtoken";
 
-const router = Router();
+const router: Router = Router();
 router.post("/signup", zodBodyVerification(SIGNUP_SCHEMA), async (req, res) => {
   //
+  console.log(req.body);
   try {
     const { username, password } = req.body;
     const findUser = await prisma.user.findUnique({

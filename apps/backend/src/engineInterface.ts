@@ -1,7 +1,7 @@
 import "dotenv/config";
 import WebSocket from "ws";
 import { redisClient as redisClientGlobal } from "@repo/db";
-import type { RedisClientType } from "redis";
+import type { RedisClientType } from "@repo/db";
 import { EngineRequest, EngineResponse, EngineEvent } from "@repo/shared-types";
 
 import { sendMessageOnWebSocket } from "./ws/utils/messaging.js";

@@ -1,6 +1,6 @@
 import "dotenv/config";
 import { assert } from "node:console";
-import type { RedisClientType } from "@redis/client";
+import type { RedisClientType } from "@repo/db";
 
 class MarkPriceObserver {
   private BINANCE_SUBSCIRPTION_REQUEST: {

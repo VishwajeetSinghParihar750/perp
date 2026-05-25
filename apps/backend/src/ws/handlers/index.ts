@@ -176,17 +176,16 @@ const handleWebSocketMessage = async (
   request: BackendRequest.BACKEND_REQUEST,
 ) => {
   console.log(request);
-  if (
-    zodBodyVerificationWebSocket(
-      BackendRequest.ENGINE_REQUEST_SCHEMA,
-      request,
-      ws,
-    )
-  ) {
-    if (BackendRequest.isEngineRequset(request)) {
+  if (BackendRequest.isEngineRequset(request))
+    if (
+      zodBodyVerificationWebSocket(
+        BackendRequest.ENGINE_REQUEST_SCHEMA,
+        request,
+        ws,
+      )
+    ) {
       await handleEngineRequest(request, ws);
     }
-  }
 };
 
 export { handleWebSocketMessage, engine as wsEngineInterface };

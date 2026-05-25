@@ -37,6 +37,7 @@ class EventPublisher implements Snapshotable<EVENT_PUBLISHER_SNAPSHOT> {
   }
 
   handleEvent = async (event: EngineEvent.ENGINE_EVENT) => {
+    if (event.payload.type != "markprice.updated") console.log(event);
     let idempotencyNumber = (this.idempotencyNumber[event.payload.type] ??= 0);
     this.idempotencyNumber[event.payload.type]++;
 
@@ -59,12 +60,17 @@ class EventPublisher implements Snapshotable<EVENT_PUBLISHER_SNAPSHOT> {
       event.payload.type == "order.created" ||
       event.payload.type == "fills.created"
     ) {
-      await this.redisClient.xAdd(process.env.DB_POLLER_REDIS_STREAM!, "*", {
-        data: JSON.stringify({
-          idempotencyNumber,
-          event,
-        }),
-      });
+      let res = await this.redisClient.xAdd(
+        process.env.DB_POLLER_REDIS_STREAM!,
+        "*",
+        {
+          data: JSON.stringify({
+            idempotencyNumber,
+            event,
+          }),
+        },
+      );
+      console.log(res);
     }
   };
 

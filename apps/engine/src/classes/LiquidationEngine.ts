@@ -218,7 +218,7 @@ class LiquidationEngine implements Snapshotable<LIQUIDATION_SNAPSHOT> {
       },
     });
 
-    console.log(symbol, newPrice, this.indexPrices[symbol]);
+    // console.log(symbol, newPrice, this.indexPrices[symbol]);
     if (!this.indexPrices[symbol]) this.indexPrices[symbol] = newPrice;
     else {
       this.indexPrices[symbol] = newPrice;

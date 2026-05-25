@@ -15,8 +15,8 @@ datasource db {
 
 
 enum ORDER_SIDE {
-  LONG
-  SHORT
+  BUY
+  SELL
 }
 
 enum MARKET_SYMBOL {
@@ -42,7 +42,7 @@ enum ORDER_STATUS {
 
 model Market {
   id String @id @default(uuid())
-  MARKET_SYMBOL MARKET_SYMBOL @unique
+  symbol MARKET_SYMBOL @unique
 
   //
   orders Order[]
@@ -66,26 +66,26 @@ model User {
 model Order {
   id String @id @default(uuid())
   userId String 
-  ORDER_SIDE ORDER_SIDE
-  MARKET_SYMBOL MARKET_SYMBOL
+  side ORDER_SIDE
+  symbol MARKET_SYMBOL
   margin Decimal @db.Decimal(18,0)
   price Decimal @db.Decimal(18,0)
   filledQuantity Decimal @db.Decimal(18,0)
   quantity Decimal @db.Decimal(18,0)
   status ORDER_STATUS
 
-  ORDER_TYPE ORDER_TYPE
+  type ORDER_TYPE
   marginType MARGIN_TYPE
   //
   user User @relation(fields: [userId],references: [id])
   longFills Fill[] @relation(name : "longOrder")
   shortFills Fill[] @relation(name : "shortOrder")
-  market Market @relation(fields: [MARKET_SYMBOL], references: [MARKET_SYMBOL])
+  market Market @relation(fields: [symbol], references: [symbol])
 }
 
 model Fill {
   id String @id @default(ulid())
-  MARKET_SYMBOL MARKET_SYMBOL
+  symbol MARKET_SYMBOL
   quantity Decimal @db.Decimal(18,0)
   price Decimal @db.Decimal(18,0)
   bidPrice Decimal @db.Decimal(18,0)
@@ -103,6 +103,6 @@ model Fill {
   longOrder Order @relation(name : "longOrder"  ,fields: [longOrderId], references: [id])
   shortOrder Order @relation(name : "shortOrder" ,fields: [shortOrderId], references: [id])
 
-  market Market @relation(fields: [MARKET_SYMBOL], references: [MARKET_SYMBOL])
+  market Market @relation(fields: [symbol], references: [symbol])
 
 }

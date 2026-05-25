@@ -17,7 +17,9 @@
   },
   "dependencies": {
     "@repo/db": "workspace:*",
+    "@repo/shared-types": "workspace:*",
     "dotenv": "^17.4.2",
-    "typescript": "^6.0.3"
+    "typescript": "^6.0.3",
+    "zod": "^4.4.3"
   }
 }

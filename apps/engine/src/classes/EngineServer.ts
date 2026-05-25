@@ -52,7 +52,7 @@ class EngineServer implements Snapshotable<ENGINE_SERVER_SNAPSHOT> {
       { BLOCK: 0, COUNT: 100 },
     );
 
-    console.log(xReadResponse);
+    // console.log(xReadResponse);
     if (xReadResponse) {
       for (let perStreamRespone of xReadResponse) {
         if (perStreamRespone.name == process.env.REDIS_ENGINE_STREAM) {

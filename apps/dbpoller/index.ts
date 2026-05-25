@@ -1,8 +1,11 @@
 import "dotenv/config";
 
-console.log(process.cwd());
-
-import { redisClient as globalRedisClient } from "@repo/db";
+import { redisClient as globalRedisClient, prisma } from "@repo/db";
+import {
+  DB_POLLER_SCHEMA,
+  type FILLS_CREATED_EVENT,
+  type ORDER_CREATED_EVENT,
+} from "./validations.js";
 
 const redisClient = globalRedisClient.duplicate();
 
@@ -34,8 +37,59 @@ const tryCreatingConsumerGroup = async () => {
   }
 };
 
-const handleEvent = async (event: any) => {
-  console.log(event);
+const handleFillsCreated = async (event: FILLS_CREATED_EVENT) => {};
+const handleOrderCreated = async (event: ORDER_CREATED_EVENT) => {
+  const { idempotencyNumber } = event;
+  const {
+    filledQty,
+    margin,
+    marginType,
+    orderId,
+    price,
+    qty,
+    side,
+    status,
+    symbol,
+    type,
+    userId,
+  } = event.event.payload.data;
+
+  //
+  let res = await prisma.order.create({
+    data: {
+      id: orderId,
+      userId,
+      side,
+      symbol,
+      margin,
+      price,
+      filledQuantity: filledQty,
+      quantity: qty,
+      status,
+      type,
+      marginType,
+    },
+  });
+  console.log(res);
+};
+
+const handleEvent = async (passedEvent: any) => {
+  // TODO : WHAT IF ERROR HAPPENS HERE
+
+  const event = DB_POLLER_SCHEMA.parse(passedEvent);
+
+  switch (event.event.payload.type) {
+    case "fills.created":
+      await handleFillsCreated(event as FILLS_CREATED_EVENT);
+      break;
+    case "order.created":
+      await handleOrderCreated(event as ORDER_CREATED_EVENT);
+
+      break;
+
+    default:
+      break;
+  }
 };
 
 const processPendingUnackedEvents = async () => {
@@ -54,6 +108,7 @@ const processPendingUnackedEvents = async () => {
 
     for (const { id, message } of messages) {
       //
+      console.log(message.data);
       const event = JSON.parse(message.data);
       await handleEvent(event);
       await redisClient.xAck(process.env.DB_POLLER_REDIS_STREAM!, "group", id);
@@ -79,13 +134,14 @@ const processNewEvents = async () => {
 
     for (const { id, message } of messages) {
       //
+      console.log(message.data);
       const event = JSON.parse(message.data);
       await handleEvent(event);
 
       await redisClient.xAck(process.env.DB_POLLER_REDIS_STREAM!, "group", id);
     }
 
-    processPendingUnackedEvents();
+    processNewEvents();
   } else throw new Error("xreadGroupRes is falsy even on blocking wtf");
 };
 

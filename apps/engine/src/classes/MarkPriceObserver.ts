@@ -34,6 +34,7 @@ class MarkPriceObserver {
 
   setupPriceSubscriptions() {
     console.log(process.env.PRICE_UPDATES_WEBSOCKET_BACKEND_URL);
+
     let ws = new WebSocket(process.env.PRICE_UPDATES_WEBSOCKET_BACKEND_URL!);
 
     // maybe we will ahve to wait for ws.open using  promises

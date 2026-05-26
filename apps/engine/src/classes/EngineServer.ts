@@ -58,6 +58,8 @@ class EngineServer implements Snapshotable<ENGINE_SERVER_SNAPSHOT> {
         if (perStreamRespone.name == process.env.REDIS_ENGINE_STREAM) {
           for (let { id, message } of perStreamRespone.messages) {
             try {
+              this.eventPublisher.startObservingEvents();
+
               // json parsing
               let request: EngineRequest.ENGINE_REQUEST = JSON.parse(
                 message.data!,
@@ -69,10 +71,27 @@ class EngineServer implements Snapshotable<ENGINE_SERVER_SNAPSHOT> {
               // here switch based on info types
               if (request.type == "markprice_updated") {
                 this.handleEngineInfoRequest(request);
+                this.snapshotManager.onMessageProcessed(id);
+
+                await this.eventPublisher.publishEvents();
+                this.snapshotManager.onFullMessageProcessed(id);
               } else {
                 // here sned to request handler
                 let result = this.handleEngineRequest(request);
+                this.snapshotManager.onMessageProcessed(id);
                 // send back this result
+
+                // TODO : here await pushing to streams
+                // TODO : here await pushing to streams
+                // TODO : here await pushing to streams
+                // TODO : here await pushing to streams
+                // TODO : here await pushing to streams
+                // TODO : here await pushing to streams
+                // TODO : here await pushing to streams
+                // TODO : here await pushing to streams
+                // TODO : here await pushing to streams
+
+                await this.eventPublisher.publishEvents();
                 await redisClient.xAdd(request.stream, "*", {
                   data: JSON.stringify(result),
                 });
@@ -90,13 +109,12 @@ class EngineServer implements Snapshotable<ENGINE_SERVER_SNAPSHOT> {
       }
     }
 
-    this.snapshotManager.setLastRedisMessageId(lastRedisMessageId);
     // then wait again
     this.handleClientRequsts(redisClient, lastRedisMessageId);
   }
 
   async initialize() {
-    let lastRedisMessageId = this.snapshotManager.initialize(this);
+    let lastRedisMessageId = this.snapshotManager.initialize();
 
     await this.eventPublisher.initialize();
     await this.markpPriceObserver.initialize();
@@ -108,7 +126,7 @@ class EngineServer implements Snapshotable<ENGINE_SERVER_SNAPSHOT> {
 
   constructor() {
     this.eventBus = new EventBus();
-    this.snapshotManager = new SnapshotManager();
+    this.snapshotManager = new SnapshotManager(this);
     this.redisClient = redisClient.duplicate();
     this.exchange = new Exchange(this.eventBus);
     this.eventPublisher = new EventPublisher(

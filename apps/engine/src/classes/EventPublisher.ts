@@ -18,6 +18,8 @@ class EventPublisher implements Snapshotable<EVENT_PUBLISHER_SNAPSHOT> {
     {};
   globalIdempotencyNumber: number = 0;
 
+  eventsBuffer: EngineEvent.ENGINE_EVENT[] = []; // this is not needed in snaposhot coz
+
   eventBus: EventBus;
 
   getSnapshot(): EVENT_PUBLISHER_SNAPSHOT {
@@ -43,45 +45,58 @@ class EventPublisher implements Snapshotable<EVENT_PUBLISHER_SNAPSHOT> {
     });
   }
 
+  startObservingEvents = () => {
+    this.eventsBuffer = [];
+  };
+  publishEvents = async () => {
+    // if (event.payload.type != "markprice.updated") console.log(event);
+    await Promise.all(
+      this.eventsBuffer.map(async (event) => {
+        let idempotencyNumber = (this.idempotencyNumber[event.payload.type] ??=
+          0);
+        let globalIdemNumber = this.globalIdempotencyNumber;
+
+        this.idempotencyNumber[event.payload.type]++;
+        this.globalIdempotencyNumber++;
+
+        // send to all backends who are subbed
+        let streams = this.subscriptions.get(event.payload.type);
+        if (streams)
+          await Promise.all(
+            [...streams].map((stream) =>
+              this.redisClient.xAdd(stream, "*", {
+                data: JSON.stringify({
+                  idempotencyNumber,
+                  event,
+                }),
+              }),
+            ),
+          );
+
+        // send to db poller main stream
+        if (
+          event.payload.type == "order.created" ||
+          event.payload.type == "fills.created"
+        ) {
+          let res = await this.redisClient.xAdd(
+            process.env.DB_POLLER_REDIS_STREAM!,
+            "*",
+            {
+              data: JSON.stringify({
+                idempotencyNumber: globalIdemNumber,
+                event,
+              }),
+            },
+          );
+          console.log(res);
+        }
+      }),
+    );
+    this.eventsBuffer = [];
+  };
+
   handleEvent = async (event: EngineEvent.ENGINE_EVENT) => {
-    if (event.payload.type != "markprice.updated") console.log(event);
-    let idempotencyNumber = (this.idempotencyNumber[event.payload.type] ??= 0);
-    let globalIdemNumber = this.globalIdempotencyNumber;
-
-    this.idempotencyNumber[event.payload.type]++;
-    this.globalIdempotencyNumber++;
-
-    // send to all backends who are subbed
-    let streams = this.subscriptions.get(event.payload.type);
-    if (streams)
-      await Promise.all(
-        [...streams].map((stream) =>
-          this.redisClient.xAdd(stream, "*", {
-            data: JSON.stringify({
-              idempotencyNumber,
-              event,
-            }),
-          }),
-        ),
-      );
-
-    // send to db poller main stream
-    if (
-      event.payload.type == "order.created" ||
-      event.payload.type == "fills.created"
-    ) {
-      let res = await this.redisClient.xAdd(
-        process.env.DB_POLLER_REDIS_STREAM!,
-        "*",
-        {
-          data: JSON.stringify({
-            idempotencyNumber: globalIdemNumber,
-            event,
-          }),
-        },
-      );
-      console.log(res);
-    }
+    this.eventsBuffer.push(event);
   };
 
   async initialize() {

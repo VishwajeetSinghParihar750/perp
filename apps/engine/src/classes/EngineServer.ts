@@ -78,29 +78,25 @@ class EngineServer implements Snapshotable<ENGINE_SERVER_SNAPSHOT> {
               } else {
                 // here sned to request handler
                 let result = this.handleEngineRequest(request);
+
+                // this message processed
                 this.snapshotManager.onMessageProcessed(id);
-                // send back this result
 
-                // TODO : here await pushing to streams
-                // TODO : here await pushing to streams
-                // TODO : here await pushing to streams
-                // TODO : here await pushing to streams
-                // TODO : here await pushing to streams
-                // TODO : here await pushing to streams
-                // TODO : here await pushing to streams
-                // TODO : here await pushing to streams
-                // TODO : here await pushing to streams
-
+                //
                 await this.eventPublisher.publishEvents();
                 await redisClient.xAdd(request.stream, "*", {
                   data: JSON.stringify(result),
                 });
+
+                this.snapshotManager.onFullMessageProcessed(id);
               }
             } catch (error) {
               console.log(
                 "error happened in parsin request, so ignoring requset handling ",
                 message.data,
               );
+
+              // TODO : if error happends you should replay state snapshot + events
             }
 
             lastRedisMessageId = id;

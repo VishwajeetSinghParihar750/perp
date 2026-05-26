@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { zodBodyVerification } from "../middlewares/zodBodyVerification.js";
 import { SIGNIN_SCHEMA, SIGNUP_SCHEMA } from "../validations/auth.js";
-import { prisma } from "@repo/db";
+import { prismaClient } from "@repo/db";
 import jwt from "jsonwebtoken";
 
 const router: Router = Router();
@@ -10,14 +10,16 @@ router.post("/signup", zodBodyVerification(SIGNUP_SCHEMA), async (req, res) => {
   console.log(req.body);
   try {
     const { username, password } = req.body;
-    const findUser = await prisma.user.findUnique({
+    const findUser = await prismaClient.user.findUnique({
       where: { username },
     });
     if (findUser) {
       res.status(403).json({ error: true, payload: "username already exists" });
       return;
     }
-    const user = await prisma.user.create({ data: { username, password } });
+    const user = await prismaClient.user.create({
+      data: { username, password },
+    });
 
     res.status(201).json({ error: false, payload: user.id });
   } catch (e) {
@@ -30,7 +32,7 @@ router.post("/signin", zodBodyVerification(SIGNIN_SCHEMA), async (req, res) => {
   try {
     const { username, password } = req.body;
 
-    const user = await prisma.user.findUnique({
+    const user = await prismaClient.user.findUnique({
       where: { username },
     });
     if (!user || user.password != password) {

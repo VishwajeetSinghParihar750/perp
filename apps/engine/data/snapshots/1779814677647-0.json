@@ -1,0 +1,42 @@
+{
+  "snapshot": {
+    "eventPublisher": {
+      "idempotencyNumber": {
+        "markprice.updated": 69
+      },
+      "globalIdempotencyNumber": 69,
+      "subscriptions": {}
+    },
+    "exchange": {
+      "balance": {
+        "exchangeBalance": 100000000,
+        "perSymbolBalances": {},
+        "lockedAccounts": {}
+      },
+      "orderbook": {
+        "depthUpdateOffset": {
+          "USD": 0,
+          "SOLUSD": 0,
+          "ETHUSD": 0,
+          "BTCUSD": 0
+        },
+        "orders": {}
+      },
+      "position": {
+        "isolatedPositions": {}
+      },
+      "liquidation": {
+        "indexPrices": {
+          "ETHUSD": 2076.70076468,
+          "BTCUSD": 76399.51944525,
+          "SOLUSD": 84.06960073
+        },
+        "liquidationPrice": {},
+        "positions": {},
+        "positionsBeingLiquidated": []
+      }
+    }
+  },
+  "lastRedisStreamMessageId": "1779814677647-0",
+  "lastFullyProcessedRedisStreamMessageId": "1779814674428-0"
+}

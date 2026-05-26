@@ -1,4 +1,4 @@
-import z, { maxSize, symbol } from "zod";
+import z from "zod";
 
 const SIDE_SCHEMA = z.union([z.literal("BUY"), z.literal("SELL")]);
 type SIDE = z.infer<typeof SIDE_SCHEMA>;

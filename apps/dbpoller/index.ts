@@ -1,6 +1,10 @@
 import "dotenv/config";
 
-import { redisClient as globalRedisClient, prisma } from "@repo/db";
+import {
+  redisClient as globalRedisClient,
+  prismaClient,
+  Prisma,
+} from "@repo/db";
 import {
   DB_POLLER_SCHEMA,
   type FILLS_CREATED_EVENT,
@@ -15,6 +19,21 @@ const setupRedis = async () => {
   });
 
   await redisClient.connect();
+};
+const tryCreatingMarkets = async () => {
+  await Promise.all(
+    ["BTCUSD", "SOLUSD", "ETHUSD"].map(async (cur) => {
+      try {
+        await prismaClient.market.create({ data: { symbol: cur as any } });
+      } catch (e) {
+        if (e instanceof Prisma.PrismaClientKnownRequestError) {
+          if (e.code == "P2002") {
+            console.log("market already exist in schema");
+          } else throw e;
+        }
+      }
+    }),
+  );
 };
 
 const tryCreatingConsumerGroup = async () => {
@@ -54,7 +73,7 @@ const handleOrderCreated = async (event: ORDER_CREATED_EVENT) => {
     userId,
   } = event.event.payload.data;
 
-  await prisma.$transaction(async (tx) => {
+  await prismaClient.$transaction(async (tx) => {
     let exists = await tx.processedEvent.findFirst({
       where: { id: String(idempotencyNumber) },
     });
@@ -166,6 +185,7 @@ const processEvents = async () => {
 const startDbPoller = async () => {
   await setupRedis();
   await tryCreatingConsumerGroup();
+  await tryCreatingMarkets();
   processEvents();
 };
 

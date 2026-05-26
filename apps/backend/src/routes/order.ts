@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { BackendRequest } from "@repo/shared-types";
 import { zodBodyVerification } from "../middlewares/zodBodyVerification.js";
-import { prisma } from "@repo/db";
+import { prismaClient } from "@repo/db";
 
 const router = Router();
 
@@ -13,7 +13,7 @@ router.get(
 
     try {
       const { orderId } = req.body as BackendRequest.GET_ORDER_REQUEST;
-      let order = await prisma.order.findOne({
+      let order = await prismaClient.order.findOne({
         where: {
           id: orderId,
         },

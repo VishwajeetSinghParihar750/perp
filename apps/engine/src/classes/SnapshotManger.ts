@@ -77,11 +77,12 @@ class SnapshotManager {
 
   onMessageProcessed = (messageId: string) => {
     if (messageId <= this.lastFullyProcessedRedisStreamMessageId) return; // this will happen during replay
+    this.lastRedisStreamMessageId = messageId;
 
     this.snapshotCounter++;
 
     // save every 100 fully processes redis messages
-    if (this.snapshotCounter == 5) {
+    if (this.snapshotCounter == 100) {
       this.snapshotCounter = 0;
       // make snapshot
 

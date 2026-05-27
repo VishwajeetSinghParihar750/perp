@@ -57,12 +57,12 @@ const tryCreatingConsumerGroup = async () => {
 };
 
 const handleFillsCreated = async (event: FILLS_CREATED_EVENT) => {
-  const { idempotencyNumber } = event;
+  const { idempotencyKey } = event;
 
   await prismaClient.$transaction(async (tx) => {
-    await tx.processedEvent.create({ data: { id: String(idempotencyNumber) } });
+    await tx.processedEvent.create({ data: { id: idempotencyKey } });
 
-    for (let fill of event.event.payload.data) {
+    for (let fill of event.payload.data.fills) {
       const {
         bidPrice,
         buyOrderInfo,
@@ -107,7 +107,7 @@ const handleFillsCreated = async (event: FILLS_CREATED_EVENT) => {
 };
 
 const handleOrderCreated = async (event: ORDER_CREATED_EVENT) => {
-  const { idempotencyNumber } = event;
+  const { idempotencyKey } = event;
   const {
     filledQty,
     margin,
@@ -120,17 +120,17 @@ const handleOrderCreated = async (event: ORDER_CREATED_EVENT) => {
     symbol,
     type,
     userId,
-  } = event.event.payload.data;
+  } = event.payload.data;
 
   await prismaClient.$transaction(async (tx) => {
     let exists = await tx.processedEvent.findFirst({
-      where: { id: String(idempotencyNumber) },
+      where: { id: idempotencyKey },
     });
 
     if (exists) return;
 
     await tx.processedEvent.create({
-      data: { id: String(idempotencyNumber) },
+      data: { id: idempotencyKey },
     });
 
     await tx.order.create({
@@ -156,7 +156,7 @@ const handleEvent = async (passedEvent: any) => {
 
   const event = DB_POLLER_SCHEMA.parse(passedEvent);
 
-  switch (event.event.payload.type) {
+  switch (event.payload.type) {
     case "fills.created":
       await handleFillsCreated(event as FILLS_CREATED_EVENT);
       break;

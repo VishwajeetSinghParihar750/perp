@@ -149,13 +149,10 @@ class LiquidationEngine implements Snapshotable<LIQUIDATION_SNAPSHOT> {
 
     // lock the positoin for this symbol for this user
     this.eventBus.emit({
-      type: "event",
-      payload: {
-        type: "liquidation.started",
-        data: {
-          userId: position.userId,
-          symbol: position.symbol,
-        },
+      type: "liquidation.started",
+      data: {
+        userId: position.userId,
+        symbol: position.symbol,
       },
     });
 
@@ -209,13 +206,10 @@ class LiquidationEngine implements Snapshotable<LIQUIDATION_SNAPSHOT> {
 
     // emit event
     this.eventBus.emit({
-      type: "event",
-      payload: {
-        type: "markprice.updated",
-        data: {
-          price: newPrice,
-          symbol,
-        },
+      type: "markprice.updated",
+      data: {
+        price: newPrice,
+        symbol,
       },
     });
 
@@ -280,13 +274,10 @@ class LiquidationEngine implements Snapshotable<LIQUIDATION_SNAPSHOT> {
       this.positionsBeingLiquidated.delete(position.positionId);
 
       this.eventBus.emit({
-        type: "event",
-        payload: {
-          type: "liquidation.completed",
-          data: {
-            symbol: position.symbol,
-            userId: position.userId,
-          },
+        type: "liquidation.completed",
+        data: {
+          symbol: position.symbol,
+          userId: position.userId,
         },
       });
     }

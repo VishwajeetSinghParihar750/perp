@@ -1,8 +1,8 @@
 import { EngineEvent } from "@repo/shared-types";
 
 type EVENT_FROM_TYPE<T extends EngineEvent.ENGINE_EVENT_TYPE> = Extract<
-  EngineEvent.ENGINE_EVENT,
-  { payload: { type: T } }
+  EngineEvent.ENGINE_EVENT_PAYLOAD,
+  { type: T }
 >;
 
 type EVENT_CALLBACK_FUNCTION<T extends EngineEvent.ENGINE_EVENT_TYPE> = (
@@ -14,12 +14,12 @@ class EventBus {
     [K in EngineEvent.ENGINE_EVENT_TYPE]?: EVENT_CALLBACK_FUNCTION<K>[];
   } = {};
 
-  allEventCallbacks: ((event: EngineEvent.ENGINE_EVENT) => void)[] = [];
+  allEventCallbacks: ((event: EngineEvent.ENGINE_EVENT_PAYLOAD) => void)[] = [];
 
   emit = <T extends EngineEvent.ENGINE_EVENT_TYPE>(
     event: EVENT_FROM_TYPE<T>,
   ) => {
-    let callbacks = this.eventCallbacks[event.payload.type] as
+    let callbacks = this.eventCallbacks[event.type] as
       | EVENT_CALLBACK_FUNCTION<T>[]
       | undefined;
 
@@ -35,12 +35,12 @@ class EventBus {
 
   on(
     eventType: "ALL_EVENTS",
-    cb: (event: EngineEvent.ENGINE_EVENT) => void,
+    cb: (event: EngineEvent.ENGINE_EVENT_PAYLOAD) => void,
   ): void;
 
   on(
     eventType: EngineEvent.ENGINE_EVENT_TYPE | "ALL_EVENTS",
-    cb: (event: EngineEvent.ENGINE_EVENT) => void,
+    cb: (event: EngineEvent.ENGINE_EVENT_PAYLOAD) => void,
   ) {
     if (eventType == "ALL_EVENTS") {
       this.allEventCallbacks.push(cb);

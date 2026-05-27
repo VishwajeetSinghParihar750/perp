@@ -561,7 +561,7 @@ export default class OrderBook implements Snapshotable<ORDERBOOK_SNAPSHOT> {
     };
   };
 
-  private emitEvent(event: EngineEvent.ENGINE_EVENT) {
+  private emitEvent(event: EngineEvent.ENGINE_EVENT_PAYLOAD) {
     this.eventBus.emit(event);
   }
 
@@ -606,11 +606,8 @@ export default class OrderBook implements Snapshotable<ORDERBOOK_SNAPSHOT> {
 
     // emit  order created event
     this.emitEvent({
-      type: "event",
-      payload: {
-        type: "order.created",
-        data: currentOrder,
-      },
+      type: "order.created",
+      data: currentOrder,
     });
 
     // create orderbook if not alreaddy
@@ -626,11 +623,8 @@ export default class OrderBook implements Snapshotable<ORDERBOOK_SNAPSHOT> {
 
     // emit fills created event
     this.emitEvent({
-      type: "event",
-      payload: {
-        type: "fills.created",
-        data: toReturn.fills,
-      },
+      type: "fills.created",
+      data: { fills: toReturn.fills },
     });
 
     return toReturn;

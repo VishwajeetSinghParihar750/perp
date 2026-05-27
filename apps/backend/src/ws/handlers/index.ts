@@ -153,15 +153,18 @@ async function handleEngineRequest(
       else if (req.type == "get_position")
         await handleGetPositionsRequest(req, ws);
       else {
-        let res = await engine.getEngineResponseForRequest({
-          ...req,
-          stream: process.env.REDIS_ENGINE_RECEIVE_STREAM_NAME!,
-        });
+        let res = await engine.getEngineResponseForRequest(
+          {
+            ...req,
+            stream: process.env.REDIS_ENGINE_RECEIVE_STREAM_NAME!,
+          },
+          ws,
+        );
 
         sendMessageOnWebSocket(ws, res);
       }
     } catch (error) {
-      console.log(error);
+      // console.log(error);
       sendMessageOnWebSocket(ws, {
         type: "error",
         payload: "INTERNAL_SERVER_ERROR",

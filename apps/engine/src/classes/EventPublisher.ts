@@ -6,26 +6,25 @@ import type { Snapshotable } from "./SnapshotManger.js";
 
 type EVENT_PUBLISHER_SNAPSHOT = {
   subscriptions: Record<EngineEvent.ENGINE_EVENT_TYPE, string[]>;
-  idempotencyNumber: Partial<Record<EngineEvent.ENGINE_EVENT_TYPE, number>>;
-  globalIdempotencyNumber: number;
+  idempotencyKey: Partial<Record<EngineEvent.ENGINE_EVENT_TYPE, number>>;
+  globalidempotencyKey: number;
 };
 
 class EventPublisher implements Snapshotable<EVENT_PUBLISHER_SNAPSHOT> {
   subscriptions: Map<EngineEvent.ENGINE_EVENT_TYPE, Set<string>> = new Map(); // string represents stream name that is subscribed to that event
   redisClient: RedisClientType;
 
-  idempotencyNumber: Partial<Record<EngineEvent.ENGINE_EVENT_TYPE, number>> =
-    {};
-  globalIdempotencyNumber: number = 0;
+  idempotencyKey: Partial<Record<EngineEvent.ENGINE_EVENT_TYPE, number>> = {};
+  globalidempotencyKey: number = 0;
 
-  eventsBuffer: EngineEvent.ENGINE_EVENT[] = []; // this is not needed in snaposhot coz
+  eventsBuffer: EngineEvent.ENGINE_EVENT_PAYLOAD[] = []; // this is not needed in snaposhot coz
 
   eventBus: EventBus;
 
   getSnapshot(): EVENT_PUBLISHER_SNAPSHOT {
     return {
-      idempotencyNumber: this.idempotencyNumber,
-      globalIdempotencyNumber: this.globalIdempotencyNumber,
+      idempotencyKey: this.idempotencyKey,
+      globalidempotencyKey: this.globalidempotencyKey,
       subscriptions: this.subscriptions.keys().reduce((obj, curKey) => {
         obj[curKey] = [...this.subscriptions.get(curKey)!];
         return obj;
@@ -34,8 +33,8 @@ class EventPublisher implements Snapshotable<EVENT_PUBLISHER_SNAPSHOT> {
   }
 
   loadSnapshot(data: EVENT_PUBLISHER_SNAPSHOT) {
-    this.idempotencyNumber = data.idempotencyNumber;
-    this.globalIdempotencyNumber = data.globalIdempotencyNumber;
+    this.idempotencyKey = data.idempotencyKey;
+    this.globalidempotencyKey = data.globalidempotencyKey;
     this.subscriptions = new Map();
     Object.entries(data.subscriptions).forEach(([key, sub]) => {
       this.subscriptions.set(
@@ -50,52 +49,48 @@ class EventPublisher implements Snapshotable<EVENT_PUBLISHER_SNAPSHOT> {
   };
   publishEvents = async () => {
     // if (event.payload.type != "markprice.updated") console.log(event);
-    await Promise.all(
-      this.eventsBuffer.map(async (event) => {
-        let idempotencyNumber = (this.idempotencyNumber[event.payload.type] ??=
-          0);
-        let globalIdemNumber = this.globalIdempotencyNumber;
+    for (let event of this.eventsBuffer) {
+      let perEventIdemNumber = (this.idempotencyKey[event.type] ??= 0);
+      let globalIdemNumber = this.globalidempotencyKey;
 
-        this.idempotencyNumber[event.payload.type]++;
-        this.globalIdempotencyNumber++;
+      this.idempotencyKey[event.type]++;
+      this.globalidempotencyKey++;
 
-        // send to all backends who are subbed
-        let streams = this.subscriptions.get(event.payload.type);
-        if (streams)
-          await Promise.all(
-            [...streams].map((stream) =>
-              this.redisClient.xAdd(stream, "*", {
-                data: JSON.stringify({
-                  idempotencyNumber,
-                  event,
-                }),
-              }),
-            ),
-          );
-
-        // send to db poller main stream
-        if (
-          event.payload.type == "order.created" ||
-          event.payload.type == "fills.created"
-        ) {
-          let res = await this.redisClient.xAdd(
-            process.env.DB_POLLER_REDIS_STREAM!,
-            "*",
-            {
+      // send to all backends who are subbed
+      let streams = this.subscriptions.get(event.type);
+      if (streams)
+        await Promise.all(
+          [...streams].map((stream) =>
+            this.redisClient.xAdd(stream, "*", {
               data: JSON.stringify({
-                idempotencyNumber: globalIdemNumber,
-                event,
+                idempotencyKey: String(perEventIdemNumber),
+                type: "event",
+                payload: event,
               }),
-            },
-          );
-          console.log(res);
-        }
-      }),
-    );
+            }),
+          ),
+        );
+
+      // send to db poller main stream
+      if (event.type == "order.created" || event.type == "fills.created") {
+        let res = await this.redisClient.xAdd(
+          process.env.DB_POLLER_REDIS_STREAM!,
+          "*",
+          {
+            data: JSON.stringify({
+              idempotencyKey: String(globalIdemNumber),
+              type: "event",
+              payload: event,
+            }),
+          },
+        );
+        console.log(res);
+      }
+    }
     this.eventsBuffer = [];
   };
 
-  handleEvent = async (event: EngineEvent.ENGINE_EVENT) => {
+  handleEvent = async (event: EngineEvent.ENGINE_EVENT_PAYLOAD) => {
     this.eventsBuffer.push(event);
   };
 

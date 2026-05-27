@@ -15,6 +15,9 @@ import LiquidationEngine, {
   type LiquidationOrderInfo,
 } from "./LiquidationEngine.js";
 import type { Snapshotable } from "./SnapshotManger.js";
+import MarkPriceObserver from "./IndexPriceObserver.js";
+import { symbol } from "zod";
+import { partial } from "zod/mini";
 
 type EXCHANGE_SNAPSHOT = {
   balance: BALANCE_SNAPSHOT;
@@ -197,7 +200,33 @@ export default class Exchange implements Snapshotable<EXCHANGE_SNAPSHOT> {
     newPrice: number;
     symbol: TRADABLE_CURRENCY_SYMBOL;
   }) {
-    this.liquidationEngine.handleMarkPriceUpdate({ symbol, newPrice });
+    this.liquidationEngine.handleIndexPriceUpdate({ symbol, newPrice });
+  }
+
+  handleFunding() {
+    let indexPrices = this.liquidationEngine.indexPrices;
+    let markPrices = this.orderBook.markPrices;
+
+    let fundingRates = Object.entries(markPrices).reduce(
+      (toRet, [symbol, markprice]) => {
+        let typedSymbol = symbol as TRADABLE_CURRENCY_SYMBOL;
+        if (indexPrices[typedSymbol]) {
+          let premium =
+            (markprice - indexPrices[typedSymbol]) / indexPrices[typedSymbol];
+          let interestRate = 20;
+          let fundingRate =
+            premium + Math.min(Math.max(interestRate - premium, -30), 30);
+          toRet[typedSymbol] = fundingRate;
+        }
+        return toRet;
+      },
+      {} as Partial<Record<TRADABLE_CURRENCY_SYMBOL, number>>,
+    );
+
+    let { positionUpdates, usersPnl } =
+      this.positionManager.applyFunding(fundingRates);
+    this.balances.applyUsersPnl(usersPnl);
+    this.liquidationEngine.applyPositionUpdates(positionUpdates);
   }
 }
 

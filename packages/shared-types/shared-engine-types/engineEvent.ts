@@ -41,7 +41,7 @@ const ORDERBOOK_EVENT_TYPE = z.union([
 ]);
 
 const LIQUIDATION_EVENT_TYPE = z.union([
-  z.literal("markprice.updated"),
+  z.literal("indexprice.updated"),
   z.literal("liquidation.started"),
   z.literal("liquidation.completed"),
 ]);
@@ -93,7 +93,7 @@ const LIQUIDATION_COMPLETED_PAYLOAD_SCHEMA = z.object({
 });
 
 const MARKPRICE_UPDATED_PAYLOAD_SCHEMA = z.object({
-  type: z.literal("markprice.updated"),
+  type: z.literal("indexprice.updated"),
   data: z.object({
     price: z.number(),
     symbol: TRADBLE_SYMBOL_SCHEMA,

@@ -45,7 +45,7 @@ class LiquidationEngine implements Snapshotable<LIQUIDATION_SNAPSHOT> {
     Map<CURRENCY_SYMBOL, POSITION>
   > = new Map();
 
-  private indexPrices: Partial<Record<CURRENCY_SYMBOL, number>> = {};
+  private _indexPrices: Partial<Record<CURRENCY_SYMBOL, number>> = {};
 
   private positions: Record<string, POSITION> = {}; // positions in positions being liqudated are ref of this
   private liquidationPrice: Record<string, number> = {}; // position id mapped to price
@@ -71,7 +71,7 @@ class LiquidationEngine implements Snapshotable<LIQUIDATION_SNAPSHOT> {
 
   getSnapshot(): LIQUIDATION_SNAPSHOT {
     return {
-      indexPrices: this.indexPrices,
+      indexPrices: this._indexPrices,
       liquidationPrice: this.liquidationPrice,
       positions: this.positions,
       positionsBeingLiquidated: this.positionsBeingLiquidated
@@ -85,7 +85,7 @@ class LiquidationEngine implements Snapshotable<LIQUIDATION_SNAPSHOT> {
     };
   }
   loadSnapshot(data: LIQUIDATION_SNAPSHOT) {
-    this.indexPrices = data.indexPrices;
+    this._indexPrices = data.indexPrices;
     this.liquidationPrice = data.liquidationPrice;
     this.positions = this.positions;
 
@@ -193,7 +193,7 @@ class LiquidationEngine implements Snapshotable<LIQUIDATION_SNAPSHOT> {
     return newPrice;
   }
 
-  handleMarkPriceUpdate({
+  handleIndexPriceUpdate({
     symbol,
     newPrice,
   }: {
@@ -204,9 +204,12 @@ class LiquidationEngine implements Snapshotable<LIQUIDATION_SNAPSHOT> {
     // E is time thing, price is in string
     // maybe let the server run for 2 mins, get mark price updates, then only start serving requests
 
+    // update index price
+    this.indexPrices[symbol] = newPrice;
+
     // emit event
     this.eventBus.emit({
-      type: "markprice.updated",
+      type: "indexprice.updated",
       data: {
         price: newPrice,
         symbol,
@@ -283,6 +286,10 @@ class LiquidationEngine implements Snapshotable<LIQUIDATION_SNAPSHOT> {
     }
 
     // remove from
+  }
+
+  get indexPrices() {
+    return this._indexPrices;
   }
 
   applyPositionUpdates(positionUpdates: POSITION_UPDATES) {

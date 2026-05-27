@@ -43,18 +43,24 @@ type ORDERBOOK_SNAPSHOT = {
   orders: Record<ORDER_ID, ORDER>;
   depthUpdateOffset: Partial<Record<CURRENCY_SYMBOL, number>>;
   ids: { orderId: number; fillId: number };
+  markPrices: Partial<Record<TRADABLE_CURRENCY_SYMBOL, number>>;
 };
 export default class OrderBook implements Snapshotable<ORDERBOOK_SNAPSHOT> {
-  orderBook: ORDERBOOK = {};
-  orders: Record<ORDER_ID, ORDER> = {}; // here keep ref of item in orderbook, to not double memeory
+  private orderBook: ORDERBOOK = {};
+  private orders: Record<ORDER_ID, ORDER> = {}; // here keep ref of item in orderbook, to not double memeory
 
-  ids = {
+  private ids = {
     orderId: 0,
     fillId: 0,
   };
 
-  eventBus: EventBus;
-  depthUpdateOffset: Map<CURRENCY_SYMBOL, number>;
+  private eventBus: EventBus;
+  private depthUpdateOffset: Map<CURRENCY_SYMBOL, number>;
+
+  private _markPrices: Partial<Record<TRADABLE_CURRENCY_SYMBOL, number>> = {};
+  get markPrices() {
+    return this._markPrices;
+  }
 
   getOrderbookSnapshot(symbol: CURRENCY_SYMBOL): ORDERBOOK_SYMBOL_SNAPSHOT {
     let toReturn: ORDERBOOK_SYMBOL_SNAPSHOT = {
@@ -88,10 +94,12 @@ export default class OrderBook implements Snapshotable<ORDERBOOK_SNAPSHOT> {
       }, {} as any),
       orders: this.orders,
       ids: this.ids,
+      markPrices: this._markPrices,
     };
   }
   loadSnapshot(data: ORDERBOOK_SNAPSHOT) {
     this.orders = data.orders;
+    this._markPrices = data.markPrices;
     this.ids = data.ids;
 
     Object.keys(data.depthUpdateOffset).forEach((key) => {
@@ -632,6 +640,12 @@ export default class OrderBook implements Snapshotable<ORDERBOOK_SNAPSHOT> {
       type: "fills.created",
       data: { fills: toReturn.fills },
     });
+
+    // update mark prices
+    if (toReturn.fills.length > 0) {
+      let lastFill = toReturn.fills[toReturn.fills.length - 1]!;
+      this.markPrices[lastFill.symbol] = lastFill.price;
+    }
 
     return toReturn;
   };

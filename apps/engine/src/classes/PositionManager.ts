@@ -221,6 +221,39 @@ class PositionManager implements Snapshotable<POSITION_SNAPSHOT> {
 
     return { pnlUpdates, positionUpdates };
   }
+
+  // get funding rate per symbol in params
+  applyFunding(
+    fundingRate: Partial<Record<TRADABLE_CURRENCY_SYMBOL, number>>,
+  ): { usersPnl: Record<string, number>; positionUpdates: POSITION_UPDATES } {
+    let usersPnl: Record<string, number> = {};
+    let positionUpdates: POSITION_UPDATES = {};
+
+    Object.entries(this.isolatedPositions).forEach(
+      ([userId, perSymbolPositions]) => {
+        Object.entries(perSymbolPositions).forEach(([symbol, position]) => {
+          let curFundingRate = fundingRate[symbol as TRADABLE_CURRENCY_SYMBOL];
+          if (curFundingRate) {
+            let toUpdateMargin = Math.abs(
+              position.price * position.qty * curFundingRate,
+            );
+
+            if (curFundingRate > 0 == (position.type == "LONG")) {
+              // you pay
+              position.margin -= toUpdateMargin;
+              positionUpdates[userId] ??= {};
+              positionUpdates[userId][position.symbol] = position;
+            } else {
+              // you get
+              usersPnl[userId] ??= 0;
+              usersPnl[userId] += toUpdateMargin;
+            }
+          }
+        });
+      },
+    );
+    return { usersPnl, positionUpdates };
+  }
 }
 
 export default PositionManager;

@@ -48,7 +48,6 @@ class EventPublisher implements Snapshotable<EVENT_PUBLISHER_SNAPSHOT> {
     this.eventsBuffer = [];
   };
   publishEvents = async () => {
-    // if (event.payload.type != "markprice.updated") console.log(event);
     for (let event of this.eventsBuffer) {
       let perEventIdemNumber = (this.idempotencyKey[event.type] ??= 0);
       let globalIdemNumber = this.globalidempotencyKey;

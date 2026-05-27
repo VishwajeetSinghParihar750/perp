@@ -7,7 +7,7 @@ import { EngineRequest, EngineResponse } from "@repo/shared-types";
 import EventPublisher, {
   type EVENT_PUBLISHER_SNAPSHOT,
 } from "./EventPublisher.js";
-import MarkPriceObserver from "./MarkPriceObserver.js";
+import MarkPriceObserver from "./IndexPriceObserver.js";
 import SnapshotManager, { type Snapshotable } from "./SnapshotManger.js";
 import type { FILLS_INFO } from "../types/order.js";
 

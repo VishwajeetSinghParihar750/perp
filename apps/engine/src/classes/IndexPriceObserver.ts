@@ -2,7 +2,7 @@ import "dotenv/config";
 import { assert } from "node:console";
 import type { RedisClientType } from "@repo/db";
 
-class MarkPriceObserver {
+class IndexPriceObserver {
   private BINANCE_SUBSCIRPTION_REQUEST: {
     method: "SUBSCRIBE";
     params: string[];
@@ -79,4 +79,4 @@ class MarkPriceObserver {
     };
   }
 }
-export default MarkPriceObserver;
+export default IndexPriceObserver;

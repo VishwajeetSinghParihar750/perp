@@ -1,5 +1,9 @@
 import OrderBook, { type ORDERBOOK_SNAPSHOT } from "./OrderBook.js";
-import type { FILLS_INFO, TRADABLE_CURRENCY_SYMBOL } from "../types/order.js";
+import type {
+  FILLS_INFO,
+  ORDER,
+  TRADABLE_CURRENCY_SYMBOL,
+} from "../types/order.js";
 import Balances, { type BALANCE_SNAPSHOT } from "./Balances.js";
 import type {
   CURRENCY_SYMBOL,
@@ -15,6 +19,7 @@ import LiquidationEngine, {
   type LiquidationOrderInfo,
 } from "./LiquidationEngine.js";
 import type { Snapshotable } from "./SnapshotManger.js";
+import type { POSITION } from "../types/positions.js";
 
 type EXCHANGE_SNAPSHOT = {
   balance: BALANCE_SNAPSHOT;
@@ -50,7 +55,7 @@ export default class Exchange implements Snapshotable<EXCHANGE_SNAPSHOT> {
     this.balances = new Balances(eventBus);
     this.orderBook = new OrderBook(eventBus);
     this.positionManager = new PositionManager();
-    this.liquidationEngine = new LiquidationEngine(eventBus, this.createOrder);
+    this.liquidationEngine = new LiquidationEngine(eventBus);
   }
 
   createOrder = (
@@ -73,44 +78,42 @@ export default class Exchange implements Snapshotable<EXCHANGE_SNAPSHOT> {
         orderId: ORDER_ID;
         fills: FILLS_INFO;
       } => {
-    if (!liquidation) {
-      // check if account locked
-      if (this.balances.isAccountLocked(userId, symbol)) {
-        return { status: "REJECTED" };
-      }
-
-      // get initial balance
-      let initialUSDBalance = this.balances.getBalance(userId, "USD") as number;
-
-      // check if have claimed margin
-      if (margin > initialUSDBalance) {
-        return { status: "REJECTED" };
-      }
-
-      // check and reduce balance for margin
-      let marginNeeded = this.liquidationEngine.getMarginRequired({
-        qty,
-        side,
-        symbol,
-        type,
-        price,
-      });
-      if (marginNeeded > margin) {
-        return { status: "REJECTED" };
-      }
-
-      // lock margin
-      this.balances.removeBalance(userId, "USD", margin);
-
-      // // check if liquid positoins care about this order
-      // this.liquidationEngine.notifyIncomingOrder(
-      //   type,
-      //   side,
-      //   symbol,
-      //   qty,
-      //   price,
-      // );
+    // check if account locked
+    if (this.balances.isAccountLocked(userId, symbol)) {
+      return { status: "REJECTED" };
     }
+
+    // get initial balance
+    let initialUSDBalance = this.balances.getBalance(userId, "USD") as number;
+
+    // check if have claimed margin
+    if (margin > initialUSDBalance) {
+      return { status: "REJECTED" };
+    }
+
+    // check and reduce balance for margin
+    let marginNeeded = this.liquidationEngine.getMarginRequired({
+      qty,
+      side,
+      symbol,
+      type,
+      price,
+    });
+    if (marginNeeded > margin) {
+      return { status: "REJECTED" };
+    }
+
+    // lock margin
+    this.balances.removeBalance(userId, "USD", margin);
+
+    // // check if liquid positoins care about this order
+    // this.liquidationEngine.notifyIncomingOrder(
+    //   type,
+    //   side,
+    //   symbol,
+    //   qty,
+    //   price,
+    // );
 
     // place order in orderbook
     let { newOrderId, totalFilledQuantity, fills } = this.orderBook.createOrder(
@@ -199,7 +202,57 @@ export default class Exchange implements Snapshotable<EXCHANGE_SNAPSHOT> {
     newPrice: number;
     symbol: TRADABLE_CURRENCY_SYMBOL;
   }) {
-    this.liquidationEngine.handleIndexPriceUpdate({ symbol, newPrice });
+    let { toLiquidatePositions } =
+      this.liquidationEngine.handleIndexPriceUpdate({ symbol, newPrice });
+
+    toLiquidatePositions.forEach((position) => {
+      let { totalFilledQuantity, fills } = this.orderBook.createOrder(
+        "MARKET",
+        position.type == "LONG" ? "SELL" : "BUY",
+        position.symbol,
+        position.qty,
+        position.userId,
+        0,
+        "ISOLATED",
+      );
+      // update users positions based on placed order
+      let { pnlUpdates: usersPnlUpdate, positionUpdates } =
+        this.positionManager.applyFills(fills);
+
+      // update users balance based on updated margin/pnl
+      this.balances.applyUsersPnl(usersPnlUpdate);
+
+      // change liquidation price for udpated positions
+      this.liquidationEngine.applyPositionUpdates(positionUpdates);
+
+      if (totalFilledQuantity != position.qty) {
+        // cause adl
+
+        // get most winning positions from position manager
+        let { winningPositions } = this.positionManager.getWinningPositions(
+          position.symbol,
+          position.qty - totalFilledQuantity,
+        );
+        // place limit order for these positions
+        winningPositions.forEach((winPosition: POSITION) => {
+          this.orderBook.createOrder(
+            "LIMIT",
+            winPosition.type == "LONG" ? "SELL" : "BUY",
+            winPosition.symbol,
+            winPosition.qty,
+            winPosition.userId,
+            0,
+            "ISOLATED",
+            marketPrice,
+          );
+        });
+
+        // place your market order again
+        // and do whole processing again...
+
+        // todo ; separate this logic , DRY PRINCIPLE
+      }
+    });
   }
 
   handleFunding() {

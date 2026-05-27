@@ -21,12 +21,16 @@ type FILL_INFO = {
     sellerId: string;
     orderId: string;
     totalQty: number;
+    orderStatus: ORDER_STATUS;
+    filledQty: number;
     margin: number;
     marginType: MARGIN_TYPE;
   };
   buyOrderInfo: {
     buyerId: string;
     orderId: string;
+    orderStatus: ORDER_STATUS;
+    filledQty: number;
     totalQty: number;
     margin: number;
     marginType: MARGIN_TYPE;

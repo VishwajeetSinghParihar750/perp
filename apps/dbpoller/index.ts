@@ -62,66 +62,50 @@ const handleFillsCreated = async (event: FILLS_CREATED_EVENT) => {
   await prismaClient.$transaction(async (tx) => {
     await tx.processedEvent.create({ data: { id: String(idempotencyNumber) } });
 
-    let fillPerOrder: Record<string, number> = {};
-    await Promise.all(
-      event.event.payload.data.map(async (fill) => {
-        const {
+    for (let fill of event.event.payload.data) {
+      const {
+        bidPrice,
+        buyOrderInfo,
+        fillId,
+        price,
+        qty,
+        sellOrderInfo,
+        symbol,
+      } = fill;
+
+      await tx.fill.create({
+        data: {
+          id: fillId,
           bidPrice,
-          buyOrderInfo,
-          fillId,
           price,
-          qty,
-          sellOrderInfo,
-          symbol,
-        } = fill;
+          quantity: qty,
+          symbol: symbol,
+          longOrderId: buyOrderInfo.orderId,
+          longUserId: buyOrderInfo.buyerId,
+          shortOrderId: sellOrderInfo.orderId,
+          shortUserId: sellOrderInfo.sellerId,
+        },
+      });
 
-        await tx.fill.create({
-          data: {
-            id: fillId,
-            bidPrice,
-            price,
-            quantity: qty,
-            symbol: symbol,
-            longOrderId: buyOrderInfo.orderId,
-            longUserId: buyOrderInfo.buyerId,
-            shortOrderId: sellOrderInfo.orderId,
-            shortUserId: sellOrderInfo.sellerId,
-          },
-        });
+      await tx.order.update({
+        where: { id: fill.buyOrderInfo.orderId },
+        data: {
+          filledQuantity: fill.buyOrderInfo.filledQty,
+          status: fill.buyOrderInfo.orderStatus,
+        },
+      });
 
-        fillPerOrder[buyOrderInfo.orderId] ??= 0;
-        fillPerOrder[buyOrderInfo.orderId]! += qty;
-        fillPerOrder[sellOrderInfo.orderId] ??= 0;
-        fillPerOrder[sellOrderInfo.orderId]! += qty;
-
-        //
-      }),
-    );
-
-    await Promise.all(
-      Object.entries(fillPerOrder).map(async ([orderId, filled]) => {
-        let order = await tx.order.findUniqueOrThrow({
-          where: { id: orderId },
-        });
-        let newFilledQty = order.filledQuantity.plus(filled);
-        let qty = order.quantity;
-
-        await tx.order.update({
-          where: { id: orderId },
-          data: {
-            filledQuantity: newFilledQty,
-            status:
-              newFilledQty == qty
-                ? "FILLED"
-                : newFilledQty.equals(0)
-                  ? "OPEN"
-                  : "PARTIALLY_FILLED",
-          },
-        });
-      }),
-    );
+      await tx.order.update({
+        where: { id: fill.sellOrderInfo.orderId },
+        data: {
+          filledQuantity: fill.sellOrderInfo.filledQty,
+          status: fill.sellOrderInfo.orderStatus,
+        },
+      });
+    }
   });
 };
+
 const handleOrderCreated = async (event: ORDER_CREATED_EVENT) => {
   const { idempotencyNumber } = event;
   const {

@@ -168,8 +168,25 @@ export default class OrderBook implements Snapshotable<ORDERBOOK_SNAPSHOT> {
           pendingQty,
         );
 
+        frontOrder!.filledQty += toExchangeQty;
+        currentOrder.filledQty += toExchangeQty;
+        topOppositeSidePriceLevel.totalQuantity -= toExchangeQty;
+
+        currentOrder.status =
+          currentOrder.filledQty == currentOrder.qty
+            ? "FILLED"
+            : "PARTIALLY_FILLED";
+        frontOrder!.status =
+          frontOrder!.filledQty == frontOrder!.qty
+            ? "FILLED"
+            : "PARTIALLY_FILLED";
+
         fillsToReturn.push({
           buyOrderInfo: {
+            filledQty:
+              side == "BUY" ? currentOrder.filledQty : frontOrder!.filledQty,
+            orderStatus:
+              side == "BUY" ? currentOrder.status : frontOrder!.status,
             buyerId: side == "BUY" ? userId : frontOrder!.userId,
             margin: side == "BUY" ? currentOrder.margin : frontOrder!.margin,
             marginType:
@@ -179,6 +196,10 @@ export default class OrderBook implements Snapshotable<ORDERBOOK_SNAPSHOT> {
           },
 
           sellOrderInfo: {
+            filledQty:
+              side == "SELL" ? currentOrder.filledQty : frontOrder!.filledQty,
+            orderStatus:
+              side == "SELL" ? currentOrder.status : frontOrder!.status,
             sellerId: side == "SELL" ? userId : frontOrder!.userId,
             margin: side == "SELL" ? currentOrder.margin : frontOrder!.margin,
             marginType:
@@ -194,10 +215,6 @@ export default class OrderBook implements Snapshotable<ORDERBOOK_SNAPSHOT> {
           qty: toExchangeQty,
           symbol,
         });
-
-        frontOrder!.filledQty += toExchangeQty;
-        currentOrder.filledQty += toExchangeQty;
-        topOppositeSidePriceLevel.totalQuantity -= toExchangeQty;
 
         // update depthUpdates for opposite side, current side does not change orderbook on same side
         depthUpdates[side == "BUY" ? "asks" : "bids"].set(
@@ -263,8 +280,25 @@ export default class OrderBook implements Snapshotable<ORDERBOOK_SNAPSHOT> {
           pendingQty,
         );
 
-        let newFill = {
+        frontOrder!.filledQty += toExchangeQty;
+        currentOrder.filledQty += toExchangeQty;
+        topOppositeSidePriceLevel.totalQuantity -= toExchangeQty;
+
+        currentOrder.status =
+          currentOrder.filledQty == currentOrder.qty
+            ? "FILLED"
+            : "PARTIALLY_FILLED";
+        frontOrder!.status =
+          frontOrder!.filledQty == frontOrder!.qty
+            ? "FILLED"
+            : "PARTIALLY_FILLED";
+
+        fillsToReturn.push({
           buyOrderInfo: {
+            filledQty:
+              side == "BUY" ? currentOrder.filledQty : frontOrder!.filledQty,
+            orderStatus:
+              side == "BUY" ? currentOrder.status : frontOrder!.status,
             buyerId: side == "BUY" ? userId : frontOrder!.userId,
             margin: side == "BUY" ? currentOrder.margin : frontOrder!.margin,
             marginType:
@@ -274,6 +308,10 @@ export default class OrderBook implements Snapshotable<ORDERBOOK_SNAPSHOT> {
           },
 
           sellOrderInfo: {
+            filledQty:
+              side == "SELL" ? currentOrder.filledQty : frontOrder!.filledQty,
+            orderStatus:
+              side == "SELL" ? currentOrder.status : frontOrder!.status,
             sellerId: side == "SELL" ? userId : frontOrder!.userId,
             margin: side == "SELL" ? currentOrder.margin : frontOrder!.margin,
             marginType:
@@ -284,18 +322,11 @@ export default class OrderBook implements Snapshotable<ORDERBOOK_SNAPSHOT> {
           },
 
           fillId: crypto.randomUUID(),
-          bidPrice: Math.max(frontOrder!.price, currentOrder.price),
-          price: Math.min(frontOrder!.price, currentOrder.price),
+          bidPrice: frontOrder!.price,
+          price: frontOrder!.price,
           qty: toExchangeQty,
           symbol,
-        };
-
-        fillsToReturn.push(newFill);
-        // this.fills[newFill.fillId] = newFill;
-
-        frontOrder!.filledQty += toExchangeQty;
-        currentOrder.filledQty += toExchangeQty;
-        topOppositeSidePriceLevel.totalQuantity -= toExchangeQty;
+        });
 
         // update depthUpdates for opposite side, current side does not change orderbook on same side
         depthUpdates[side == "BUY" ? "asks" : "bids"].set(
@@ -405,9 +436,25 @@ export default class OrderBook implements Snapshotable<ORDERBOOK_SNAPSHOT> {
           let exchangePrice = Math.min(frontOrder!.price, currentOrder.price);
 
           quantityPriceProductSum += exchangePrice * toExchangeQty;
+          frontOrder!.filledQty += toExchangeQty;
+          currentOrder.filledQty += toExchangeQty;
+          topOppositeSidePriceLevel.totalQuantity -= toExchangeQty;
 
-          let newFill = {
+          currentOrder.status =
+            currentOrder.filledQty == currentOrder.qty
+              ? "FILLED"
+              : "PARTIALLY_FILLED";
+          frontOrder!.status =
+            frontOrder!.filledQty == frontOrder!.qty
+              ? "FILLED"
+              : "PARTIALLY_FILLED";
+
+          fillsToReturn.push({
             buyOrderInfo: {
+              filledQty:
+                side == "BUY" ? currentOrder.filledQty : frontOrder!.filledQty,
+              orderStatus:
+                side == "BUY" ? currentOrder.status : frontOrder!.status,
               buyerId: side == "BUY" ? userId : frontOrder!.userId,
               margin: side == "BUY" ? currentOrder.margin : frontOrder!.margin,
               marginType:
@@ -420,6 +467,10 @@ export default class OrderBook implements Snapshotable<ORDERBOOK_SNAPSHOT> {
             },
 
             sellOrderInfo: {
+              filledQty:
+                side == "SELL" ? currentOrder.filledQty : frontOrder!.filledQty,
+              orderStatus:
+                side == "SELL" ? currentOrder.status : frontOrder!.status,
               sellerId: side == "SELL" ? userId : frontOrder!.userId,
               margin: side == "SELL" ? currentOrder.margin : frontOrder!.margin,
               marginType:
@@ -432,19 +483,11 @@ export default class OrderBook implements Snapshotable<ORDERBOOK_SNAPSHOT> {
             },
 
             fillId: crypto.randomUUID(),
-            bidPrice: Math.max(frontOrder!.price, currentOrder.price),
-            price: exchangePrice,
+            bidPrice: frontOrder!.price,
+            price: frontOrder!.price,
             qty: toExchangeQty,
             symbol,
-          };
-
-          fillsToReturn.push(newFill);
-          // save to fills
-          // this.fills[newFill.fillId] = newFill;
-
-          frontOrder!.filledQty += toExchangeQty;
-          currentOrder.filledQty += toExchangeQty;
-          topOppositeSidePriceLevel.totalQuantity -= toExchangeQty;
+          });
 
           // update depthUpdates for opposite side, current side update will happen with this pending order in end
           depthUpdates[side == "BUY" ? "asks" : "bids"].set(

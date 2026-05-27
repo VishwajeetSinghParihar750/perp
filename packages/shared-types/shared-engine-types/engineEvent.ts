@@ -132,10 +132,16 @@ const FILLS_CREATED_SCHEMA = baseEventSchema.extend({
         buyOrderInfo: z.object({
           buyerId: z.string(),
           orderId: z.string(),
+          filledQty: z.number(),
+          totalQty: z.number(),
+          orderStatus: ORDER_STATUS_SCHEMA,
         }),
         sellOrderInfo: z.object({
           sellerId: z.string(),
           orderId: z.string(),
+          filledQty: z.number(),
+          totalQty: z.number(),
+          orderStatus: ORDER_STATUS_SCHEMA,
         }),
       }),
     ),

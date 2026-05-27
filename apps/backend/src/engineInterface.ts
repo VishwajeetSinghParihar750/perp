@@ -67,7 +67,7 @@ class EngineInterface {
 
   private broadcastEvent = (event: EngineEvent.ENGINE_EVENT) => {
     let { type } = event.payload;
-    console.log(this.eventSubscriptions);
+    // console.log(this.eventSubscriptions);
     this.eventSubscriptions[type]?.forEach((ws) => {
       sendMessageOnWebSocket(ws, event);
     });
@@ -92,7 +92,7 @@ class EngineInterface {
           // it has a request id , means it was personal
           let gotRequestId = "";
           try {
-            console.log(message.data);
+            // console.log(message.data);
             let response: EngineResponse.ENGINE_RESPONSE =
               EngineResponse.ENGINE_RESPONSE_SCHEMA.parse(
                 JSON.parse(message.data!),
@@ -143,7 +143,7 @@ class EngineInterface {
         data: JSON.stringify(engineRequest),
       },
     );
-    console.log("res", res);
+    // console.log("res", res);
   };
 
   getEngineResponseForRequest = async (

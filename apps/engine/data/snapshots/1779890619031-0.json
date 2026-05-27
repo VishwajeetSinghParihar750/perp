@@ -1,0 +1,66 @@
+{
+  "snapshot": {
+    "eventPublisher": {
+      "idempotencyKey": {
+        "markprice.updated": 195,
+        "order.created": 2,
+        "fills.created": 2
+      },
+      "globalidempotencyKey": 199,
+      "subscriptions": {}
+    },
+    "exchange": {
+      "balance": {
+        "exchangeBalance": 100000000,
+        "perSymbolBalances": {
+          "205e7b6b-600d-4aa8-a483-986af940c20a": {
+            "USD": 1022221700
+          },
+          "6217cce7-c674-45f6-813a-91c665615856": {
+            "USD": 1000222122
+          }
+        },
+        "lockedAccounts": {}
+      },
+      "orderbook": {
+        "depthUpdateOffset": {
+          "USD": 0,
+          "SOLUSD": 0,
+          "ETHUSD": 0,
+          "BTCUSD": 2
+        },
+        "orders": {
+          "a25adcca-d8ac-4757-ad6b-8e1843515efa": {
+            "createdAt": "2026-05-27T14:01:11.830Z",
+            "filledQty": 0.05,
+            "orderId": "a25adcca-d8ac-4757-ad6b-8e1843515efa",
+            "price": 4500,
+            "qty": 0.1,
+            "userId": "205e7b6b-600d-4aa8-a483-986af940c20a",
+            "side": "SELL",
+            "type": "LIMIT",
+            "symbol": "BTCUSD",
+            "margin": 500,
+            "marginType": "ISOLATED",
+            "status": "PARTIALLY_FILLED"
+          }
+        }
+      },
+      "position": {
+        "isolatedPositions": {}
+      },
+      "liquidation": {
+        "indexPrices": {
+          "ETHUSD": 2066.28694733,
+          "BTCUSD": 75072.38081323,
+          "SOLUSD": 83.88447142
+        },
+        "liquidationPrice": {},
+        "positions": {},
+        "positionsBeingLiquidated": []
+      }
+    }
+  },
+  "lastRedisStreamMessageId": "1779890619031-0",
+  "lastFullyProcessedRedisStreamMessageId": "1779890616037-0"
+}

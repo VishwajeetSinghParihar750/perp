@@ -42,12 +42,16 @@ type ORDERBOOK_SYMBOL_SNAPSHOT = {
 type ORDERBOOK_SNAPSHOT = {
   orders: Record<ORDER_ID, ORDER>;
   depthUpdateOffset: Partial<Record<CURRENCY_SYMBOL, number>>;
+  ids: { orderId: number; fillId: number };
 };
 export default class OrderBook implements Snapshotable<ORDERBOOK_SNAPSHOT> {
   orderBook: ORDERBOOK = {};
   orders: Record<ORDER_ID, ORDER> = {}; // here keep ref of item in orderbook, to not double memeory
 
-  // fills: Record<string, FILL_INFO> = {};
+  ids = {
+    orderId: 0,
+    fillId: 0,
+  };
 
   eventBus: EventBus;
   depthUpdateOffset: Map<CURRENCY_SYMBOL, number>;
@@ -83,10 +87,12 @@ export default class OrderBook implements Snapshotable<ORDERBOOK_SNAPSHOT> {
         return obj;
       }, {} as any),
       orders: this.orders,
+      ids: this.ids,
     };
   }
   loadSnapshot(data: ORDERBOOK_SNAPSHOT) {
     this.orders = data.orders;
+    this.ids = data.ids;
 
     Object.keys(data.depthUpdateOffset).forEach((key) => {
       this.depthUpdateOffset.set(
@@ -209,7 +215,7 @@ export default class OrderBook implements Snapshotable<ORDERBOOK_SNAPSHOT> {
             totalQty: side == "SELL" ? currentOrder.qty : frontOrder!.qty,
           },
 
-          fillId: crypto.randomUUID(),
+          fillId: String(this.ids.fillId++),
           bidPrice: frontOrder!.price,
           price: frontOrder!.price,
           qty: toExchangeQty,
@@ -321,7 +327,7 @@ export default class OrderBook implements Snapshotable<ORDERBOOK_SNAPSHOT> {
             totalQty: side == "SELL" ? currentOrder.qty : frontOrder!.qty,
           },
 
-          fillId: crypto.randomUUID(),
+          fillId: String(this.ids.fillId++),
           bidPrice: frontOrder!.price,
           price: frontOrder!.price,
           qty: toExchangeQty,
@@ -482,7 +488,7 @@ export default class OrderBook implements Snapshotable<ORDERBOOK_SNAPSHOT> {
               totalQty: side == "SELL" ? currentOrder.qty : frontOrder!.qty,
             },
 
-            fillId: crypto.randomUUID(),
+            fillId: String(this.ids.fillId++),
             bidPrice: frontOrder!.price,
             price: frontOrder!.price,
             qty: toExchangeQty,
@@ -592,7 +598,7 @@ export default class OrderBook implements Snapshotable<ORDERBOOK_SNAPSHOT> {
     let currentOrder: ORDER = {
       createdAt: new Date(),
       filledQty: 0,
-      orderId: crypto.randomUUID(),
+      orderId: String(this.ids.orderId++),
       price: price || 0,
       qty: qty,
       userId: userId,

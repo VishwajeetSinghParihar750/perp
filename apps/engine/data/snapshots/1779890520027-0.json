@@ -2,19 +2,22 @@
   "snapshot": {
     "eventPublisher": {
       "idempotencyKey": {
-        "markprice.updated": 697,
+        "markprice.updated": 96,
         "order.created": 1,
         "fills.created": 1
       },
-      "globalidempotencyKey": 699,
+      "globalidempotencyKey": 98,
       "subscriptions": {}
     },
     "exchange": {
       "balance": {
         "exchangeBalance": 100000000,
         "perSymbolBalances": {
-          "8aa44eb8-9611-4a78-b1ff-a1d925ae89e5": {
-            "USD": 10004444394
+          "205e7b6b-600d-4aa8-a483-986af940c20a": {
+            "USD": 1022221700
+          },
+          "6217cce7-c674-45f6-813a-91c665615856": {
+            "USD": 1000222222
           }
         },
         "lockedAccounts": {}
@@ -27,17 +30,17 @@
           "BTCUSD": 1
         },
         "orders": {
-          "8f61a2d6-5cf7-49a8-b0b8-883e19ffe549": {
-            "createdAt": "2026-05-27T13:25:10.709Z",
+          "a25adcca-d8ac-4757-ad6b-8e1843515efa": {
+            "createdAt": "2026-05-27T14:01:11.830Z",
             "filledQty": 0,
-            "orderId": "8f61a2d6-5cf7-49a8-b0b8-883e19ffe549",
-            "price": 450,
-            "qty": 1,
-            "userId": "8aa44eb8-9611-4a78-b1ff-a1d925ae89e5",
-            "side": "BUY",
+            "orderId": "a25adcca-d8ac-4757-ad6b-8e1843515efa",
+            "price": 4500,
+            "qty": 0.1,
+            "userId": "205e7b6b-600d-4aa8-a483-986af940c20a",
+            "side": "SELL",
             "type": "LIMIT",
             "symbol": "BTCUSD",
-            "margin": 50,
+            "margin": 500,
             "marginType": "ISOLATED",
             "status": "OPEN"
           }
@@ -48,9 +51,9 @@
       },
       "liquidation": {
         "indexPrices": {
-          "BTCUSD": 75608.11520372,
-          "ETHUSD": 2076.74070406,
-          "SOLUSD": 83.85919717
+          "ETHUSD": 2065.15005646,
+          "BTCUSD": 75053.00503723,
+          "SOLUSD": 83.72389712
         },
         "liquidationPrice": {},
         "positions": {},
@@ -58,6 +61,6 @@
       }
     }
   },
-  "lastRedisStreamMessageId": "1779886584188-0",
-  "lastFullyProcessedRedisStreamMessageId": "1779886584187-0"
+  "lastRedisStreamMessageId": "1779890520027-0",
+  "lastFullyProcessedRedisStreamMessageId": "1779890517025-0"
 }

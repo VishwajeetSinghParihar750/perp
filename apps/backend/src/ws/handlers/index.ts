@@ -82,7 +82,11 @@ async function handleCreateOrderRequest(
           requestId: req.requestId,
           type: "order_created",
         });
+
+      console.log(res);
     } catch (error) {
+      console.log(error);
+
       sendMessageOnWebSocket(ws, {
         type: "error",
         payload: "INTERNAL_SERVER_ERROR",
@@ -178,7 +182,7 @@ const handleWebSocketMessage = async (
   ws: WebSocket,
   request: BackendRequest.BACKEND_REQUEST,
 ) => {
-  console.log(request);
+  // console.log(request);
   if (BackendRequest.isEngineRequset(request))
     if (
       zodBodyVerificationWebSocket(

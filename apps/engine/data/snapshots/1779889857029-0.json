@@ -2,11 +2,11 @@
   "snapshot": {
     "eventPublisher": {
       "idempotencyKey": {
-        "markprice.updated": 997,
+        "markprice.updated": 196,
         "order.created": 1,
         "fills.created": 1
       },
-      "globalidempotencyKey": 999,
+      "globalidempotencyKey": 198,
       "subscriptions": {}
     },
     "exchange": {
@@ -14,7 +14,7 @@
         "exchangeBalance": 100000000,
         "perSymbolBalances": {
           "8aa44eb8-9611-4a78-b1ff-a1d925ae89e5": {
-            "USD": 10004444394
+            "USD": 1033333250
           }
         },
         "lockedAccounts": {}
@@ -27,10 +27,10 @@
           "BTCUSD": 1
         },
         "orders": {
-          "8f61a2d6-5cf7-49a8-b0b8-883e19ffe549": {
-            "createdAt": "2026-05-27T13:25:10.709Z",
+          "a33bb943-1c89-4021-9cbc-020ab22f7602": {
+            "createdAt": "2026-05-27T13:52:31.726Z",
             "filledQty": 0,
-            "orderId": "8f61a2d6-5cf7-49a8-b0b8-883e19ffe549",
+            "orderId": "a33bb943-1c89-4021-9cbc-020ab22f7602",
             "price": 450,
             "qty": 1,
             "userId": "8aa44eb8-9611-4a78-b1ff-a1d925ae89e5",
@@ -48,9 +48,9 @@
       },
       "liquidation": {
         "indexPrices": {
-          "BTCUSD": 75588.12036191,
-          "ETHUSD": 2076.57749947,
-          "SOLUSD": 83.88689538
+          "BTCUSD": 74806.18998444,
+          "ETHUSD": 2054.46040269,
+          "SOLUSD": 83.12089851
         },
         "liquidationPrice": {},
         "positions": {},
@@ -58,6 +58,6 @@
       }
     }
   },
-  "lastRedisStreamMessageId": "1779886908304-0",
-  "lastFullyProcessedRedisStreamMessageId": "1779886908301-0"
+  "lastRedisStreamMessageId": "1779889857029-0",
+  "lastFullyProcessedRedisStreamMessageId": "1779889857028-0"
 }

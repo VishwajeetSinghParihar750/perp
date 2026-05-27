@@ -21,6 +21,7 @@ const setupRedis = async () => {
   await redisClient.connect();
 };
 const tryCreatingMarkets = async () => {
+  console.log("trying creating markets");
   await Promise.all(
     ["BTCUSD", "SOLUSD", "ETHUSD"].map(async (cur) => {
       try {

@@ -22,6 +22,9 @@ type POSITION_SNAPSHOT = {
     string, // userid
     Partial<Record<TRADABLE_CURRENCY_SYMBOL, POSITION>>
   >;
+  ids: {
+    positionId: number;
+  };
 };
 
 class PositionManager implements Snapshotable<POSITION_SNAPSHOT> {
@@ -31,10 +34,15 @@ class PositionManager implements Snapshotable<POSITION_SNAPSHOT> {
     Partial<Record<TRADABLE_CURRENCY_SYMBOL, POSITION>>
   > = {}; // this is per user per symbol per price positions
 
+  ids = {
+    positionId: 0,
+  };
+
   getSnapshot(): POSITION_SNAPSHOT {
-    return { isolatedPositions: this.isolatedPositions };
+    return { isolatedPositions: this.isolatedPositions, ids: this.ids };
   }
   loadSnapshot(data: POSITION_SNAPSHOT) {
+    this.ids = data.ids;
     this.isolatedPositions = data.isolatedPositions;
   }
   getPosition(userId: string, symbol?: TRADABLE_CURRENCY_SYMBOL) {
@@ -117,7 +125,7 @@ class PositionManager implements Snapshotable<POSITION_SNAPSHOT> {
 
         if (!newPosition) {
           newPosition = {
-            positionId: crypto.randomUUID(),
+            positionId: String(this.ids.positionId++),
             createdAt: new Date(),
             margin: (margin * filledRecentQty) / totalOrderQty,
             marginType: marginType,

@@ -15,9 +15,6 @@ import LiquidationEngine, {
   type LiquidationOrderInfo,
 } from "./LiquidationEngine.js";
 import type { Snapshotable } from "./SnapshotManger.js";
-import MarkPriceObserver from "./IndexPriceObserver.js";
-import { symbol } from "zod";
-import { partial } from "zod/mini";
 
 type EXCHANGE_SNAPSHOT = {
   balance: BALANCE_SNAPSHOT;
@@ -31,6 +28,7 @@ export default class Exchange implements Snapshotable<EXCHANGE_SNAPSHOT> {
   private orderBook: OrderBook;
   private positionManager: PositionManager;
   private liquidationEngine: LiquidationEngine;
+  private eventBus: EventBus;
 
   getSnapshot() {
     return {
@@ -48,6 +46,7 @@ export default class Exchange implements Snapshotable<EXCHANGE_SNAPSHOT> {
   }
 
   constructor(eventBus: EventBus) {
+    this.eventBus = eventBus;
     this.balances = new Balances(eventBus);
     this.orderBook = new OrderBook(eventBus);
     this.positionManager = new PositionManager();
@@ -207,9 +206,12 @@ export default class Exchange implements Snapshotable<EXCHANGE_SNAPSHOT> {
     let indexPrices = this.liquidationEngine.indexPrices;
     let markPrices = this.orderBook.markPrices;
 
+    let symbols: TRADABLE_CURRENCY_SYMBOL[] = [];
+
     let fundingRates = Object.entries(markPrices).reduce(
       (toRet, [symbol, markprice]) => {
         let typedSymbol = symbol as TRADABLE_CURRENCY_SYMBOL;
+
         if (indexPrices[typedSymbol]) {
           let premium =
             (markprice - indexPrices[typedSymbol]) / indexPrices[typedSymbol];
@@ -217,11 +219,18 @@ export default class Exchange implements Snapshotable<EXCHANGE_SNAPSHOT> {
           let fundingRate =
             premium + Math.min(Math.max(interestRate - premium, -30), 30);
           toRet[typedSymbol] = fundingRate;
+
+          symbols.push(typedSymbol);
         }
         return toRet;
       },
       {} as Partial<Record<TRADABLE_CURRENCY_SYMBOL, number>>,
     );
+
+    this.eventBus.emit({
+      type: "funding.created",
+      data: { symbol: symbols },
+    });
 
     let { positionUpdates, usersPnl } =
       this.positionManager.applyFunding(fundingRates);

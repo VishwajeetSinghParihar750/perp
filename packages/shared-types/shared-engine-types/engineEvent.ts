@@ -42,6 +42,7 @@ const ORDERBOOK_EVENT_TYPE = z.union([
 
 const LIQUIDATION_EVENT_TYPE = z.union([
   z.literal("indexprice.updated"),
+  z.literal("funding.created"),
   z.literal("liquidation.started"),
   z.literal("liquidation.completed"),
 ]);

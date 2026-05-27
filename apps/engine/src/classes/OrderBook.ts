@@ -596,7 +596,7 @@ export default class OrderBook implements Snapshotable<ORDERBOOK_SNAPSHOT> {
     let toReturn;
 
     let currentOrder: ORDER = {
-      createdAt: new Date(),
+      createdAt: new Date().toISOString(),
       filledQty: 0,
       orderId: String(this.ids.orderId++),
       price: price || 0,

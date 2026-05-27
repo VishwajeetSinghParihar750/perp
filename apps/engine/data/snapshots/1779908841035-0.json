@@ -1,0 +1,140 @@
+{
+  "snapshot": {
+    "eventPublisher": {
+      "idempotencyKey": {
+        "markprice.updated": 1179,
+        "order.created": 5,
+        "fills.created": 5
+      },
+      "globalidempotencyKey": 1189,
+      "subscriptions": {}
+    },
+    "exchange": {
+      "balance": {
+        "exchangeBalance": 100000000,
+        "perSymbolBalances": {
+          "92dcb382-58ca-4025-9bf4-75ffd00e87db": {
+            "USD": 100332830
+          },
+          "9a8a6f59-c812-4a2c-90e4-8556e85689b3": {
+            "USD": 1000221722
+          }
+        },
+        "lockedAccounts": {}
+      },
+      "orderbook": {
+        "depthUpdateOffset": {
+          "USD": 0,
+          "SOLUSD": 0,
+          "ETHUSD": 0,
+          "BTCUSD": 5
+        },
+        "orders": {
+          "3": {
+            "createdAt": "2026-05-27T19:21:00.963Z",
+            "filledQty": 0.020000000000000004,
+            "orderId": "3",
+            "price": 4495,
+            "qty": 0.03,
+            "userId": "9a8a6f59-c812-4a2c-90e4-8556e85689b3",
+            "side": "SELL",
+            "type": "LIMIT",
+            "symbol": "BTCUSD",
+            "margin": 100,
+            "marginType": "ISOLATED",
+            "status": "PARTIALLY_FILLED"
+          },
+          "4": {
+            "createdAt": "2026-05-27T19:21:00.979Z",
+            "filledQty": 0,
+            "orderId": "4",
+            "price": 4495,
+            "qty": 0.03,
+            "userId": "9a8a6f59-c812-4a2c-90e4-8556e85689b3",
+            "side": "SELL",
+            "type": "LIMIT",
+            "symbol": "BTCUSD",
+            "margin": 100,
+            "marginType": "ISOLATED",
+            "status": "OPEN"
+          }
+        },
+        "ids": {
+          "orderId": 5,
+          "fillId": 3
+        }
+      },
+      "position": {
+        "isolatedPositions": {
+          "92dcb382-58ca-4025-9bf4-75ffd00e87db": {
+            "BTCUSD": {
+              "positionId": "0",
+              "createdAt": "2026-05-27T19:21:00.925Z",
+              "margin": 500,
+              "marginType": "ISOLATED",
+              "price": 4500,
+              "qty": 0.1,
+              "symbol": "BTCUSD",
+              "type": "LONG",
+              "userId": "92dcb382-58ca-4025-9bf4-75ffd00e87db"
+            }
+          },
+          "9a8a6f59-c812-4a2c-90e4-8556e85689b3": {
+            "BTCUSD": {
+              "positionId": "1",
+              "createdAt": "2026-05-27T19:21:00.925Z",
+              "margin": 366.6666666666667,
+              "marginType": "ISOLATED",
+              "price": 4500,
+              "qty": 0.06,
+              "symbol": "BTCUSD",
+              "type": "LONG",
+              "userId": "9a8a6f59-c812-4a2c-90e4-8556e85689b3"
+            }
+          }
+        },
+        "ids": {
+          "positionId": 2
+        }
+      },
+      "liquidation": {
+        "indexPrices": {
+          "ETHUSD": 2052.39050577,
+          "BTCUSD": 74854.83022984,
+          "SOLUSD": 83.82611152
+        },
+        "liquidationPrice": {
+          "0": 9250,
+          "1": 10305.555555555555
+        },
+        "positions": {
+          "0": {
+            "positionId": "0",
+            "createdAt": "2026-05-27T19:21:00.925Z",
+            "margin": 500,
+            "marginType": "ISOLATED",
+            "price": 4500,
+            "qty": 0.1,
+            "symbol": "BTCUSD",
+            "type": "LONG",
+            "userId": "92dcb382-58ca-4025-9bf4-75ffd00e87db"
+          },
+          "1": {
+            "positionId": "1",
+            "createdAt": "2026-05-27T19:21:00.925Z",
+            "margin": 366.6666666666667,
+            "marginType": "ISOLATED",
+            "price": 4500,
+            "qty": 0.06,
+            "symbol": "BTCUSD",
+            "type": "LONG",
+            "userId": "9a8a6f59-c812-4a2c-90e4-8556e85689b3"
+          }
+        },
+        "positionsBeingLiquidated": []
+      }
+    }
+  },
+  "lastRedisStreamMessageId": "1779908841035-0",
+  "lastFullyProcessedRedisStreamMessageId": "1779908838036-0"
+}

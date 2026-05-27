@@ -12,7 +12,7 @@ type POSITION = {
   qty: number;
   type: POSITION_TYPE;
   symbol: TRADABLE_CURRENCY_SYMBOL;
-  createdAt: Date;
+  createdAt: string;
 
   //  for perp
   margin: number;

@@ -92,14 +92,13 @@ class EngineInterface {
           // it has a request id , means it was personal
           let gotRequestId = "";
           try {
-            // console.log(message.data);
+            console.log(message.data);
+
+            // zod validation
             let response: EngineResponse.ENGINE_RESPONSE =
               EngineResponse.ENGINE_RESPONSE_SCHEMA.parse(
                 JSON.parse(message.data!),
               );
-
-            // zod validation
-            EngineResponse.ENGINE_RESPONSE_SCHEMA.parse(response);
 
             let { type } = response;
 
@@ -122,6 +121,7 @@ class EngineInterface {
           } catch (error) {
             console.log("error in parsing engine message");
             this.pendingRequests[gotRequestId]?.[1]?.(error);
+            delete this.pendingRequests[gotRequestId];
           }
           lastRedisMessageId = id;
         }

@@ -64,28 +64,25 @@ class PositionManager implements Snapshotable<POSITION_SNAPSHOT> {
       const { buyerId, orderId: buyOrderId } = buyOrderInfo;
       const { sellerId, orderId: sellOrderId } = sellOrderInfo;
 
-      if (!orderUpdates[buyerId])
-        orderUpdates[buyerId] = {
-          buyOrderId: {
-            positionUpdatePriceQtyProduct: 0,
-            positionUpdateQty: 0,
-            margin: buyOrderInfo.margin,
-            marginType: buyOrderInfo.marginType,
-            totalQty: buyOrderInfo.totalQty,
-            symbol,
-          },
-        };
-      if (!orderUpdates[sellerId])
-        orderUpdates[sellerId] = {
-          sellOrderId: {
-            positionUpdatePriceQtyProduct: 0,
-            positionUpdateQty: 0,
-            margin: sellOrderInfo.margin,
-            marginType: sellOrderInfo.marginType,
-            totalQty: sellOrderInfo.totalQty,
-            symbol,
-          },
-        };
+      orderUpdates[buyerId] ??= {};
+      orderUpdates[buyerId][buyOrderId] ??= {
+        positionUpdatePriceQtyProduct: 0,
+        positionUpdateQty: 0,
+        margin: buyOrderInfo.margin,
+        marginType: buyOrderInfo.marginType,
+        totalQty: buyOrderInfo.totalQty,
+        symbol,
+      };
+
+      orderUpdates[sellerId] ??= {};
+      orderUpdates[sellerId][sellOrderId] ??= {
+        positionUpdatePriceQtyProduct: 0,
+        positionUpdateQty: 0,
+        margin: sellOrderInfo.margin,
+        marginType: sellOrderInfo.marginType,
+        totalQty: sellOrderInfo.totalQty,
+        symbol,
+      };
 
       orderUpdates[buyerId][buyOrderId]!.positionUpdatePriceQtyProduct +=
         price * qty;
@@ -126,7 +123,7 @@ class PositionManager implements Snapshotable<POSITION_SNAPSHOT> {
         if (!newPosition) {
           newPosition = {
             positionId: String(this.ids.positionId++),
-            createdAt: new Date(),
+            createdAt: new Date().toISOString(),
             margin: (margin * filledRecentQty) / totalOrderQty,
             marginType: marginType,
             price: weighedAvgPrice,

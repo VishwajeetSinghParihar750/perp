@@ -48,7 +48,7 @@ type ORDER = {
   type: TYPE;
   filledQty: number;
   orderId: string;
-  createdAt: Date;
+  createdAt: string;
 
   //  for perp
   margin: number;

@@ -305,8 +305,8 @@ class LiquidationEngine implements Snapshotable<LIQUIDATION_SNAPSHOT> {
             this.liquidPositions[prevPosition.symbol]?.[prevPosition.type]
               .getElementByKey?.(
                 this.liquidationPrice[prevPosition.positionId]!,
-              )!
-              .delete(prevPosition.positionId);
+              )
+              ?.delete(prevPosition.positionId);
             delete this.liquidationPrice[prevPosition.positionId];
           }
 

@@ -17,7 +17,8 @@ const ORDER_SCHEMA = z.object({
   type: ORDER_TYPE_SCHEMA,
   filledQty: z.number(),
   orderId: z.string(),
-  createdAt: z.date(),
+  //
+  createdAt: z.iso.datetime(),
 
   //  for perp
   margin: z.number(),
@@ -42,7 +43,7 @@ const POSITION_SCHEMA = z.object({
   qty: z.number(),
   type: POSITION_TYPE_SCHEMA,
   symbol: CURRENCY_SYMBOL_SCHEMA,
-  createdAt: z.date(),
+  createdAt: z.iso.datetime(),
   margin: z.number(),
   marginType: MARGIN_TYPE_SCHEMA,
 });

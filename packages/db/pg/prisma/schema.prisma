@@ -73,10 +73,10 @@ model Order {
   userId String 
   side ORDER_SIDE
   symbol MARKET_SYMBOL
-  margin Decimal @db.Decimal(18,0)
-  price Decimal @db.Decimal(18,0)
-  filledQuantity Decimal @db.Decimal(18,0)
-  quantity Decimal @db.Decimal(18,0)
+  margin Decimal @db.Decimal(18,2)
+  price Decimal @db.Decimal(18,2)
+  filledQuantity Decimal @db.Decimal(18,2)
+  quantity Decimal @db.Decimal(18,2)
   status ORDER_STATUS
 
   type ORDER_TYPE
@@ -91,9 +91,9 @@ model Order {
 model Fill {
   id String @id @default(ulid())
   symbol MARKET_SYMBOL
-  quantity Decimal @db.Decimal(18,0)
-  price Decimal @db.Decimal(18,0)
-  bidPrice Decimal @db.Decimal(18,0)
+  quantity Decimal @db.Decimal(18,2)
+  price Decimal @db.Decimal(18,2)
+  bidPrice Decimal @db.Decimal(18,2)
 
   longUserId String
   shortUserId String

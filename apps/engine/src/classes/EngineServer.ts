@@ -69,7 +69,7 @@ class EngineServer implements Snapshotable<ENGINE_SERVER_SNAPSHOT> {
               EngineRequest.ENGINE_REQUEST_SCHEMA.parse(request);
 
               // here switch based on info types
-              if (request.type == "markprice_updated") {
+              if (EngineRequest.isEngineInfoRequst(request)) {
                 this.handleEngineInfoRequest(request);
                 this.snapshotManager.onMessageProcessed(id);
 
@@ -118,6 +118,19 @@ class EngineServer implements Snapshotable<ENGINE_SERVER_SNAPSHOT> {
     let dupClient = this.redisClient.duplicate();
     await dupClient.connect();
     this.handleClientRequsts(dupClient, lastRedisMessageId);
+
+    // every 8 hrs do funding
+    let dupClient2 = this.redisClient.duplicate();
+    setInterval(
+      async () => {
+        await dupClient2.xAdd(process.env.REDIS_ENGINE_STREAM!, "*", {
+          data: JSON.stringify({
+            type: "funding_created",
+          }),
+        });
+      },
+      8 * 60 * 60,
+    );
   }
 
   constructor() {
@@ -407,6 +420,9 @@ class EngineServer implements Snapshotable<ENGINE_SERVER_SNAPSHOT> {
     switch (engineRequest.type) {
       case "markprice_updated":
         this.handleUpdateMarkPriceRequest(engineRequest);
+        break;
+      case "funding_created":
+        this.exchange.handleFunding();
         break;
       default:
         throw new Error("invalid engine request type ");

@@ -102,15 +102,27 @@ const MARK_PRICE_UDPATED_SCHEMA = z.object({
     symbol: MARK_PRICE_UPDATE_SYMBOL_SCHEMA,
   }),
 });
+
 type MARK_PRICE_UDPATED_REQUEST = z.infer<typeof MARK_PRICE_UDPATED_SCHEMA>;
 
-const ENGINE_INFO_REQUEST_SCHEMA = z.union([MARK_PRICE_UDPATED_SCHEMA]);
+const FUNDING_CREATED_SCHEMA = z.object({
+  type: z.literal("funding_created"),
+});
+
+const ENGINE_INFO_REQUEST_SCHEMA = z.union([
+  MARK_PRICE_UDPATED_SCHEMA,
+  FUNDING_CREATED_SCHEMA,
+]);
 type ENGINE_INFO_REQUEST = z.infer<typeof ENGINE_INFO_REQUEST_SCHEMA>;
 
 const ENGINE_REQUEST_SCHEMA = z.union([
   ENGINE_REQUEST_FROM_BACKEND_SCHEMA,
   ENGINE_INFO_REQUEST_SCHEMA,
 ]);
+
+function isEngineInfoRequst(request: unknown): request is ENGINE_INFO_REQUEST {
+  return ENGINE_INFO_REQUEST_SCHEMA.safeParse(request).success;
+}
 
 type ENGINE_REQUEST = z.infer<typeof ENGINE_REQUEST_SCHEMA>;
 
@@ -126,6 +138,7 @@ export {
   SUBSCRIBE_EVENT_SCHEMA,
   UNSUBSCRIBE_EVENT_SCHEMA,
 };
+export { isEngineInfoRequst };
 export type {
   ENGINE_REQUEST,
   ENGINE_INFO_REQUEST,

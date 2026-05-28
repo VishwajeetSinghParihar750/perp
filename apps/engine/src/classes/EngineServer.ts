@@ -318,7 +318,7 @@ class EngineServer implements Snapshotable<ENGINE_SERVER_SNAPSHOT> {
     try {
       let { price, symbol } = engineRequest.payload;
 
-      this.exchange.handleMarkPriceUpdate({ newPrice: +price, symbol });
+      this.exchange.handleIndexPriceUpdate({ newPrice: +price, symbol });
     } catch (error) {
       console.error("error in hanlding mark price update ", error);
     }

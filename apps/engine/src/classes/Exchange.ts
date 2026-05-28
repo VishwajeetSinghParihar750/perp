@@ -68,7 +68,6 @@ export default class Exchange implements Snapshotable<EXCHANGE_SNAPSHOT> {
     margin: number,
     marginType: MARGIN_TYPE,
     price?: number,
-    liquidation?: boolean,
   ):
     | {
         status: "REJECTED";
@@ -195,7 +194,7 @@ export default class Exchange implements Snapshotable<EXCHANGE_SNAPSHOT> {
   getOrderbookSnapshot(symbol: TRADABLE_CURRENCY_SYMBOL) {
     return this.orderBook.getOrderbookSnapshot(symbol);
   }
-  handleMarkPriceUpdate({
+  handleIndexPriceUpdate({
     newPrice,
     symbol,
   }: {
@@ -215,6 +214,7 @@ export default class Exchange implements Snapshotable<EXCHANGE_SNAPSHOT> {
         0,
         "ISOLATED",
       );
+
       // update users positions based on placed order
       let { pnlUpdates: usersPnlUpdate, positionUpdates } =
         this.positionManager.applyFills(fills);
@@ -226,31 +226,15 @@ export default class Exchange implements Snapshotable<EXCHANGE_SNAPSHOT> {
       this.liquidationEngine.applyPositionUpdates(positionUpdates);
 
       if (totalFilledQuantity != position.qty) {
-        // cause adl
+        // cause adl, no insurance fund for now
 
-        // get most winning positions from position manager
-        let { winningPositions } = this.positionManager.getWinningPositions(
-          position.symbol,
-          position.qty - totalFilledQuantity,
+        let { usersPnl, positionUpdates } = this.positionManager.performAdl(
+          position,
+          this.liquidationEngine.indexPrices[position.symbol]!,
         );
-        // place limit order for these positions
-        winningPositions.forEach((winPosition: POSITION) => {
-          this.orderBook.createOrder(
-            "LIMIT",
-            winPosition.type == "LONG" ? "SELL" : "BUY",
-            winPosition.symbol,
-            winPosition.qty,
-            winPosition.userId,
-            0,
-            "ISOLATED",
-            marketPrice,
-          );
-        });
 
-        // place your market order again
-        // and do whole processing again...
-
-        // todo ; separate this logic , DRY PRINCIPLE
+        this.balances.applyUsersPnl(usersPnl);
+        this.liquidationEngine.applyPositionUpdates(positionUpdates);
       }
     });
   }

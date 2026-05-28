@@ -1,4 +1,8 @@
-import type { TRADABLE_CURRENCY_SYMBOL, MARGIN_TYPE } from "../types/order.js";
+import type {
+  TRADABLE_CURRENCY_SYMBOL,
+  MARGIN_TYPE,
+  ORDER,
+} from "../types/order.js";
 import type { POSITION, POSITION_UPDATES } from "../types/positions.js";
 import type { Snapshotable } from "./SnapshotManger.js";
 import type { FILLS_INFO } from "../types/order.js";
@@ -18,9 +22,14 @@ type ORDER_UPDATES = Record<
   >
 >;
 type POSITION_SNAPSHOT = {
-  isolatedPositions: Record<
-    string, // userid
-    Partial<Record<TRADABLE_CURRENCY_SYMBOL, POSITION>>
+  isolatedPositions: Partial<
+    Record<
+      TRADABLE_CURRENCY_SYMBOL,
+      Record<
+        string, // userid
+        POSITION
+      >
+    >
   >;
   ids: {
     positionId: number;
@@ -29,9 +38,14 @@ type POSITION_SNAPSHOT = {
 
 class PositionManager implements Snapshotable<POSITION_SNAPSHOT> {
   // just isolated
-  private isolatedPositions: Record<
-    string, // userid
-    Partial<Record<TRADABLE_CURRENCY_SYMBOL, POSITION>>
+  private isolatedPositions: Partial<
+    Record<
+      TRADABLE_CURRENCY_SYMBOL,
+      Record<
+        string, // userid
+        POSITION
+      >
+    >
   > = {}; // this is per user per symbol per price positions
 
   ids = {
@@ -46,10 +60,10 @@ class PositionManager implements Snapshotable<POSITION_SNAPSHOT> {
     this.isolatedPositions = data.isolatedPositions;
   }
   getPosition(userId: string, symbol?: TRADABLE_CURRENCY_SYMBOL) {
-    if (symbol) {
-      return this.isolatedPositions[userId];
+    if (!symbol) {
+      return undefined;
     }
-    return this.isolatedPositions[userId]?.[symbol!];
+    return this.isolatedPositions[symbol]?.[userId];
   }
 
   private calculateOrderUpdates(fills: FILLS_INFO) {
@@ -95,7 +109,7 @@ class PositionManager implements Snapshotable<POSITION_SNAPSHOT> {
 
     return orderUpdates;
   }
-  private applyOderUpdates(orderUpdates: ORDER_UPDATES) {
+  private applyOrderUpdates(orderUpdates: ORDER_UPDATES) {
     //
     let usersPnlUpdate: Record<string, number> = {};
     let positionUpdates: POSITION_UPDATES = {};
@@ -113,7 +127,7 @@ class PositionManager implements Snapshotable<POSITION_SNAPSHOT> {
         },
       ] of Object.entries(orderUpdate)) {
         let weighedAvgPrice = positionUpdatePriceQtyProduct / positionUpdateQty;
-        let newPosition = this.isolatedPositions[userId]?.[symbol];
+        let newPosition = this.isolatedPositions[symbol]?.[userId];
 
         let filledRecentQty = Math.abs(positionUpdateQty);
         let unrealizedPnl = 0;
@@ -197,12 +211,12 @@ class PositionManager implements Snapshotable<POSITION_SNAPSHOT> {
         if (newPosition.qty == 0) {
           // return back their margin
           unrealizedPnl += newPosition.margin;
-          delete this.isolatedPositions[userId]?.[symbol];
+          delete this.isolatedPositions[symbol]?.[userId];
         } else {
-          if (!this.isolatedPositions[userId])
-            this.isolatedPositions[userId] = {};
+          if (!this.isolatedPositions[symbol])
+            this.isolatedPositions[symbol] = {};
 
-          this.isolatedPositions[userId]![symbol] = newPosition;
+          this.isolatedPositions[symbol]![userId] = newPosition;
         }
 
         if (unrealizedPnl != 0) {
@@ -217,7 +231,7 @@ class PositionManager implements Snapshotable<POSITION_SNAPSHOT> {
   applyFills(fills: FILLS_INFO) {
     let orderUpdates = this.calculateOrderUpdates(fills);
 
-    let { pnlUpdates, positionUpdates } = this.applyOderUpdates(orderUpdates);
+    let { pnlUpdates, positionUpdates } = this.applyOrderUpdates(orderUpdates);
 
     return { pnlUpdates, positionUpdates };
   }
@@ -230,8 +244,10 @@ class PositionManager implements Snapshotable<POSITION_SNAPSHOT> {
     let positionUpdates: POSITION_UPDATES = {};
 
     Object.entries(this.isolatedPositions).forEach(
-      ([userId, perSymbolPositions]) => {
-        Object.entries(perSymbolPositions).forEach(([symbol, position]) => {
+      ([symbol, perUserPositions]) => {
+        if (!perUserPositions) return;
+
+        Object.entries(perUserPositions).forEach(([userId, position]) => {
           let curFundingRate = fundingRate[symbol as TRADABLE_CURRENCY_SYMBOL];
           if (curFundingRate) {
             let toUpdateMargin = Math.abs(
@@ -253,6 +269,70 @@ class PositionManager implements Snapshotable<POSITION_SNAPSHOT> {
       },
     );
     return { usersPnl, positionUpdates };
+  }
+
+  // adl winnign positions against this guy
+  performAdl(
+    position: POSITION,
+    indexPrice: number,
+  ): {
+    usersPnl: Record<string, number>;
+    positionUpdates: POSITION_UPDATES;
+  } {
+    //
+
+    // maintaining best winner at all times is complicated/ no easy way to do it
+    // TODO : find winners effectively
+
+    let positions = Object.entries(this.isolatedPositions[position.symbol]!);
+
+    positions.sort(([_, posa], [__, posb]) => {
+      let profita =
+        posa.qty * (indexPrice - posa.price) * (posa.type == "LONG" ? 1 : -1);
+      let profitb =
+        posb.qty * (indexPrice - posb.price) * (posb.type == "LONG" ? 1 : -1);
+
+      return profitb - profita;
+    });
+
+    // create random order for current position
+    let positionChanges: ORDER_UPDATES = {
+      [position.userId]: {
+        [crypto.randomUUID()]: {
+          margin: 0,
+          marginType: "ISOLATED",
+          positionUpdatePriceQtyProduct:
+            position.qty * position.price * (position.type == "LONG" ? -1 : 1),
+          positionUpdateQty: position.qty,
+          symbol: position.symbol,
+          totalQty: position.qty,
+        },
+      },
+    };
+
+    // create random order for opposote winning people
+    for (let [userId, pos] of positions) {
+      let qtyToAdl = Math.min(position.qty, pos.qty);
+      positionChanges[userId] = {
+        [crypto.randomUUID()]: {
+          margin: 0,
+          marginType: "ISOLATED",
+          positionUpdatePriceQtyProduct:
+            qtyToAdl * position.price * (position.type == "LONG" ? -1 : 1),
+          positionUpdateQty: position.qty,
+          symbol: position.symbol,
+          totalQty: qtyToAdl,
+        },
+      };
+
+      position.qty -= qtyToAdl;
+      if (position.qty == 0) break;
+    }
+
+    let { pnlUpdates, positionUpdates } =
+      this.applyOrderUpdates(positionChanges);
+
+    return { usersPnl: pnlUpdates, positionUpdates };
   }
 }
 

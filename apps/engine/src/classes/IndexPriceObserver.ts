@@ -71,7 +71,7 @@ class IndexPriceObserver {
         // to keep input to engien determinstic
         await this.redisClient.xAdd(process.env.REDIS_ENGINE_STREAM!, "*", {
           data: JSON.stringify({
-            type: "markprice_updated",
+            type: "indexprice_updated",
             payload: { price: data.p, symbol: data.i },
           }),
         });

@@ -1,4 +1,4 @@
-import z from "zod";
+import z, { symbol } from "zod";
 
 const SIDE_SCHEMA = z.union([z.literal("BUY"), z.literal("SELL")]);
 type SIDE = z.infer<typeof SIDE_SCHEMA>;
@@ -19,6 +19,7 @@ const ORDER_STATUS_SCHEMA = z.union([
 const CURRENCY_SYMBOL_SCHEMA = z.union([
   z.literal("USD"),
   z.literal("BTCUSD"),
+
   z.literal("SOLUSD"),
   z.literal("ETHUSD"),
 ]);
@@ -32,16 +33,21 @@ const TRADBLE_SYMBOL_SCHEMA = z.union([
 type TRADABLE_SYMBOL = z.infer<typeof TRADBLE_SYMBOL_SCHEMA>;
 
 const ORDERBOOK_EVENT_TYPE = z.union([
-  z.literal("depth.updated.sol_usd"),
-  z.literal("depth.updated.eth_usd"),
-  z.literal("depth.updated.btc_usd"),
-  z.literal("users_pnl.updated"),
+  // these are for end user
+  z.literal("depth.updated"),
+  z.literal("lastTradedPrice.updated"),
+  z.literal("trades.created"),
+
+  // these are for db poller
   z.literal("order.created"),
   z.literal("fills.created"),
 ]);
 
 const LIQUIDATION_EVENT_TYPE = z.union([
+  // for end user
   z.literal("indexprice.updated"),
+
+  // use if needed, but not needed rn
   z.literal("funding.created"),
   z.literal("liquidation.started"),
   z.literal("liquidation.completed"),
@@ -63,20 +69,38 @@ const BASE_EVENT_SCHEMA = z.object({
 
 // =======================================================================================
 
-const DEPTH_UPDATED_SOL_USD_PAYLOAD_SCHEMA = z.object({
-  type: z.literal("depth.updated.sol_usd"),
-  data: z.string(),
+const DEPTH_UPDATED_PAYLOAD_SCHEMA = z.object({
+  type: z.literal("depth.updated"),
+  data: z.object({
+    symbol: TRADBLE_SYMBOL_SCHEMA,
+    depthUpdates: z.record(z.number(), z.number()),
+  }),
 });
 
-const DEPTH_UPDATED_BTC_USD_PAYLOAD_SCHEMA = z.object({
-  type: z.literal("depth.updated.btc_usd"),
-  data: z.string(),
+const INDEXPRICE_UPDATED_PAYLOAD_SCHEMA = z.object({
+  type: z.literal("indexprice.updated"),
+  data: z.object({
+    price: z.number(),
+    symbol: TRADBLE_SYMBOL_SCHEMA,
+  }),
 });
 
-const DEPTH_UPDATED_ETH_USD_PAYLOAD_SCHEMA = z.object({
-  type: z.literal("depth.updated.eth_usd"),
-  data: z.string(),
+const LAST_TRADED_PRICE_UPDATED_PAYLOAD_SCHEMA = z.object({
+  type: z.literal("lastTradedPrice.updated"),
+  data: z.object({
+    price: z.number(),
+    symbol: TRADBLE_SYMBOL_SCHEMA,
+  }),
 });
+
+const TRADES_CREATED_PAYLOAD_SCHEMA = z.object({
+  type: z.literal("trades.created"),
+  data: z.object({
+    symbol: TRADBLE_SYMBOL_SCHEMA,
+    trades: z.array(z.tuple([z.number(), z.number()])), // array of [price, position ]
+  }),
+});
+
 const LIQUIDATION_STARTED_PAYLOAD_SCHEMA = z.object({
   type: z.literal("liquidation.started"),
   data: z.object({
@@ -89,14 +113,6 @@ const LIQUIDATION_COMPLETED_PAYLOAD_SCHEMA = z.object({
   type: z.literal("liquidation.completed"),
   data: z.object({
     userId: z.string(),
-    symbol: TRADBLE_SYMBOL_SCHEMA,
-  }),
-});
-
-const MARKPRICE_UPDATED_PAYLOAD_SCHEMA = z.object({
-  type: z.literal("indexprice.updated"),
-  data: z.object({
-    price: z.number(),
     symbol: TRADBLE_SYMBOL_SCHEMA,
   }),
 });
@@ -158,16 +174,8 @@ const FILLS_CREATED_PAYLOAD_SCHEMA = z.object({
 
 // =======================================================================================
 
-const DEPTH_UPDATED_SOL_USD_SCHEMA = BASE_EVENT_SCHEMA.extend({
-  payload: DEPTH_UPDATED_SOL_USD_PAYLOAD_SCHEMA,
-});
-
-const DEPTH_UPDATED_BTC_USD_SCHEMA = BASE_EVENT_SCHEMA.extend({
-  payload: DEPTH_UPDATED_BTC_USD_PAYLOAD_SCHEMA,
-});
-
-const DEPTH_UPDATED_ETH_USD_SCHEMA = BASE_EVENT_SCHEMA.extend({
-  payload: DEPTH_UPDATED_ETH_USD_PAYLOAD_SCHEMA,
+const DEPTH_UPDATED_SCHEMA = BASE_EVENT_SCHEMA.extend({
+  payload: DEPTH_UPDATED_PAYLOAD_SCHEMA,
 });
 
 const LIQUIDATION_STARTED_SCHEMA = BASE_EVENT_SCHEMA.extend({
@@ -178,8 +186,8 @@ const LIQUIDATION_COMPLETED_SCHEMA = BASE_EVENT_SCHEMA.extend({
   payload: LIQUIDATION_COMPLETED_PAYLOAD_SCHEMA,
 });
 
-const MARKPRICE_UPDATED_SCHEMA = BASE_EVENT_SCHEMA.extend({
-  payload: MARKPRICE_UPDATED_PAYLOAD_SCHEMA,
+const INDEXPRICE_UPDATED_SCHEMA = BASE_EVENT_SCHEMA.extend({
+  payload: INDEXPRICE_UPDATED_PAYLOAD_SCHEMA,
 });
 
 const FUNDING_SCHEMA = BASE_EVENT_SCHEMA.extend({
@@ -194,6 +202,13 @@ const FILLS_CREATED_SCHEMA = BASE_EVENT_SCHEMA.extend({
   payload: FILLS_CREATED_PAYLOAD_SCHEMA,
 });
 
+const TRADES_CREATED_SCHEMA = BASE_EVENT_SCHEMA.extend({
+  payload: TRADES_CREATED_PAYLOAD_SCHEMA,
+});
+const LAST_TRADED_PRICE_UPDATED_SCHEMA = BASE_EVENT_SCHEMA.extend({
+  payload: LAST_TRADED_PRICE_UPDATED_PAYLOAD_SCHEMA,
+});
+
 // =======================================================================================
 
 type LIQUIDATION_STARTED_EVENT = z.infer<typeof LIQUIDATION_STARTED_SCHEMA>;
@@ -205,9 +220,21 @@ type LIQUIDATION_COMPLETED_EVENT_PAYLOAD = z.infer<
   typeof LIQUIDATION_COMPLETED_PAYLOAD_SCHEMA
 >;
 
-type MARKPRICE_UPDATED_EVENT = z.infer<typeof MARKPRICE_UPDATED_SCHEMA>;
-type MARKPRICE_UPDATED_EVENT_PAYLOAD = z.infer<
-  typeof MARKPRICE_UPDATED_PAYLOAD_SCHEMA
+type INDEXPRICE_UPDATED_EVENT = z.infer<typeof INDEXPRICE_UPDATED_SCHEMA>;
+type INDEXPRICE_UPDATED_EVENT_PAYLOAD = z.infer<
+  typeof INDEXPRICE_UPDATED_PAYLOAD_SCHEMA
+>;
+
+type LAST_TRADED_PRICE_UPDATED_EVENT = z.infer<
+  typeof LAST_TRADED_PRICE_UPDATED_SCHEMA
+>;
+type LAST_TRADED_PRICE_UPDATED_EVENT_PAYLOAD = z.infer<
+  typeof LAST_TRADED_PRICE_UPDATED_PAYLOAD_SCHEMA
+>;
+
+type TRADES_CREATED_EVENT = z.infer<typeof TRADES_CREATED_SCHEMA>;
+type TRADES_CREATED_EVENT_PAYLOAD = z.infer<
+  typeof TRADES_CREATED_PAYLOAD_SCHEMA
 >;
 
 type FUNDING_EVENT = z.infer<typeof FUNDING_SCHEMA>;
@@ -220,25 +247,25 @@ type FILLS_CREATED_EVENT = z.infer<typeof FILLS_CREATED_SCHEMA>;
 // =======================================================================================
 
 const ENGINE_EVENT_PAYLOAD_SCHEMA = z.union([
-  DEPTH_UPDATED_BTC_USD_PAYLOAD_SCHEMA,
-  DEPTH_UPDATED_SOL_USD_PAYLOAD_SCHEMA,
-  DEPTH_UPDATED_ETH_USD_PAYLOAD_SCHEMA,
+  DEPTH_UPDATED_PAYLOAD_SCHEMA,
   LIQUIDATION_COMPLETED_PAYLOAD_SCHEMA,
   LIQUIDATION_STARTED_PAYLOAD_SCHEMA,
-  MARKPRICE_UPDATED_PAYLOAD_SCHEMA,
+  INDEXPRICE_UPDATED_PAYLOAD_SCHEMA,
   ORDER_CREATED_PAYLOAD_SCHEMA,
   FUNDING_PAYLOAD_SCHEMA,
   FILLS_CREATED_PAYLOAD_SCHEMA,
+  TRADES_CREATED_PAYLOAD_SCHEMA,
+  LAST_TRADED_PRICE_UPDATED_PAYLOAD_SCHEMA,
 ]);
 
 const ENGINE_EVENT_SCHEMA = z.union([
-  DEPTH_UPDATED_BTC_USD_SCHEMA,
-  DEPTH_UPDATED_SOL_USD_SCHEMA,
-  DEPTH_UPDATED_ETH_USD_SCHEMA,
+  DEPTH_UPDATED_SCHEMA,
   LIQUIDATION_COMPLETED_SCHEMA,
+  TRADES_CREATED_SCHEMA,
+  LAST_TRADED_PRICE_UPDATED_SCHEMA,
   FUNDING_SCHEMA,
   LIQUIDATION_STARTED_SCHEMA,
-  MARKPRICE_UPDATED_SCHEMA,
+  INDEXPRICE_UPDATED_SCHEMA,
   ORDER_CREATED_SCHEMA,
   FILLS_CREATED_SCHEMA,
 ]);
@@ -255,22 +282,25 @@ export {
   SIDE_SCHEMA,
   MARGIN_TYPE_SCHEMA,
   TYPE_SCHEMA,
-  MARKPRICE_UPDATED_SCHEMA,
+  INDEXPRICE_UPDATED_SCHEMA,
   CURRENCY_SYMBOL_SCHEMA,
   ORDER_STATUS_SCHEMA,
   FILLS_CREATED_SCHEMA,
   ORDER_CREATED_SCHEMA,
   TRADBLE_SYMBOL_SCHEMA,
-  DEPTH_UPDATED_SOL_USD_PAYLOAD_SCHEMA,
-  DEPTH_UPDATED_BTC_USD_PAYLOAD_SCHEMA,
-  DEPTH_UPDATED_ETH_USD_PAYLOAD_SCHEMA,
+  DEPTH_UPDATED_SCHEMA,
+  DEPTH_UPDATED_PAYLOAD_SCHEMA,
   LIQUIDATION_STARTED_PAYLOAD_SCHEMA,
   LIQUIDATION_COMPLETED_PAYLOAD_SCHEMA,
-  MARKPRICE_UPDATED_PAYLOAD_SCHEMA,
+  INDEXPRICE_UPDATED_PAYLOAD_SCHEMA,
   ORDER_CREATED_PAYLOAD_SCHEMA,
   FILLS_CREATED_PAYLOAD_SCHEMA,
   FUNDING_PAYLOAD_SCHEMA,
   FUNDING_SCHEMA,
+  TRADES_CREATED_SCHEMA,
+  LAST_TRADED_PRICE_UPDATED_SCHEMA,
+  TRADES_CREATED_PAYLOAD_SCHEMA,
+  LAST_TRADED_PRICE_UPDATED_PAYLOAD_SCHEMA,
 };
 
 export type {
@@ -280,11 +310,11 @@ export type {
   ENGINE_EVENT_PAYLOAD,
   LIQUIDATION_COMPLETED_EVENT_PAYLOAD,
   LIQUIDATION_STARTED_EVENT_PAYLOAD,
-  MARKPRICE_UPDATED_EVENT_PAYLOAD,
+  INDEXPRICE_UPDATED_EVENT_PAYLOAD,
   ORDER_CREATED_EVENT,
   MARGIN_TYPE,
   TYPE,
-  MARKPRICE_UPDATED_EVENT,
+  INDEXPRICE_UPDATED_EVENT,
   ENGINE_EVENT_TYPE,
   ENGINE_EVENT,
   LIQUIDATION_STARTED_EVENT,
@@ -292,4 +322,8 @@ export type {
   FUNDING_EVENT,
   FUNDING_EVENT_PAYLOAD,
   CURRENCY_SYMBOL,
+  TRADES_CREATED_EVENT,
+  TRADES_CREATED_EVENT_PAYLOAD,
+  LAST_TRADED_PRICE_UPDATED_EVENT,
+  LAST_TRADED_PRICE_UPDATED_EVENT_PAYLOAD,
 };

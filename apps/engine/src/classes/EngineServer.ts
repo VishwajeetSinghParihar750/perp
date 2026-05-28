@@ -7,7 +7,7 @@ import { EngineRequest, EngineResponse } from "@repo/shared-types";
 import EventPublisher, {
   type EVENT_PUBLISHER_SNAPSHOT,
 } from "./EventPublisher.js";
-import MarkPriceObserver from "./IndexPriceObserver.js";
+import IndexPriceObserver from "./IndexPriceObserver.js";
 import SnapshotManager, { type Snapshotable } from "./SnapshotManger.js";
 import type { FILLS_INFO } from "../types/order.js";
 
@@ -21,7 +21,7 @@ class EngineServer implements Snapshotable<ENGINE_SERVER_SNAPSHOT> {
   private exchange: Exchange;
   private eventBus: EventBus;
   private eventPublisher: EventPublisher;
-  private markpPriceObserver: MarkPriceObserver;
+  private indexPriceObserver: IndexPriceObserver;
   private snapshotManager: SnapshotManager;
 
   getSnapshot = (): ENGINE_SERVER_SNAPSHOT => {
@@ -113,7 +113,7 @@ class EngineServer implements Snapshotable<ENGINE_SERVER_SNAPSHOT> {
     let lastRedisMessageId = this.snapshotManager.initialize();
 
     await this.eventPublisher.initialize();
-    await this.markpPriceObserver.initialize();
+    await this.indexPriceObserver.initialize();
 
     let dupClient = this.redisClient.duplicate();
     await dupClient.connect();
@@ -142,7 +142,7 @@ class EngineServer implements Snapshotable<ENGINE_SERVER_SNAPSHOT> {
       this.eventBus,
       this.redisClient.duplicate(),
     );
-    this.markpPriceObserver = new MarkPriceObserver(
+    this.indexPriceObserver = new IndexPriceObserver(
       this.redisClient.duplicate(),
     );
   }
@@ -312,7 +312,7 @@ class EngineServer implements Snapshotable<ENGINE_SERVER_SNAPSHOT> {
     }
   };
 
-  private handleUpdateMarkPriceRequest = (
+  private handleUpdateIndexPriceRequest = (
     engineRequest: EngineRequest.MARK_PRICE_UDPATED_REQUEST,
   ) => {
     try {
@@ -418,8 +418,8 @@ class EngineServer implements Snapshotable<ENGINE_SERVER_SNAPSHOT> {
   ) => {
     // console.log("engineRequest", engineRequest);
     switch (engineRequest.type) {
-      case "markprice_updated":
-        this.handleUpdateMarkPriceRequest(engineRequest);
+      case "indexprice_updated":
+        this.handleUpdateIndexPriceRequest(engineRequest);
         break;
       case "funding_created":
         this.exchange.handleFunding();

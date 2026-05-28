@@ -241,17 +241,18 @@ export default class Exchange implements Snapshotable<EXCHANGE_SNAPSHOT> {
 
   handleFunding() {
     let indexPrices = this.liquidationEngine.indexPrices;
-    let markPrices = this.orderBook.markPrices;
+    let lastTradedPrices = this.orderBook.lastTradedPrices;
 
     let symbols: TRADABLE_CURRENCY_SYMBOL[] = [];
 
-    let fundingRates = Object.entries(markPrices).reduce(
-      (toRet, [symbol, markprice]) => {
+    let fundingRates = Object.entries(lastTradedPrices).reduce(
+      (toRet, [symbol, lastTradedPrice]) => {
         let typedSymbol = symbol as TRADABLE_CURRENCY_SYMBOL;
 
         if (indexPrices[typedSymbol]) {
           let premium =
-            (markprice - indexPrices[typedSymbol]) / indexPrices[typedSymbol];
+            (lastTradedPrice - indexPrices[typedSymbol]) /
+            indexPrices[typedSymbol];
           let interestRate = 20;
           let fundingRate =
             premium + Math.min(Math.max(interestRate - premium, -30), 30);

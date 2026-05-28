@@ -96,7 +96,7 @@ const MARK_PRICE_UPDATE_SYMBOL_SCHEMA = z.union([
 ]);
 
 const MARK_PRICE_UDPATED_SCHEMA = z.object({
-  type: z.literal("markprice_updated"),
+  type: z.literal("indexprice_updated"),
   payload: z.object({
     price: z.string(),
     symbol: MARK_PRICE_UPDATE_SYMBOL_SCHEMA,

@@ -197,28 +197,21 @@ class PositionManager implements Snapshotable<POSITION_SNAPSHOT> {
         }
 
         // update positions
-        if (!positionUpdates[newPosition.userId]) {
-          positionUpdates[newPosition.userId] = {
-            [newPosition.symbol]: newPosition,
-          };
-        } else
-          positionUpdates[newPosition.userId]![newPosition.symbol] =
-            newPosition;
+        positionUpdates[newPosition.userId] ??= {};
+        positionUpdates[newPosition.userId]![newPosition.symbol] = newPosition;
 
         if (newPosition.qty == 0) {
           // return back their margin
           unrealizedPnl += newPosition.margin;
           delete this.isolatedPositions[symbol]?.[userId];
         } else {
-          if (!this.isolatedPositions[symbol])
-            this.isolatedPositions[symbol] = {};
-
+          this.isolatedPositions[symbol] ??= {};
           this.isolatedPositions[symbol]![userId] = newPosition;
         }
 
         if (unrealizedPnl != 0) {
-          if (!usersPnlUpdate[userId]) usersPnlUpdate[userId] = unrealizedPnl;
-          else usersPnlUpdate[userId] += unrealizedPnl;
+          usersPnlUpdate[userId] ??= 0;
+          usersPnlUpdate[userId] += unrealizedPnl;
         }
       }
     }

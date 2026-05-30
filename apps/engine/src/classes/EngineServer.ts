@@ -41,64 +41,62 @@ class EngineServer implements Snapshotable<ENGINE_SERVER_SNAPSHOT> {
     lastRedisMessageId: string,
   ) {
     // getting connected client
+    while (true) {
+      const xReadResponse = await redisClient.xRead(
+        [
+          {
+            id: lastRedisMessageId,
+            key: process.env.REDIS_ENGINE_STREAM!,
+          },
+        ],
+        { BLOCK: 0, COUNT: 100 },
+      );
 
-    const xReadResponse = await redisClient.xRead(
-      [
-        {
-          id: lastRedisMessageId,
-          key: process.env.REDIS_ENGINE_STREAM!,
-        },
-      ],
-      { BLOCK: 0, COUNT: 100 },
-    );
+      // error here in processing reading request and sending resonse shuld not be caught
+      // it should make process exit and must be restarted to keep state reliable across services
+      if (xReadResponse) {
+        for (let perStreamRespone of xReadResponse) {
+          if (perStreamRespone.name == process.env.REDIS_ENGINE_STREAM) {
+            for (let { id, message } of perStreamRespone.messages) {
+              this.eventPublisher.startObservingEvents();
 
-    // error here in processing reading request and sending resonse shuld not be caught
-    // it should make process exit and must be restarted to keep state reliable across services
-    if (xReadResponse) {
-      for (let perStreamRespone of xReadResponse) {
-        if (perStreamRespone.name == process.env.REDIS_ENGINE_STREAM) {
-          for (let { id, message } of perStreamRespone.messages) {
-            this.eventPublisher.startObservingEvents();
+              // json parsing
+              let request: EngineRequest.ENGINE_REQUEST = JSON.parse(
+                message.data!,
+              );
 
-            // json parsing
-            let request: EngineRequest.ENGINE_REQUEST = JSON.parse(
-              message.data!,
-            );
+              // zod validation
+              EngineRequest.ENGINE_REQUEST_SCHEMA.parse(request);
 
-            // zod validation
-            EngineRequest.ENGINE_REQUEST_SCHEMA.parse(request);
+              // here switch based on info types
+              if (EngineRequest.isEngineInfoRequst(request)) {
+                this.handleEngineInfoRequest(request);
+                this.snapshotManager.onMessageProcessed(id);
 
-            // here switch based on info types
-            if (EngineRequest.isEngineInfoRequst(request)) {
-              this.handleEngineInfoRequest(request);
-              this.snapshotManager.onMessageProcessed(id);
+                await this.eventPublisher.publishEvents();
+                this.snapshotManager.onFullMessageProcessed(id);
+              } else {
+                // here sned to request handler
+                let result = this.handleEngineRequest(request);
 
-              await this.eventPublisher.publishEvents();
-              this.snapshotManager.onFullMessageProcessed(id);
-            } else {
-              // here sned to request handler
-              let result = this.handleEngineRequest(request);
+                // this message processed
+                this.snapshotManager.onMessageProcessed(id);
 
-              // this message processed
-              this.snapshotManager.onMessageProcessed(id);
+                //
+                await this.eventPublisher.publishEvents();
+                await redisClient.xAdd(request.stream, "*", {
+                  data: JSON.stringify(result),
+                });
 
-              //
-              await this.eventPublisher.publishEvents();
-              await redisClient.xAdd(request.stream, "*", {
-                data: JSON.stringify(result),
-              });
+                this.snapshotManager.onFullMessageProcessed(id);
+              }
 
-              this.snapshotManager.onFullMessageProcessed(id);
+              lastRedisMessageId = id;
             }
-
-            lastRedisMessageId = id;
           }
         }
       }
     }
-
-    // then wait again
-    this.handleClientRequsts(redisClient, lastRedisMessageId);
   }
 
   async initialize() {
@@ -113,6 +111,8 @@ class EngineServer implements Snapshotable<ENGINE_SERVER_SNAPSHOT> {
 
     // every 8 hrs do funding
     let dupClient2 = this.redisClient.duplicate();
+    await dupClient2.connect();
+
     setInterval(
       async () => {
         await dupClient2.xAdd(process.env.REDIS_ENGINE_STREAM!, "*", {
@@ -121,7 +121,7 @@ class EngineServer implements Snapshotable<ENGINE_SERVER_SNAPSHOT> {
           }),
         });
       },
-      8 * 60 * 60,
+      8 * 60 * 60 * 1000,
     );
   }
 

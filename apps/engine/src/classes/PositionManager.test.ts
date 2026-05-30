@@ -61,7 +61,29 @@ describe("PositionManager", () => {
     it("should increase position size on same-direction fill", () => {
       const fills: FILLS_INFO = [makeFill()];
       pm.applyFills(fills);
-      const fills2: FILLS_INFO = [makeFill({ qty: 3, buyOrderInfo: { buyerId: "buyer1", orderId: "o3", totalQty: 3, orderStatus: "FILLED", filledQty: 3, margin: 30, marginType: "ISOLATED" }, sellOrderInfo: { sellerId: "seller2", orderId: "o4", totalQty: 3, orderStatus: "FILLED", filledQty: 3, margin: 30, marginType: "ISOLATED" } })];
+      const fills2: FILLS_INFO = [
+        makeFill({
+          qty: 3,
+          buyOrderInfo: {
+            buyerId: "buyer1",
+            orderId: "o3",
+            totalQty: 3,
+            orderStatus: "FILLED",
+            filledQty: 3,
+            margin: 30,
+            marginType: "ISOLATED",
+          },
+          sellOrderInfo: {
+            sellerId: "seller2",
+            orderId: "o4",
+            totalQty: 3,
+            orderStatus: "FILLED",
+            filledQty: 3,
+            margin: 30,
+            marginType: "ISOLATED",
+          },
+        }),
+      ];
       pm.applyFills(fills2);
       const position = pm.getPosition("buyer1", "SOLUSD");
       expect(position!.qty).toBe(8);
@@ -70,7 +92,31 @@ describe("PositionManager", () => {
     it("should reduce position size on opposite-direction fill", () => {
       const fills: FILLS_INFO = [makeFill()];
       pm.applyFills(fills);
-      const fills2: FILLS_INFO = [makeFill({ qty: 3, price: 25, buyOrderInfo: { buyerId: "seller1", orderId: "o3", totalQty: 3, orderStatus: "FILLED", filledQty: 3, margin: 30, marginType: "ISOLATED" }, sellOrderInfo: { sellerId: "buyer1", orderId: "o4", totalQty: 3, orderStatus: "FILLED", filledQty: 3, margin: 30, marginType: "ISOLATED" }, symbol: "SOLUSD" })];
+      const fills2: FILLS_INFO = [
+        makeFill({
+          qty: 3,
+          price: 25,
+          buyOrderInfo: {
+            buyerId: "seller1",
+            orderId: "o3",
+            totalQty: 3,
+            orderStatus: "FILLED",
+            filledQty: 3,
+            margin: 30,
+            marginType: "ISOLATED",
+          },
+          sellOrderInfo: {
+            sellerId: "buyer1",
+            orderId: "o4",
+            totalQty: 3,
+            orderStatus: "FILLED",
+            filledQty: 3,
+            margin: 30,
+            marginType: "ISOLATED",
+          },
+          symbol: "SOLUSD",
+        }),
+      ];
       pm.applyFills(fills2);
       const position = pm.getPosition("buyer1", "SOLUSD");
       expect(position!.qty).toBe(2);
@@ -79,7 +125,30 @@ describe("PositionManager", () => {
     it("should close position when qty reaches 0 and return PnL", () => {
       const fills: FILLS_INFO = [makeFill()];
       pm.applyFills(fills);
-      const fills2: FILLS_INFO = [makeFill({ qty: 5, price: 25, buyOrderInfo: { buyerId: "seller1", orderId: "o3", totalQty: 5, orderStatus: "FILLED", filledQty: 5, margin: 50, marginType: "ISOLATED" }, sellOrderInfo: { sellerId: "buyer1", orderId: "o4", totalQty: 5, orderStatus: "FILLED", filledQty: 5, margin: 50, marginType: "ISOLATED" } })];
+      const fills2: FILLS_INFO = [
+        makeFill({
+          qty: 5,
+          price: 25,
+          buyOrderInfo: {
+            buyerId: "seller1",
+            orderId: "o3",
+            totalQty: 5,
+            orderStatus: "FILLED",
+            filledQty: 5,
+            margin: 50,
+            marginType: "ISOLATED",
+          },
+          sellOrderInfo: {
+            sellerId: "buyer1",
+            orderId: "o4",
+            totalQty: 5,
+            orderStatus: "FILLED",
+            filledQty: 5,
+            margin: 50,
+            marginType: "ISOLATED",
+          },
+        }),
+      ];
       const result = pm.applyFills(fills2);
       const position = pm.getPosition("buyer1", "SOLUSD");
       expect(position).toBeUndefined();
@@ -89,7 +158,30 @@ describe("PositionManager", () => {
     it("should return correct PnL for profitable close", () => {
       const fills: FILLS_INFO = [makeFill()];
       pm.applyFills(fills);
-      const fills2: FILLS_INFO = [makeFill({ qty: 5, price: 25, buyOrderInfo: { buyerId: "seller1", orderId: "o3", totalQty: 5, orderStatus: "FILLED", filledQty: 5, margin: 50, marginType: "ISOLATED" }, sellOrderInfo: { sellerId: "buyer1", orderId: "o4", totalQty: 5, orderStatus: "FILLED", filledQty: 5, margin: 50, marginType: "ISOLATED" } })];
+      const fills2: FILLS_INFO = [
+        makeFill({
+          qty: 5,
+          price: 25,
+          buyOrderInfo: {
+            buyerId: "seller1",
+            orderId: "o3",
+            totalQty: 5,
+            orderStatus: "FILLED",
+            filledQty: 5,
+            margin: 50,
+            marginType: "ISOLATED",
+          },
+          sellOrderInfo: {
+            sellerId: "buyer1",
+            orderId: "o4",
+            totalQty: 5,
+            orderStatus: "FILLED",
+            filledQty: 5,
+            margin: 50,
+            marginType: "ISOLATED",
+          },
+        }),
+      ];
       const result = pm.applyFills(fills2);
       expect(result.pnlUpdates.buyer1).toBeGreaterThan(0);
     });

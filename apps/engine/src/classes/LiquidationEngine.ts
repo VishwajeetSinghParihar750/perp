@@ -61,7 +61,7 @@ class LiquidationEngine implements Snapshotable<LIQUIDATION_SNAPSHOT> {
   loadSnapshot(data: LIQUIDATION_SNAPSHOT) {
     this._indexPrices = data.indexPrices;
     this.liquidationPrice = data.liquidationPrice;
-    this.positions = this.positions;
+    this.positions = data.positions;
 
     Object.values(this.positions).forEach((position) => {
       // add to liquis positons
@@ -94,7 +94,7 @@ class LiquidationEngine implements Snapshotable<LIQUIDATION_SNAPSHOT> {
 
     let newPrice =
       positon.price +
-      (canTakeLoss / positon.qty) * (positon.type == "LONG" ? 1 : -1);
+      (canTakeLoss / positon.qty) * (positon.type == "LONG" ? -1 : 1);
 
     return newPrice;
   }
@@ -160,12 +160,9 @@ class LiquidationEngine implements Snapshotable<LIQUIDATION_SNAPSHOT> {
     qty: number;
     type: ORDER_TYPE;
     side: ORDER_SIDE;
-    price: number | undefined;
+    price: number;
   }): number {
-    if (order.price) return (order.price * order.qty) / 10;
-
-    // TODO : makr sure you have index prices before you start taking orders
-    return (this.indexPrices[order.symbol]! * order.qty) / 10;
+    return (order.price * order.qty) / 10;
   }
 
   get indexPrices() {

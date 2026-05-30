@@ -15,9 +15,9 @@ pnpm --filter engine exec vitest run
 
 ---
 
-## Category A — Test Failures (Confirmed at Runtime)
+## Category A — Test Failures (Confirmed at Runtime) 💚
 
-### A1. `OrderBook` — Market orders fail to match
+### A1. `OrderBook` — Market orders fail to match 💚
 
 **File:** `apps/engine/src/classes/OrderBook.ts:147-245`
 **Tests affected:** `should match a market buy against existing limit sell orders`, `should partially fill market buy if not enough liquidity`, `should match across multiple price levels on market buy`, `should match a market sell against existing limit buy orders`
@@ -28,7 +28,7 @@ pnpm --filter engine exec vitest run
 
 ---
 
-### A2. `LiquidationEngine` — `getMarginRequired` does not throw on missing index price
+### A2. `LiquidationEngine` — `getMarginRequired` does not throw on missing index price 💚
 
 **File:** `apps/engine/src/classes/LiquidationEngine.ts:168`
 **Test affected:** `should throw when no index price and no price given`
@@ -37,35 +37,41 @@ pnpm --filter engine exec vitest run
 
 ---
 
-### A3. `PositionManager` — PnL calculation has wrong sign for position reductions
+### A3. `PositionManager` — PnL calculation has wrong sign for position reductions 💚
 
 **File:** `apps/engine/src/classes/PositionManager.ts:189-191`
 **Test affected:** `should close position when qty reaches 0 and return PnL`
 
 **What happens:** When reducing an existing LONG position (selling into it), `orderType` is `"SHORT"`, so the multiplier is `-1`:
+
 ```ts
-(weighedAvgPrice - newPosition.price) * qtyForPnl * (orderType == "LONG" ? 1 : -1);
+(weighedAvgPrice - newPosition.price) *
+  qtyForPnl *
+  (orderType == "LONG" ? 1 : -1);
 ```
+
 A profitable close (bought at 20, sold at 25) produces negative PnL because `(25-20) * 5 * (-1) = -25`. The multiplier should be based on **position type**, not order type. Additionally on full close, the entire margin (`100`) is added to PnL (line 213), inflating the value to `75` instead of the correct `25` (profit only).
 
 ---
 
 ## Category B — Critical Runtime Bugs (Will Crash or Corrupt State)
 
-### B1. `LiquidationEngine.loadSnapshot` — No-op assignment discards all data
+### B1. `LiquidationEngine.loadSnapshot` — No-op assignment discards all data 💚
 
 **File:** `apps/engine/src/classes/LiquidationEngine.ts:64`
+
 ```ts
-this.positions = this.positions;  // BUG: should be data.positions
+this.positions = this.positions; // BUG: should be data.positions
 ```
 
 The snapshot's `positions` data is completely discarded. Line 66 then iterates over the empty `this.positions`, so the rest of the load logic (`liquidPositions`, `liquidationPrice`) does nothing. **Snapshot restore for liquidation state is completely broken.**
 
 ---
 
-### B2. `LiquidationEngine.getLiquidationForPosition` — LONG liquidation price is inverted
+### B2. `LiquidationEngine.getLiquidationForPosition` — LONG liquidation price is inverted 💚
 
 **File:** `apps/engine/src/classes/LiquidationEngine.ts:95-97`
+
 ```ts
 let newPrice =
   positon.price +
@@ -80,7 +86,7 @@ For SHORT the formula is correct (price rises to liquidate shorts).
 
 ---
 
-### B3. `LiquidationEngine.handleIndexPriceUpdate` — Liquidated positions never removed from data structure
+### B3. `LiquidationEngine.handleIndexPriceUpdate` — Liquidated positions never removed from data structure 💚
 
 **File:** `apps/engine/src/classes/LiquidationEngine.ts:142-151`
 
@@ -90,20 +96,22 @@ Additionally, `liquidation.started` / `liquidation.completed` events are **never
 
 ---
 
-### B4. `EngineServer.handleClientRequsts` — Unbounded recursion causes stack overflow
+### B4. `EngineServer.handleClientRequsts` — Unbounded recursion causes stack overflow 💚
 
 **File:** `apps/engine/src/classes/EngineServer.ts:109`
+
 ```ts
-this.handleClientRequsts(redisClient, lastRedisMessageId);  // recursive call
+this.handleClientRequsts(redisClient, lastRedisMessageId); // recursive call
 ```
 
 Each processed message adds a stack frame via recursive call. JavaScript call stack limit is ~10k frames. Under sustained load this **will crash the engine**. Should use a `while(true)` loop.
 
 ---
 
-### B5. `EngineServer` — Funding interval Redis client never connected
+### B5. `EngineServer` — Funding interval Redis client never connected 💚
 
 **File:** `apps/engine/src/classes/EngineServer.ts:123-126`
+
 ```ts
 let dupClient2 = this.redisClient.duplicate();
 setInterval(async () => {
@@ -115,11 +123,12 @@ setInterval(async () => {
 
 ---
 
-### B6. `EngineServer` — Funding interval is 28.8 seconds, not 8 hours
+### B6. `EngineServer` — Funding interval is 28.8 seconds, not 8 hours 💚
 
 **File:** `apps/engine/src/classes/EngineServer.ts:132`
+
 ```ts
-8 * 60 * 60  // = 28800 ms = 28.8 seconds (missing * 1000)
+8 * 60 * 60; // = 28800 ms = 28.8 seconds (missing * 1000)
 ```
 
 Should be `8 * 60 * 60 * 1000`.
@@ -137,9 +146,10 @@ Redis message IDs like `"1680000000000-0"` (13 digits) and `"999999999999-0"` (1
 ### B8. `IndexPriceObserver` — WebSocket errors silently swallowed
 
 **File:** `apps/engine/src/classes/IndexPriceObserver.ts:55-57`
+
 ```ts
 ws.onerror = () => {
-  assert(true);  // no-op, never throws
+  assert(true); // no-op, never throws
 };
 ```
 
@@ -150,11 +160,12 @@ If the Binance WebSocket disconnects or errors, the engine silently loses its pr
 ### B9. `IndexPriceObserver` — No symbol case conversion
 
 **File:** `apps/engine/src/classes/IndexPriceObserver.ts:75`
+
 ```ts
 data: JSON.stringify({
   type: "indexprice_updated",
-  payload: { price: data.p, symbol: data.i }  // Binance sends "btcusd", engine expects "BTCUSD"
-})
+  payload: { price: data.p, symbol: data.i }, // Binance sends "btcusd", engine expects "BTCUSD"
+});
 ```
 
 Binance uses lowercase symbols (e.g., `"btcusd"`). The engine uses uppercase (`"BTCUSD"`). No `.toUpperCase()` is applied. Index price updates will never match any tradable symbol.
@@ -172,6 +183,7 @@ The `depthUpdates` parameter (typed as `any`) is completely ignored. All the act
 ### B11. `Balances.loadSnapshot` — `new Set(...array)` uses spread incorrectly
 
 **File:** `apps/engine/src/classes/Balances.ts:56-57`
+
 ```ts
 this.lockedAccounts[curKey as CURRENCY_SYMBOL] = new Set(
   ...data.lockedAccounts[curKey as CURRENCY_SYMBOL]!,
@@ -185,6 +197,7 @@ this.lockedAccounts[curKey as CURRENCY_SYMBOL] = new Set(
 ### B12. `PositionManager.calculateOrderUpdates` — Division by zero
 
 **File:** `apps/engine/src/classes/PositionManager.ts:129`
+
 ```ts
 let weighedAvgPrice = positionUpdatePriceQtyProduct / positionUpdateQty;
 ```
@@ -196,6 +209,7 @@ If `positionUpdateQty` is `0` (possible if fill quantities net to zero), this pr
 ### B13. `Exchange.cancelOrder` — Division by zero if qty is 0
 
 **File:** `apps/engine/src/classes/Exchange.ts:168`
+
 ```ts
 this.balances.addBalance(userId, "USD", (margin * (qty - filledQty)) / qty);
 ```
@@ -207,6 +221,7 @@ If `qty === 0`, this produces `Infinity`, corrupting the user's balance.
 ### B14. `Exchange.handleIndexPriceUpdate` — Non-null assertion on potentially undefined index price
 
 **File:** `apps/engine/src/classes/Exchange.ts:233`
+
 ```ts
 let price = this.liquidationEngine.indexPrices[position.symbol]!;
 ```
@@ -218,6 +233,7 @@ If no index price has been set for this symbol (e.g., Binance WebSocket hasn't s
 ### B15. `routes/order.ts` — Prisma method `findOne` does not exist
 
 **File:** `apps/backend/src/routes/order.ts:16`
+
 ```ts
 prismaClient.order.findOne(...)
 ```
@@ -270,8 +286,9 @@ No hashing (bcrypt, argon2, etc.) is performed. A database breach leaks all user
 ### B21. `routes/auth.ts` — JWT tokens never expire
 
 **File:** `apps/backend/src/routes/auth.ts:44`
+
 ```ts
-jwt.sign({ id: user.id, username: user.username }, process.env.JWT_SECRET_KEY!)
+jwt.sign({ id: user.id, username: user.username }, process.env.JWT_SECRET_KEY!);
 ```
 
 No `expiresIn` option. Stolen tokens are valid forever and cannot be revoked.
@@ -282,11 +299,11 @@ No `expiresIn` option. Stolen tokens are valid forever and cannot be revoked.
 
 Multiple Zod v4 API incompatibilities:
 
-| File | Line | Code | Issue |
-|------|------|------|-------|
-| `engineEvent.ts` | 1 | `import { symbol } from "zod"` | Zod v4 does not export `symbol` |
-| `engineResponse.ts` | 21 | `z.iso.datetime()` | No such API in Zod v4 |
-| `engineResponse.ts` | 102 | `z.partialRecord(...)` | No such API in Zod v4 |
+| File                | Line | Code                           | Issue                           |
+| ------------------- | ---- | ------------------------------ | ------------------------------- |
+| `engineEvent.ts`    | 1    | `import { symbol } from "zod"` | Zod v4 does not export `symbol` |
+| `engineResponse.ts` | 21   | `z.iso.datetime()`             | No such API in Zod v4           |
+| `engineResponse.ts` | 102  | `z.partialRecord(...)`         | No such API in Zod v4           |
 
 These will all cause TypeScript compilation failures.
 
@@ -295,8 +312,12 @@ These will all cause TypeScript compilation failures.
 ### B23. `ws.d.ts` — `user` typed as non-optional but is undefined before auth
 
 **File:** `apps/backend/src/types/ws.d.ts`
+
 ```ts
-user: { id: string; username: string };  // no ?
+user: {
+  id: string;
+  username: string;
+} // no ?
 ```
 
 `ws.user` is only assigned after `verifyJwtToken` succeeds. Before that it is `undefined`. The type lies to developers. Accessing `ws.user.id` before auth throws `TypeError`.
@@ -324,6 +345,7 @@ The Redis client is created but `connect()` is never called. Modern `redis` (v4+
 ### C1. `OrderBook.getDepth` — BIDS count uses ASKS size
 
 **File:** `apps/engine/src/classes/OrderBook.ts:722`
+
 ```ts
 let countToReturn = Math.min(count, this.orderBook[symbol]!.ASKS.size());
 ```
@@ -351,6 +373,7 @@ The `OrderedMap` for BIDS uses default comparator `(x, y) => x - y` (ascending).
 ### C4. `LiquidationEngine.handleIndexPriceUpdate` — Falsy price check
 
 **File:** `apps/engine/src/classes/LiquidationEngine.ts:130-133`
+
 ```ts
 if (!this.indexPrices[symbol]) this.indexPrices[symbol] = newPrice;
 ```
@@ -362,6 +385,7 @@ If an index price is literally `0`, this branch incorrectly treats it as unset a
 ### C5. `LiquidationEngine.getMarginRequired` — Truthy price check omits price = 0
 
 **File:** `apps/engine/src/classes/LiquidationEngine.ts:165`
+
 ```ts
 if (order.price) return (order.price * order.qty) / 10;
 ```
@@ -385,6 +409,7 @@ When flipping (SHORT→LONG): keeps old entry price (incorrect — should use ne
 ### C7. `PositionManager.applyFunding` — Margin can go negative
 
 **File:** `apps/engine/src/classes/PositionManager.ts:256`
+
 ```ts
 position.margin -= toUpdateMargin;
 ```
@@ -415,7 +440,7 @@ This is a magic number with no documentation. Should be configurable.
 
 ### C10. `Exchange.handleFunding` — `!indexPrices[typedSymbol]` skips on zero price
 
-**File:** `apps/engine/src/classes/Exchange.ts:252**
+**File:** `apps/engine/src/classes/Exchange.ts:252\*\*
 
 If an index price is literally `0`, funding for that symbol is silently skipped.
 
@@ -439,12 +464,12 @@ When called without a symbol, returns `undefined` instead of returning all posit
 
 ### C13. `engineInterface.ts` — Catch block dead code (`gotRequestId` always `""`)
 
-**File:** `apps/backend/src/engineInterface.ts:93**
+**File:** `apps/backend/src/engineInterface.ts:93\*\*
 
 ```ts
 let gotRequestId = "";
 // ... never reassigned before catch block
-this.pendingRequests[gotRequestId]?.[1]?.(error);  // pendingRequests[""] is always undefined
+this.pendingRequests[gotRequestId]?.[1]?.(error); // pendingRequests[""] is always undefined
 ```
 
 When message parsing fails, the caller is never notified. The WebSocket client hangs forever waiting for a response.
@@ -481,7 +506,7 @@ The schema only has `BIDS`. The `ASKS` field is missing, so orderbook snapshots 
 
 ### C17. `backendResponse.ts` — Exported identifiers misspelled
 
-**File:** `packages/shared-types/shared-backend-types/backendResponse.ts:6,10,12,13**
+**File:** `packages/shared-types/shared-backend-types/backendResponse.ts:6,10,12,13\*\*
 
 `BACKEND_RESPOSNE_SCHEMA` / `BACKEND_RESPOSNE` — missing `N` in "RESPONSE". Any consumer importing `BACKEND_RESPONSE_SCHEMA` gets a compile error.
 
@@ -497,108 +522,108 @@ Incoming engine-info requests use `"indexprice_updated"` (underscore), but the e
 
 ## Category D — Security Issues
 
-| # | File | Issue |
-|---|------|-------|
-| D1 | `routes/auth.ts:21` | **Passwords stored in plaintext** (no hashing) |
-| D2 | `routes/auth.ts:44` | **JWT tokens never expire** (no `expiresIn`) |
-| D3 | `routes/order.ts` | **No auth middleware** on GET /order — anyone can query any order |
-| D4 | `app.ts` | **No CORS middleware** |
-| D5 | `app.ts` | **No security headers** (helmet) |
-| D6 | `app.ts` | **No body size limit** on `express.json()` — DoS vector |
-| D7 | `ws/index.ts` | **WebSocket upgrade completes before auth** — unauthenticated clients consume resources |
+| #   | File                | Issue                                                                                   |
+| --- | ------------------- | --------------------------------------------------------------------------------------- |
+| D1  | `routes/auth.ts:21` | **Passwords stored in plaintext** (no hashing)                                          |
+| D2  | `routes/auth.ts:44` | **JWT tokens never expire** (no `expiresIn`)                                            |
+| D3  | `routes/order.ts`   | **No auth middleware** on GET /order — anyone can query any order                       |
+| D4  | `app.ts`            | **No CORS middleware**                                                                  |
+| D5  | `app.ts`            | **No security headers** (helmet)                                                        |
+| D6  | `app.ts`            | **No body size limit** on `express.json()` — DoS vector                                 |
+| D7  | `ws/index.ts`       | **WebSocket upgrade completes before auth** — unauthenticated clients consume resources |
 
 ---
 
 ## Category E — TypeScript / Type Safety Issues
 
-| # | File | Issue |
-|---|------|-------|
-| E1 | `Balances.ts:86` | `as number` cast on union return type (`number | Partial<Record<...>>`) — unchecked |
-| E2 | `OrderBook.ts:106-111` | `key as any`, `as CURRENCY_SYMBOL` bypass type safety on snapshot load |
-| E3 | `LiquidationEngine.ts:168` | `!` non-null assertion on potentially undefined index price |
-| E4 | `Exchange.ts:158` | `order!` non-null assertion on optional field |
-| E5 | `Exchange.ts:233` | `!` non-null assertion on potentially undefined index price |
-| E6 | `EngineServer.ts` | Multiple `process.env.X!` with no validation |
-| E7 | `ws.d.ts` | `user` typed as non-optional but is undefined before auth |
-| E8 | `shared-types` | 3 non-existent Zod v4 APIs (see B22) |
-| E9 | `db/redis/index.ts` | `process.env.REDIS_URL!` with no fallback |
-| E10 | `db/pg/index.ts` | `process.env.DATABASE_URL!` with no fallback |
-| E11 | `engineResponse.ts:40` | `POSITION_RES_SCHEMA` union of 3 incompatible shapes, including `z.undefined()` which JSON-serializes to missing key |
+| #   | File                       | Issue                                                                                                                |
+| --- | -------------------------- | -------------------------------------------------------------------------------------------------------------------- | ---------------------------------- |
+| E1  | `Balances.ts:86`           | `as number` cast on union return type (`number                                                                       | Partial<Record<...>>`) — unchecked |
+| E2  | `OrderBook.ts:106-111`     | `key as any`, `as CURRENCY_SYMBOL` bypass type safety on snapshot load                                               |
+| E3  | `LiquidationEngine.ts:168` | `!` non-null assertion on potentially undefined index price                                                          |
+| E4  | `Exchange.ts:158`          | `order!` non-null assertion on optional field                                                                        |
+| E5  | `Exchange.ts:233`          | `!` non-null assertion on potentially undefined index price                                                          |
+| E6  | `EngineServer.ts`          | Multiple `process.env.X!` with no validation                                                                         |
+| E7  | `ws.d.ts`                  | `user` typed as non-optional but is undefined before auth                                                            |
+| E8  | `shared-types`             | 3 non-existent Zod v4 APIs (see B22)                                                                                 |
+| E9  | `db/redis/index.ts`        | `process.env.REDIS_URL!` with no fallback                                                                            |
+| E10 | `db/pg/index.ts`           | `process.env.DATABASE_URL!` with no fallback                                                                         |
+| E11 | `engineResponse.ts:40`     | `POSITION_RES_SCHEMA` union of 3 incompatible shapes, including `z.undefined()` which JSON-serializes to missing key |
 
 ---
 
 ## Category F — Dead / Unused / Incomplete Code
 
-| # | File | Issue |
-|---|------|-------|
-| F1 | `Errors/MatchingEngine.ts` | Entire file is dead code (never imported) |
-| F2 | `routes/order.ts` | Route not mounted in `routes/index.ts` |
-| F3 | `routes/fill.ts` | Empty file, never implemented |
-| F4 | `OrderBook.ts:11` | Unused import `assert` |
-| F5 | `OrderBook.ts:372-402` | `emitDepthUpdateEvents` ignores its parameter |
-| F6 | `PositionManager.ts:196` | Orphan expression `newPosition.symbol;` (no-op) |
-| F7 | `shared-types/backendEvent.ts` | Single-element `z.union` wrapper (identical to engine type) |
-| F8 | `shared-types/backendResponse.ts` | Single-element `z.union` wrapper (identical to engine type) |
-| F9 | `ws/handlers/index.ts:32-34` | Both branches of if/else do the exact same thing |
-| F10 | `Exchange.ts:108-116` | Commented out `notifyIncomingOrder` call |
-| F11 | `engineInterface.ts:8` | Unused import `{ response }` from express (not a valid named export) |
+| #   | File                              | Issue                                                                |
+| --- | --------------------------------- | -------------------------------------------------------------------- |
+| F1  | `Errors/MatchingEngine.ts`        | Entire file is dead code (never imported)                            |
+| F2  | `routes/order.ts`                 | Route not mounted in `routes/index.ts`                               |
+| F3  | `routes/fill.ts`                  | Empty file, never implemented                                        |
+| F4  | `OrderBook.ts:11`                 | Unused import `assert`                                               |
+| F5  | `OrderBook.ts:372-402`            | `emitDepthUpdateEvents` ignores its parameter                        |
+| F6  | `PositionManager.ts:196`          | Orphan expression `newPosition.symbol;` (no-op)                      |
+| F7  | `shared-types/backendEvent.ts`    | Single-element `z.union` wrapper (identical to engine type)          |
+| F8  | `shared-types/backendResponse.ts` | Single-element `z.union` wrapper (identical to engine type)          |
+| F9  | `ws/handlers/index.ts:32-34`      | Both branches of if/else do the exact same thing                     |
+| F10 | `Exchange.ts:108-116`             | Commented out `notifyIncomingOrder` call                             |
+| F11 | `engineInterface.ts:8`            | Unused import `{ response }` from express (not a valid named export) |
 
 ---
 
 ## Category G — Memory / Resource Leaks
 
-| # | File | Issue |
-|---|------|-------|
-| G1 | `OrderBook.ts` | Filled orders kept in `this.orders` forever — memory grows unboundedly |
-| G2 | `engineInterface.ts:131` | `pendingRequests` never cleaned up for orphaned requests (TODO acknowledged) |
-| G3 | `ws/index.ts` | No heartbeat/ping-pong — stale WebSocket connections accumulate |
-| G4 | `EventBus.ts:53` | No `removeListener`/`off` method — callback memory leaks |
-| G5 | `SnapshotManger.ts` | No snapshot cleanup — files accumulate on disk |
-| G6 | `EventPublisher.ts` | `eventsBuffer` cleared even when Redis fails — events silently dropped |
+| #   | File                     | Issue                                                                        |
+| --- | ------------------------ | ---------------------------------------------------------------------------- |
+| G1  | `OrderBook.ts`           | Filled orders kept in `this.orders` forever — memory grows unboundedly       |
+| G2  | `engineInterface.ts:131` | `pendingRequests` never cleaned up for orphaned requests (TODO acknowledged) |
+| G3  | `ws/index.ts`            | No heartbeat/ping-pong — stale WebSocket connections accumulate              |
+| G4  | `EventBus.ts:53`         | No `removeListener`/`off` method — callback memory leaks                     |
+| G5  | `SnapshotManger.ts`      | No snapshot cleanup — files accumulate on disk                               |
+| G6  | `EventPublisher.ts`      | `eventsBuffer` cleared even when Redis fails — events silently dropped       |
 
 ---
 
 ## Category H — Missing Error Handling
 
-| # | File | Issue |
-|---|------|-------|
-| H1 | `EventBus.ts:26` | No try-catch around callbacks — one crashing callback kills all listeners |
-| H2 | `EventPublisher.ts:61-71` | Single failed `xAdd` rejects entire `Promise.all` — one broken stream blocks all streams |
-| H3 | `EngineServer.ts:93-99` | Error during request processing loses buffered events |
-| H4 | `EngineServer.ts:315-325` | `handleUpdateIndexPriceRequest` silently swallows errors, returns no error response |
-| H5 | `IndexPriceObserver.ts:72` | Redis `xAdd` unhandled promise rejection |
-| H6 | `index.ts:3-4` | `engineServer.initialize()` not awaited, no `.catch()` — unhandled rejection |
-| H7 | `server.ts` | No error listener on `app.listen(3001)` — port conflict silently ignored |
-| H8 | `app.ts` | No centralized Express error handler |
-| H9 | `messaging.ts:9` | `ws.send()` can throw on closed connections — no try-catch |
-| H10 | `zodBodyVerification.ts` | WebSocket validation error details commented out — client gets no actionable feedback |
-| H11 | `server.ts` | No graceful shutdown (SIGTERM/SIGINT) — Redis connections leak |
+| #   | File                       | Issue                                                                                    |
+| --- | -------------------------- | ---------------------------------------------------------------------------------------- |
+| H1  | `EventBus.ts:26`           | No try-catch around callbacks — one crashing callback kills all listeners                |
+| H2  | `EventPublisher.ts:61-71`  | Single failed `xAdd` rejects entire `Promise.all` — one broken stream blocks all streams |
+| H3  | `EngineServer.ts:93-99`    | Error during request processing loses buffered events                                    |
+| H4  | `EngineServer.ts:315-325`  | `handleUpdateIndexPriceRequest` silently swallows errors, returns no error response      |
+| H5  | `IndexPriceObserver.ts:72` | Redis `xAdd` unhandled promise rejection                                                 |
+| H6  | `index.ts:3-4`             | `engineServer.initialize()` not awaited, no `.catch()` — unhandled rejection             |
+| H7  | `server.ts`                | No error listener on `app.listen(3001)` — port conflict silently ignored                 |
+| H8  | `app.ts`                   | No centralized Express error handler                                                     |
+| H9  | `messaging.ts:9`           | `ws.send()` can throw on closed connections — no try-catch                               |
+| H10 | `zodBodyVerification.ts`   | WebSocket validation error details commented out — client gets no actionable feedback    |
+| H11 | `server.ts`                | No graceful shutdown (SIGTERM/SIGINT) — Redis connections leak                           |
 
 ---
 
 ## Category I — Configuration / Environment
 
-| # | File | Issue |
-|---|------|-------|
-| I1 | `db/pg/index.ts:1` | `dotenv/config` loads from cwd — misses `.env` in monorepo setup |
-| I2 | Multiple | Scattered `process.env.X!` with no centralized validation — obscure crashes on missing vars |
-| I3 | `server.ts` | Ports 3000/3001 hardcoded — should be configurable |
-| I4 | No health check endpoint | No `/healthz` for container orchestration |
-| I5 | `IndexPriceObserver.ts:38` | WebSocket URL from env with `!` — no fallback |
-| I6 | `db/redis/index.ts` | Redis URL and connection read at module scope — cannot be configured programmatically |
+| #   | File                       | Issue                                                                                       |
+| --- | -------------------------- | ------------------------------------------------------------------------------------------- |
+| I1  | `db/pg/index.ts:1`         | `dotenv/config` loads from cwd — misses `.env` in monorepo setup                            |
+| I2  | Multiple                   | Scattered `process.env.X!` with no centralized validation — obscure crashes on missing vars |
+| I3  | `server.ts`                | Ports 3000/3001 hardcoded — should be configurable                                          |
+| I4  | No health check endpoint   | No `/healthz` for container orchestration                                                   |
+| I5  | `IndexPriceObserver.ts:38` | WebSocket URL from env with `!` — no fallback                                               |
+| I6  | `db/redis/index.ts`        | Redis URL and connection read at module scope — cannot be configured programmatically       |
 
 ---
 
 ## Summary
 
-| Category | Count | Key Items |
-|----------|-------|-----------|
-| **Test failures** | 6 | Market order matching, PnL sign, missing throws, depth |
-| **Critical runtime bugs** | 25 | Corrupted snapshot restore, inverted liquidation price, infinite loops, stack overflow, compilation errors, unconnected Redis clients |
-| **Logic bugs** | 18 | Wrong getDepth, wrong BIDS ordering, stale events, PnL sign for SHORT |
-| **Security** | 7 | Plaintext passwords, non-expiring JWTs, missing auth, no CORS |
-| **TypeScript issues** | 11 | Unsafe assertions, non-existent APIs, wrong types |
-| **Dead/incomplete code** | 11 | Unused files, no-op branches, unimplemented routes |
-| **Memory leaks** | 6 | Filled orders in memory, orphaned requests, stale WS connections |
-| **Missing error handling** | 11 | Unhandled rejections, silent failures, no graceful shutdown |
-| **Configuration** | 6 | Missing `.env`, hardcoded ports, no health check |
+| Category                   | Count | Key Items                                                                                                                             |
+| -------------------------- | ----- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| **Test failures**          | 6     | Market order matching, PnL sign, missing throws, depth                                                                                |
+| **Critical runtime bugs**  | 25    | Corrupted snapshot restore, inverted liquidation price, infinite loops, stack overflow, compilation errors, unconnected Redis clients |
+| **Logic bugs**             | 18    | Wrong getDepth, wrong BIDS ordering, stale events, PnL sign for SHORT                                                                 |
+| **Security**               | 7     | Plaintext passwords, non-expiring JWTs, missing auth, no CORS                                                                         |
+| **TypeScript issues**      | 11    | Unsafe assertions, non-existent APIs, wrong types                                                                                     |
+| **Dead/incomplete code**   | 11    | Unused files, no-op branches, unimplemented routes                                                                                    |
+| **Memory leaks**           | 6     | Filled orders in memory, orphaned requests, stale WS connections                                                                      |
+| **Missing error handling** | 11    | Unhandled rejections, silent failures, no graceful shutdown                                                                           |
+| **Configuration**          | 6     | Missing `.env`, hardcoded ports, no health check                                                                                      |

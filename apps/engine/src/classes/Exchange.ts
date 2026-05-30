@@ -67,7 +67,7 @@ export default class Exchange implements Snapshotable<EXCHANGE_SNAPSHOT> {
     userId: string,
     margin: number,
     marginType: MARGIN_TYPE,
-    price?: number,
+    price: number, // even in market order, users send price, 1 % slippage fronted would add
   ):
     | {
         status: "REJECTED";
@@ -194,6 +194,7 @@ export default class Exchange implements Snapshotable<EXCHANGE_SNAPSHOT> {
   getOrderbookSnapshot(symbol: TRADABLE_CURRENCY_SYMBOL) {
     return this.orderBook.getOrderbookSnapshot(symbol);
   }
+
   handleIndexPriceUpdate({
     newPrice,
     symbol,
@@ -205,6 +206,12 @@ export default class Exchange implements Snapshotable<EXCHANGE_SNAPSHOT> {
       this.liquidationEngine.handleIndexPriceUpdate({ symbol, newPrice });
 
     toLiquidatePositions.forEach((position) => {
+      let price = this.liquidationEngine.indexPrices[position.symbol]!;
+
+      // find price for market order with 1% slippage
+      if (position.type == "LONG") price *= 0.99;
+      else price *= 1.01;
+
       let { totalFilledQuantity, fills } = this.orderBook.createOrder(
         "MARKET",
         position.type == "LONG" ? "SELL" : "BUY",
@@ -213,6 +220,7 @@ export default class Exchange implements Snapshotable<EXCHANGE_SNAPSHOT> {
         position.userId,
         0,
         "ISOLATED",
+        price,
       );
 
       // update users positions based on placed order

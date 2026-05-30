@@ -54,7 +54,7 @@ export default class BalanceManager implements Snapshotable<BALANCE_SNAPSHOT> {
     this.lockedAccounts = Object.keys(data.lockedAccounts).reduce(
       (obj, curKey) => {
         obj[curKey as CURRENCY_SYMBOL] = new Set(
-          ...data.lockedAccounts[curKey as CURRENCY_SYMBOL]!,
+          data.lockedAccounts[curKey as CURRENCY_SYMBOL]!,
         );
         return obj;
       },

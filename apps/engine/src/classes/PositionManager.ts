@@ -185,10 +185,7 @@ class PositionManager implements Snapshotable<POSITION_SNAPSHOT> {
               Math.abs(positionUpdateQty),
             );
 
-            unrealizedPnl =
-              (weighedAvgPrice - newPosition.price) *
-              qtyForPnl *
-              (orderType == "LONG" ? 1 : -1);
+            unrealizedPnl = (weighedAvgPrice - newPosition.price) * qtyForPnl;
           }
 
           newPosition.price = updatedPrice;

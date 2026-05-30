@@ -168,39 +168,6 @@ class LiquidationEngine implements Snapshotable<LIQUIDATION_SNAPSHOT> {
     return (this.indexPrices[order.symbol]! * order.qty) / 10;
   }
 
-  //  remove all data strcures and clear empty ds, and similarly in normal position udpats
-  private handlePositonUpdateLiquidation(position: POSITION) {
-    if (position.qty == 0) {
-      // remmove from all data strctures
-
-      // remove from liqudi positiosn
-      let set = this.liquidPositions[position.symbol]![
-        position.type
-      ].getElementByKey(position.price)!;
-      set.delete(position.positionId);
-
-      if (set.size == 0) {
-        this.liquidPositions[position.symbol]?.[
-          position.type
-        ]?.eraseElementByKey(position.price);
-      }
-
-      // remove from others
-      delete this.liquidationPrice[position.positionId];
-      delete this.positions[position.positionId];
-
-      this.eventBus.emit({
-        type: "liquidation.completed",
-        data: {
-          symbol: position.symbol,
-          userId: position.userId,
-        },
-      });
-    }
-
-    // remove from
-  }
-
   get indexPrices() {
     return this._indexPrices;
   }

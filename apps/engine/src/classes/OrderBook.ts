@@ -144,231 +144,6 @@ export default class OrderBook implements Snapshotable<ORDERBOOK_SNAPSHOT> {
     }
   }
 
-  private placeMarketBuyOrder = (currentOrder: ORDER) => {
-    const { symbol, side, userId } = currentOrder;
-
-    // emit depth update events
-    //  find depthUpdateInfo
-
-    let depthUpdates: {
-      asks: Map<number, number>;
-      bids: Map<number, number>;
-    } = {
-      asks: new Map(),
-      bids: new Map(),
-    };
-
-    let fillsToReturn: FILLS_INFO = [];
-
-    let oppositeSideOrders = this.orderBook[symbol]!.ASKS;
-
-    // try matching as much possible
-    while (
-      !oppositeSideOrders.empty() &&
-      currentOrder.filledQty < currentOrder.qty
-    ) {
-      let [topOppositeSidePrice, topOppositeSidePriceLevel] =
-        oppositeSideOrders.front()!;
-
-      let orders = topOppositeSidePriceLevel.orders;
-
-      assert(!orders.empty()); // if oders is empty then it should not be in oppositeSideOrders
-
-      while (currentOrder.filledQty < currentOrder.qty) {
-        let frontOrder = orders.front();
-        let pendingQty = frontOrder!.qty - frontOrder!.filledQty;
-
-        let toExchangeQty = Math.min(
-          currentOrder.qty - currentOrder.filledQty,
-          pendingQty,
-        );
-
-        frontOrder!.filledQty += toExchangeQty;
-        currentOrder.filledQty += toExchangeQty;
-        topOppositeSidePriceLevel.totalQuantity -= toExchangeQty;
-
-        currentOrder.status =
-          currentOrder.filledQty == currentOrder.qty
-            ? "FILLED"
-            : "PARTIALLY_FILLED";
-        frontOrder!.status =
-          frontOrder!.filledQty == frontOrder!.qty
-            ? "FILLED"
-            : "PARTIALLY_FILLED";
-
-        fillsToReturn.push({
-          buyOrderInfo: {
-            filledQty:
-              side == "BUY" ? currentOrder.filledQty : frontOrder!.filledQty,
-            orderStatus:
-              side == "BUY" ? currentOrder.status : frontOrder!.status,
-            buyerId: side == "BUY" ? userId : frontOrder!.userId,
-            margin: side == "BUY" ? currentOrder.margin : frontOrder!.margin,
-            marginType:
-              side == "BUY" ? currentOrder.marginType : frontOrder!.marginType,
-            orderId: side == "BUY" ? currentOrder.orderId : frontOrder!.orderId,
-            totalQty: side == "BUY" ? currentOrder.qty : frontOrder!.qty,
-          },
-
-          sellOrderInfo: {
-            filledQty:
-              side == "SELL" ? currentOrder.filledQty : frontOrder!.filledQty,
-            orderStatus:
-              side == "SELL" ? currentOrder.status : frontOrder!.status,
-            sellerId: side == "SELL" ? userId : frontOrder!.userId,
-            margin: side == "SELL" ? currentOrder.margin : frontOrder!.margin,
-            marginType:
-              side == "SELL" ? currentOrder.marginType : frontOrder!.marginType,
-            orderId:
-              side == "SELL" ? currentOrder.orderId : frontOrder!.orderId,
-            totalQty: side == "SELL" ? currentOrder.qty : frontOrder!.qty,
-          },
-
-          fillId: String(this.ids.fillId++),
-          bidPrice: frontOrder!.price,
-          price: frontOrder!.price,
-          qty: toExchangeQty,
-          symbol,
-        });
-
-        // update depthUpdates for opposite side, current side does not change orderbook on same side
-        depthUpdates[side == "BUY" ? "asks" : "bids"].set(
-          topOppositeSidePrice,
-          topOppositeSidePriceLevel.totalQuantity,
-        );
-
-        if (frontOrder!.filledQty == frontOrder!.qty) {
-          // remove from orders and orderbook
-          delete this.orders[frontOrder!.orderId];
-          orders.popFront();
-        }
-      }
-
-      if (orders.empty()) {
-        oppositeSideOrders.eraseElementByKey(topOppositeSidePrice);
-      }
-    }
-
-    return {
-      newOrderId: currentOrder.orderId,
-      totalFilledQuantity: currentOrder.filledQty,
-      fills: fillsToReturn,
-    };
-  };
-
-  private placeMarketSellOrder = (currentOrder: ORDER) => {
-    const { symbol, side, userId } = currentOrder;
-
-    // emit depth update events
-    //  find depthUpdateInfo
-
-    let depthUpdates: {
-      asks: Map<number, number>;
-      bids: Map<number, number>;
-    } = {
-      asks: new Map(),
-      bids: new Map(),
-    };
-
-    let fillsToReturn: FILLS_INFO = [];
-
-    let oppositeSideOrders = this.orderBook[symbol]!.BIDS;
-
-    // try matching as much possible
-    while (
-      !oppositeSideOrders.empty() &&
-      currentOrder.filledQty < currentOrder.qty
-    ) {
-      let [topOppositeSidePrice, topOppositeSidePriceLevel] =
-        oppositeSideOrders.front()!;
-
-      let orders = topOppositeSidePriceLevel.orders;
-
-      assert(!orders.empty());
-
-      while (currentOrder.filledQty < currentOrder.qty) {
-        let frontOrder = orders.front();
-        let pendingQty = frontOrder!.qty - frontOrder!.filledQty;
-
-        let toExchangeQty = Math.min(
-          currentOrder.qty - currentOrder.filledQty,
-          pendingQty,
-        );
-
-        frontOrder!.filledQty += toExchangeQty;
-        currentOrder.filledQty += toExchangeQty;
-        topOppositeSidePriceLevel.totalQuantity -= toExchangeQty;
-
-        currentOrder.status =
-          currentOrder.filledQty == currentOrder.qty
-            ? "FILLED"
-            : "PARTIALLY_FILLED";
-        frontOrder!.status =
-          frontOrder!.filledQty == frontOrder!.qty
-            ? "FILLED"
-            : "PARTIALLY_FILLED";
-
-        fillsToReturn.push({
-          buyOrderInfo: {
-            filledQty:
-              side == "BUY" ? currentOrder.filledQty : frontOrder!.filledQty,
-            orderStatus:
-              side == "BUY" ? currentOrder.status : frontOrder!.status,
-            buyerId: side == "BUY" ? userId : frontOrder!.userId,
-            margin: side == "BUY" ? currentOrder.margin : frontOrder!.margin,
-            marginType:
-              side == "BUY" ? currentOrder.marginType : frontOrder!.marginType,
-            orderId: side == "BUY" ? currentOrder.orderId : frontOrder!.orderId,
-            totalQty: side == "BUY" ? currentOrder.qty : frontOrder!.qty,
-          },
-
-          sellOrderInfo: {
-            filledQty:
-              side == "SELL" ? currentOrder.filledQty : frontOrder!.filledQty,
-            orderStatus:
-              side == "SELL" ? currentOrder.status : frontOrder!.status,
-            sellerId: side == "SELL" ? userId : frontOrder!.userId,
-            margin: side == "SELL" ? currentOrder.margin : frontOrder!.margin,
-            marginType:
-              side == "SELL" ? currentOrder.marginType : frontOrder!.marginType,
-            orderId:
-              side == "SELL" ? currentOrder.orderId : frontOrder!.orderId,
-            totalQty: side == "SELL" ? currentOrder.qty : frontOrder!.qty,
-          },
-
-          fillId: String(this.ids.fillId++),
-          bidPrice: frontOrder!.price,
-          price: frontOrder!.price,
-          qty: toExchangeQty,
-          symbol,
-        });
-
-        // update depthUpdates for opposite side, current side does not change orderbook on same side
-        depthUpdates[side == "BUY" ? "asks" : "bids"].set(
-          topOppositeSidePrice,
-          topOppositeSidePriceLevel.totalQuantity,
-        );
-
-        if (frontOrder!.filledQty == frontOrder!.qty) {
-          // remove from orders and orderbook
-          delete this.orders[frontOrder!.orderId];
-          orders.popFront();
-        }
-      }
-      if (orders.empty()) {
-        oppositeSideOrders.eraseElementByKey(topOppositeSidePrice);
-      }
-    }
-
-    this.emitDepthUpdateEvents(symbol, depthUpdates);
-
-    return {
-      newOrderId: currentOrder.orderId,
-      fills: fillsToReturn,
-      totalFilledQuantity: currentOrder.filledQty,
-    };
-  };
-
   private emitDepthUpdateEvents(symbol: CURRENCY_SYMBOL, depthUpdates: any) {
     //  emit depthUpdateEvent on  eventBus
     //  maintain depthUpdateOffset
@@ -401,7 +176,7 @@ export default class OrderBook implements Snapshotable<ORDERBOOK_SNAPSHOT> {
     this.depthUpdateOffset.set(symbol, this.depthUpdateOffset.get(symbol)! + 1);
   }
 
-  private placeLimitOrder = (currentOrder: ORDER) => {
+  private placeOrder = (currentOrder: ORDER) => {
     let { symbol, side, userId, price } = currentOrder;
 
     // emit depth update events
@@ -596,7 +371,7 @@ export default class OrderBook implements Snapshotable<ORDERBOOK_SNAPSHOT> {
     userId: string,
     margin: number,
     marginType: MARGIN_TYPE,
-    price?: number,
+    price: number,
   ): {
     newOrderId: ORDER_ID;
     totalFilledQuantity: number;
@@ -608,7 +383,7 @@ export default class OrderBook implements Snapshotable<ORDERBOOK_SNAPSHOT> {
       createdAt: new Date().toISOString(),
       filledQty: 0,
       orderId: String(this.ids.orderId++),
-      price: price || 0,
+      price: price,
       qty: qty,
       userId: userId,
       side,
@@ -629,12 +404,7 @@ export default class OrderBook implements Snapshotable<ORDERBOOK_SNAPSHOT> {
     this.createSymbolOrderbook(currentOrder.symbol);
 
     //
-    if (type == "MARKET") {
-      if (side == "BUY") toReturn = this.placeMarketBuyOrder(currentOrder);
-      else toReturn = this.placeMarketSellOrder(currentOrder);
-    } else {
-      toReturn = this.placeLimitOrder(currentOrder);
-    }
+    toReturn = this.placeOrder(currentOrder);
 
     // emit fills created event
     this.emitEvent({
@@ -733,6 +503,7 @@ export default class OrderBook implements Snapshotable<ORDERBOOK_SNAPSHOT> {
       });
     }
 
+    countToReturn = Math.min(count, this.orderBook[symbol]!.BIDS.size());
     i = 0;
     for (
       let it = this.orderBook[symbol]!.BIDS.begin();

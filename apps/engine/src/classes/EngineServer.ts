@@ -52,51 +52,43 @@ class EngineServer implements Snapshotable<ENGINE_SERVER_SNAPSHOT> {
       { BLOCK: 0, COUNT: 100 },
     );
 
-    // console.log(xReadResponse);
+    // error here in processing reading request and sending resonse shuld not be caught
+    // it should make process exit and must be restarted to keep state reliable across services
     if (xReadResponse) {
       for (let perStreamRespone of xReadResponse) {
         if (perStreamRespone.name == process.env.REDIS_ENGINE_STREAM) {
           for (let { id, message } of perStreamRespone.messages) {
-            try {
-              this.eventPublisher.startObservingEvents();
+            this.eventPublisher.startObservingEvents();
 
-              // json parsing
-              let request: EngineRequest.ENGINE_REQUEST = JSON.parse(
-                message.data!,
-              );
+            // json parsing
+            let request: EngineRequest.ENGINE_REQUEST = JSON.parse(
+              message.data!,
+            );
 
-              // zod validation
-              EngineRequest.ENGINE_REQUEST_SCHEMA.parse(request);
+            // zod validation
+            EngineRequest.ENGINE_REQUEST_SCHEMA.parse(request);
 
-              // here switch based on info types
-              if (EngineRequest.isEngineInfoRequst(request)) {
-                this.handleEngineInfoRequest(request);
-                this.snapshotManager.onMessageProcessed(id);
+            // here switch based on info types
+            if (EngineRequest.isEngineInfoRequst(request)) {
+              this.handleEngineInfoRequest(request);
+              this.snapshotManager.onMessageProcessed(id);
 
-                await this.eventPublisher.publishEvents();
-                this.snapshotManager.onFullMessageProcessed(id);
-              } else {
-                // here sned to request handler
-                let result = this.handleEngineRequest(request);
+              await this.eventPublisher.publishEvents();
+              this.snapshotManager.onFullMessageProcessed(id);
+            } else {
+              // here sned to request handler
+              let result = this.handleEngineRequest(request);
 
-                // this message processed
-                this.snapshotManager.onMessageProcessed(id);
+              // this message processed
+              this.snapshotManager.onMessageProcessed(id);
 
-                //
-                await this.eventPublisher.publishEvents();
-                await redisClient.xAdd(request.stream, "*", {
-                  data: JSON.stringify(result),
-                });
+              //
+              await this.eventPublisher.publishEvents();
+              await redisClient.xAdd(request.stream, "*", {
+                data: JSON.stringify(result),
+              });
 
-                this.snapshotManager.onFullMessageProcessed(id);
-              }
-            } catch (error) {
-              console.log(
-                "error happened in parsin request, so ignoring requset handling ",
-                message.data,
-              );
-
-              // TODO : if error happends you should replay state snapshot + events
+              this.snapshotManager.onFullMessageProcessed(id);
             }
 
             lastRedisMessageId = id;

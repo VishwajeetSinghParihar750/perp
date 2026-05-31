@@ -23,6 +23,7 @@ const setupRedis = async () => {
 };
 const tryCreatingMarkets = async () => {
   console.log("trying creating markets");
+
   await Promise.all(
     ["BTCUSD", "SOLUSD", "ETHUSD"].map(async (cur) => {
       try {

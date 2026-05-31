@@ -40,6 +40,7 @@ const ORDERBOOK_EVENT_TYPE = z.union([
 
   // these are for db poller
   z.literal("order.created"),
+  z.literal("order.cancelled"),
   z.literal("fills.created"),
 ]);
 
@@ -73,7 +74,10 @@ const DEPTH_UPDATED_PAYLOAD_SCHEMA = z.object({
   type: z.literal("depth.updated"),
   data: z.object({
     symbol: TRADBLE_SYMBOL_SCHEMA,
-    depthUpdates: z.record(z.number(), z.number()),
+    depthUpdates: {
+      asks: z.record(z.number(), z.number()),
+      bids: z.record(z.number(), z.number()),
+    },
   }),
 });
 
@@ -98,6 +102,13 @@ const TRADES_CREATED_PAYLOAD_SCHEMA = z.object({
   data: z.object({
     symbol: TRADBLE_SYMBOL_SCHEMA,
     trades: z.array(z.tuple([z.number(), z.number()])), // array of [price, position ]
+  }),
+});
+
+const ORDER_CANCELLED_PAYLOAD_SCHEMA = z.object({
+  type: z.literal("order.cancelled"),
+  data: z.object({
+    orderId: z.string(),
   }),
 });
 
@@ -178,6 +189,10 @@ const DEPTH_UPDATED_SCHEMA = BASE_EVENT_SCHEMA.extend({
   payload: DEPTH_UPDATED_PAYLOAD_SCHEMA,
 });
 
+const ORDER_CANCELLED_SCHEMA = BASE_EVENT_SCHEMA.extend({
+  payload: ORDER_CANCELLED_PAYLOAD_SCHEMA,
+});
+
 const LIQUIDATION_STARTED_SCHEMA = BASE_EVENT_SCHEMA.extend({
   payload: LIQUIDATION_STARTED_PAYLOAD_SCHEMA,
 });
@@ -244,6 +259,11 @@ type ORDER_CREATED_EVENT = z.infer<typeof ORDER_CREATED_SCHEMA>;
 
 type FILLS_CREATED_EVENT = z.infer<typeof FILLS_CREATED_SCHEMA>;
 
+type ORDER_CANCELLED_EVENT_PAYLOAD = z.infer<
+  typeof ORDER_CANCELLED_PAYLOAD_SCHEMA
+>;
+type ORDER_CANCELLED_EVENT = z.infer<typeof ORDER_CANCELLED_SCHEMA>;
+
 // =======================================================================================
 
 const ENGINE_EVENT_PAYLOAD_SCHEMA = z.union([
@@ -256,6 +276,7 @@ const ENGINE_EVENT_PAYLOAD_SCHEMA = z.union([
   FILLS_CREATED_PAYLOAD_SCHEMA,
   TRADES_CREATED_PAYLOAD_SCHEMA,
   LAST_TRADED_PRICE_UPDATED_PAYLOAD_SCHEMA,
+  ORDER_CANCELLED_PAYLOAD_SCHEMA,
 ]);
 
 const ENGINE_EVENT_SCHEMA = z.union([
@@ -264,6 +285,7 @@ const ENGINE_EVENT_SCHEMA = z.union([
   TRADES_CREATED_SCHEMA,
   LAST_TRADED_PRICE_UPDATED_SCHEMA,
   FUNDING_SCHEMA,
+  ORDER_CANCELLED_SCHEMA,
   LIQUIDATION_STARTED_SCHEMA,
   INDEXPRICE_UPDATED_SCHEMA,
   ORDER_CREATED_SCHEMA,
@@ -301,6 +323,8 @@ export {
   LAST_TRADED_PRICE_UPDATED_SCHEMA,
   TRADES_CREATED_PAYLOAD_SCHEMA,
   LAST_TRADED_PRICE_UPDATED_PAYLOAD_SCHEMA,
+  ORDER_CANCELLED_PAYLOAD_SCHEMA,
+  ORDER_CANCELLED_SCHEMA,
 };
 
 export type {
@@ -326,4 +350,6 @@ export type {
   TRADES_CREATED_EVENT_PAYLOAD,
   LAST_TRADED_PRICE_UPDATED_EVENT,
   LAST_TRADED_PRICE_UPDATED_EVENT_PAYLOAD,
+  ORDER_CANCELLED_EVENT,
+  ORDER_CANCELLED_EVENT_PAYLOAD,
 };

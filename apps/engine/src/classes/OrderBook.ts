@@ -144,38 +144,6 @@ export default class OrderBook implements Snapshotable<ORDERBOOK_SNAPSHOT> {
     }
   }
 
-  private emitDepthUpdateEvents(symbol: CURRENCY_SYMBOL, depthUpdates: any) {
-    //  emit depthUpdateEvent on  eventBus
-    //  maintain depthUpdateOffset
-    // switch (symbol) {
-    //   case "BTCUSD":
-    //     this.emitEvent({
-    //       type: "depth.updated.btc_usd",
-    //       data: {
-    //         updateOffset: this.depthUpdateOffset.get(symbol),
-    //         updates: depthUpdates,
-    //       },
-    //     });
-
-    //     break;
-
-    //   case "SOLUSD":
-    //     this.emitEvent({
-    //       type: "depth.updated.sol_usd",
-    //       data: {
-    //         updateOffset: this.depthUpdateOffset.get(symbol),
-    //         updates: depthUpdates,
-    //       },
-    //     });
-    //     break;
-
-    //   default:
-    //     return; //
-    // }
-
-    this.depthUpdateOffset.set(symbol, this.depthUpdateOffset.get(symbol)! + 1);
-  }
-
   private placeOrder = (currentOrder: ORDER) => {
     let { symbol, side, userId, price } = currentOrder;
 
@@ -183,14 +151,15 @@ export default class OrderBook implements Snapshotable<ORDERBOOK_SNAPSHOT> {
     //  find depthUpdateInfo
 
     let depthUpdates: {
-      asks: Map<number, number>;
-      bids: Map<number, number>;
+      asks: Record<number, number>;
+      bids: Record<number, number>;
     } = {
-      asks: new Map(),
-      bids: new Map(),
+      asks: {},
+      bids: {},
     };
 
     let fillsToReturn: FILLS_INFO = [];
+    let trades: [number, number][] = [];
 
     let oppositeSideOrders;
     if (side == "BUY") oppositeSideOrders = this.orderBook[symbol]!.ASKS;
@@ -224,6 +193,9 @@ export default class OrderBook implements Snapshotable<ORDERBOOK_SNAPSHOT> {
           );
 
           let exchangePrice = Math.min(frontOrder!.price, currentOrder.price);
+
+          // add to trades
+          trades.push([exchangePrice, toExchangeQty]);
 
           quantityPriceProductSum += exchangePrice * toExchangeQty;
           frontOrder!.filledQty += toExchangeQty;
@@ -280,10 +252,8 @@ export default class OrderBook implements Snapshotable<ORDERBOOK_SNAPSHOT> {
           });
 
           // update depthUpdates for opposite side, current side update will happen with this pending order in end
-          depthUpdates[side == "BUY" ? "asks" : "bids"].set(
-            topOppositeSidePrice,
-            topOppositeSidePriceLevel.totalQuantity,
-          );
+          depthUpdates[side == "BUY" ? "asks" : "bids"][topOppositeSidePrice] =
+            topOppositeSidePriceLevel.totalQuantity;
 
           if (frontOrder!.filledQty == frontOrder!.qty) {
             // remove from orders and orderbook
@@ -332,17 +302,24 @@ export default class OrderBook implements Snapshotable<ORDERBOOK_SNAPSHOT> {
       } else this.orderBook[symbol]!.ASKS.setElement(price, prevPriceLevel);
 
       // update depthUpdates
-      depthUpdates[side == "BUY" ? "bids" : "asks"].set(
-        price,
-        prevPriceLevel.totalQuantity,
-      );
+      depthUpdates[side == "BUY" ? "bids" : "asks"][price] =
+        prevPriceLevel.totalQuantity;
     } else {
       currentOrder.status = "FILLED";
       // todo : maybe send to db or whatever, dont wanna keep filled orders in memory
     }
 
     //emit dpth udpate events
-    this.emitDepthUpdateEvents(symbol, depthUpdates);
+    this.emitEvent({
+      type: "depth.updated",
+      data: { symbol: currentOrder.symbol, depthUpdates },
+    });
+
+    // emit trades events
+    this.emitEvent({
+      type: "trades.created",
+      data: { symbol: currentOrder.symbol, trades },
+    });
 
     return {
       fills: fillsToReturn,
@@ -416,6 +393,11 @@ export default class OrderBook implements Snapshotable<ORDERBOOK_SNAPSHOT> {
     if (toReturn.fills.length > 0) {
       let lastFill = toReturn.fills[toReturn.fills.length - 1]!;
       this.lastTradedPrices[lastFill.symbol] = lastFill.price;
+
+      this.emitEvent({
+        type: "lastTradedPrice.updated",
+        data: { symbol: lastFill.symbol, price: lastFill.price },
+      });
     }
 
     return toReturn;
@@ -475,6 +457,12 @@ export default class OrderBook implements Snapshotable<ORDERBOOK_SNAPSHOT> {
           this.orderBook[currentOrder.symbol]!.ASKS.eraseElementByKey(
             currentOrder.price,
           );
+
+      this.emitEvent({
+        type: "order.cancelled",
+        data: { orderId },
+      });
+
       return { status: "CANCELLED", order: currentOrder };
     }
     return { status: "NOT_CANCELLABLE" };

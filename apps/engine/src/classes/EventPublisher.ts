@@ -71,7 +71,11 @@ class EventPublisher implements Snapshotable<EVENT_PUBLISHER_SNAPSHOT> {
         );
 
       // send to db poller main stream
-      if (event.type == "order.created" || event.type == "fills.created") {
+      if (
+        event.type == "order.created" ||
+        event.type == "fills.created" ||
+        event.type == "order.cancelled"
+      ) {
         let res = await this.redisClient.xAdd(
           process.env.DB_POLLER_REDIS_STREAM!,
           "*",

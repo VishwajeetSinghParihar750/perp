@@ -162,11 +162,12 @@ export default class Exchange implements Snapshotable<EXCHANGE_SNAPSHOT> {
       }
 
       // if cancelled return margin locked still
-      this.balances.addBalance(
-        userId,
-        "USD",
-        (margin * (qty - filledQty)) / qty,
-      );
+      if (qty != 0)
+        this.balances.addBalance(
+          userId,
+          "USD",
+          (margin * (qty - filledQty)) / qty,
+        );
 
       return {
         status: "CANCELLED",

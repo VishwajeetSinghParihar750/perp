@@ -40,8 +40,15 @@ router.post("/signin", zodBodyVerification(SIGNIN_SCHEMA), async (req, res) => {
       return;
     }
 
+    let expireAt = new Date();
+    expireAt.setMinutes(expireAt.getMinutes() + 10);
+
     const jwt_token = jwt.sign(
-      { id: user.id, username: user.username },
+      {
+        id: user.id,
+        username: user.username,
+        expireAt: expireAt.toISOString(),
+      },
       process.env.JWT_SECRET_KEY!,
     );
 

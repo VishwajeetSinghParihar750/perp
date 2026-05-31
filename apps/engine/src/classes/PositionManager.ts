@@ -126,6 +126,9 @@ class PositionManager implements Snapshotable<POSITION_SNAPSHOT> {
           marginType,
         },
       ] of Object.entries(orderUpdate)) {
+        //
+        if (positionUpdateQty == 0) continue;
+
         let weighedAvgPrice = positionUpdatePriceQtyProduct / positionUpdateQty;
         let newPosition = this.isolatedPositions[symbol]?.[userId];
 

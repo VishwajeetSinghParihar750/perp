@@ -61,6 +61,12 @@ const handleFillsCreated = async (event: FILLS_CREATED_EVENT) => {
   const { idempotencyKey } = event;
 
   await prismaClient.$transaction(async (tx) => {
+    let exists = await tx.processedEvent.findFirst({
+      where: { id: idempotencyKey },
+    });
+
+    if (exists) return;
+
     await tx.processedEvent.create({ data: { id: idempotencyKey } });
 
     for (let fill of event.payload.data.fills) {
@@ -172,56 +178,65 @@ const handleEvent = async (passedEvent: any) => {
 };
 
 const processPendingUnackedEvents = async () => {
-  const xreadGroupRes: any = await redisClient.xReadGroup(
-    "group",
-    "consumer",
-    [{ id: "0", key: process.env.DB_POLLER_REDIS_STREAM! }],
-    {
-      BLOCK: 0,
-      COUNT: 100,
-    },
-  );
+  while (true) {
+    const xreadGroupRes: any = await redisClient.xReadGroup(
+      "group",
+      "consumer",
+      [{ id: "0", key: process.env.DB_POLLER_REDIS_STREAM! }],
+      {
+        COUNT: 100,
+      },
+    );
 
-  if (xreadGroupRes) {
-    let messages: any[] = xreadGroupRes[0].messages;
+    if (xreadGroupRes) {
+      let messages: any[] = xreadGroupRes[0].messages;
 
-    for (const { id, message } of messages) {
-      //
-      console.log(message.data);
-      const event = JSON.parse(message.data);
-      await handleEvent(event);
-      await redisClient.xAck(process.env.DB_POLLER_REDIS_STREAM!, "group", id);
-    }
+      for (const { id, message } of messages) {
+        //
+        console.log(message.data);
+        const event = JSON.parse(message.data);
+        await handleEvent(event);
+        await redisClient.xAck(
+          process.env.DB_POLLER_REDIS_STREAM!,
+          "group",
+          id,
+        );
+      }
 
-    if (messages.length > 0) await processPendingUnackedEvents();
-  } else throw new Error("xreadGroupRes is falsy even on blocking wtf");
+      if (messages.length == 0) break;
+    } else throw new Error("xreadGroupRes is falsy , this should not happen");
+  }
 };
 
 const processNewEvents = async () => {
-  const xreadGroupRes: any = await redisClient.xReadGroup(
-    "group",
-    "consumer",
-    [{ id: ">", key: process.env.DB_POLLER_REDIS_STREAM! }],
-    {
-      BLOCK: 0,
-      COUNT: 100,
-    },
-  );
+  while (true) {
+    const xreadGroupRes: any = await redisClient.xReadGroup(
+      "group",
+      "consumer",
+      [{ id: ">", key: process.env.DB_POLLER_REDIS_STREAM! }],
+      {
+        BLOCK: 0,
+        COUNT: 100,
+      },
+    );
 
-  if (xreadGroupRes) {
-    let messages: any[] = xreadGroupRes[0].messages;
+    if (xreadGroupRes) {
+      let messages: any[] = xreadGroupRes[0].messages;
 
-    for (const { id, message } of messages) {
-      //
-      console.log(message.data);
-      const event = JSON.parse(message.data);
-      await handleEvent(event);
+      for (const { id, message } of messages) {
+        //
+        console.log(message.data);
+        const event = JSON.parse(message.data);
+        await handleEvent(event);
 
-      await redisClient.xAck(process.env.DB_POLLER_REDIS_STREAM!, "group", id);
-    }
-
-    processNewEvents();
-  } else throw new Error("xreadGroupRes is falsy even on blocking wtf");
+        await redisClient.xAck(
+          process.env.DB_POLLER_REDIS_STREAM!,
+          "group",
+          id,
+        );
+      }
+    } else throw new Error("xreadGroupRes is falsy , this should not happen");
+  }
 };
 
 const processEvents = async () => {
@@ -229,7 +244,7 @@ const processEvents = async () => {
   await processPendingUnackedEvents();
 
   console.log("processing new events on redis straem");
-  processNewEvents();
+  await processNewEvents();
 };
 
 const startDbPoller = async () => {

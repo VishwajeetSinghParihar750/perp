@@ -18,6 +18,11 @@ function verifyJwtToken(ws: WebSocket, req: IncomingMessage): boolean {
       jwt_token,
       process.env.JWT_SECRET_KEY!,
     ) as JwtPayload;
+
+    //
+    if (decodedUser.expireAt <= new Date(Date.now()).toISOString())
+      return false;
+
     ws.user = { username: decodedUser.username, id: decodedUser.id };
 
     return true;

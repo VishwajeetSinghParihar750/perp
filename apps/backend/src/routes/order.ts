@@ -6,14 +6,14 @@ import { prismaClient } from "@repo/db";
 const router = Router();
 
 router.get(
-  "/order",
-  zodBodyVerification(BackendRequest.GET_ORDER_SCHEMA),
+  "/order:orderId",
+  zodBodyVerification(BackendRequest.GET_ORDER_SCHEMA, true),
   async (req, res) => {
     //
 
     try {
-      const { orderId } = req.body as BackendRequest.GET_ORDER_REQUEST;
-      let order = await prismaClient.order.findOne({
+      const { orderId } = req.params as BackendRequest.GET_ORDER_REQUEST;
+      let order = await prismaClient.order.findUnique({
         where: {
           id: orderId,
         },

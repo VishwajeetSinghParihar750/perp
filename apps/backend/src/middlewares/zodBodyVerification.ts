@@ -5,10 +5,11 @@ import WebSocket from "ws";
 import { BackendRequest } from "@repo/shared-types";
 
 const zodBodyVerification =
-  (schema: z.ZodObject) =>
+  (schema: z.ZodObject, params: boolean = false) =>
   (req: Request, res: Response, next: NextFunction) => {
     try {
-      schema.parse(req.body);
+      if (params) schema.parse(req.params);
+      else schema.parse(req.body);
       next();
     } catch (error) {
       res.status(400).json({ error: true, payload: "WRONG_REQUEST_FORMAT" });

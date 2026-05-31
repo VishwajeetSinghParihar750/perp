@@ -180,7 +180,7 @@ The `depthUpdates` parameter (typed as `any`) is completely ignored. All the act
 
 ---
 
-### B11. `Balances.loadSnapshot` — `new Set(...array)` uses spread incorrectly
+### B11. `Balances.loadSnapshot` — `new Set(...array)` uses spread incorrectly 💚
 
 **File:** `apps/engine/src/classes/Balances.ts:56-57`
 
@@ -194,7 +194,7 @@ this.lockedAccounts[curKey as CURRENCY_SYMBOL] = new Set(
 
 ---
 
-### B12. `PositionManager.calculateOrderUpdates` — Division by zero
+### B12. `PositionManager.calculateOrderUpdates` — Division by zero 💚
 
 **File:** `apps/engine/src/classes/PositionManager.ts:129`
 
@@ -206,7 +206,7 @@ If `positionUpdateQty` is `0` (possible if fill quantities net to zero), this pr
 
 ---
 
-### B13. `Exchange.cancelOrder` — Division by zero if qty is 0
+### B13. `Exchange.cancelOrder` — Division by zero if qty is 0 💚
 
 **File:** `apps/engine/src/classes/Exchange.ts:168`
 
@@ -218,7 +218,7 @@ If `qty === 0`, this produces `Infinity`, corrupting the user's balance.
 
 ---
 
-### B14. `Exchange.handleIndexPriceUpdate` — Non-null assertion on potentially undefined index price
+### B14. `Exchange.handleIndexPriceUpdate` — Non-null assertion on potentially undefined index price 💚
 
 **File:** `apps/engine/src/classes/Exchange.ts:233`
 
@@ -230,7 +230,7 @@ If no index price has been set for this symbol (e.g., Binance WebSocket hasn't s
 
 ---
 
-### B15. `routes/order.ts` — Prisma method `findOne` does not exist
+### B15. `routes/order.ts` — Prisma method `findOne` does not exist 💚
 
 **File:** `apps/backend/src/routes/order.ts:16`
 
@@ -242,24 +242,13 @@ In Prisma v5+, `findOne` was removed. The correct method is `findUnique()` or `f
 
 ---
 
-### B16. `routes/order.ts` — GET request reads from `req.body`
+### B16. `routes/order.ts` — GET request reads from `req.body` 💚
 
 **File:** `apps/backend/src/routes/order.ts:9,15`
 
 Express does not parse bodies for GET requests. `req.body` is `undefined`, so `req.body.orderId` throws `TypeError`.
 
----
-
-### B17. `dbpoller/index.ts` — `processPendingUnackedEvents` blocks forever
-
-**File:** `apps/dbpoller/index.ts:175-183`
-
-`xReadGroup` with `id: "0"` and `BLOCK: 0` blocks indefinitely waiting for messages with id `"0"`, which
-never arrive. The `processNewEvents` call on line 232 is never reached. **The dbpoller hangs at startup.**
-
----
-
-### B18. `dbpoller/index.ts` — `handleFillsCreated` missing idempotency check
+### B18. `dbpoller/index.ts` — `handleFillsCreated` missing idempotency check 💚
 
 **File:** `apps/dbpoller/index.ts:63-107`
 
@@ -267,7 +256,7 @@ never arrive. The `processNewEvents` call on line 232 is never reached. **The db
 
 ---
 
-### B19. `dbpoller/index.ts` — `processNewEvents` called without `await`
+### B19. `dbpoller/index.ts` — `processNewEvents` called without `await` 💚
 
 **File:** `apps/dbpoller/index.ts:223,232`
 
@@ -275,7 +264,7 @@ never arrive. The `processNewEvents` call on line 232 is never reached. **The db
 
 ---
 
-### B20. `routes/auth.ts` — Passwords stored in plaintext
+### B20. `routes/auth.ts` — Passwords stored in plaintext 💚
 
 **File:** `apps/backend/src/routes/auth.ts:21`
 
@@ -283,7 +272,7 @@ No hashing (bcrypt, argon2, etc.) is performed. A database breach leaks all user
 
 ---
 
-### B21. `routes/auth.ts` — JWT tokens never expire
+### B21. `routes/auth.ts` — JWT tokens never expire 💚
 
 **File:** `apps/backend/src/routes/auth.ts:44`
 

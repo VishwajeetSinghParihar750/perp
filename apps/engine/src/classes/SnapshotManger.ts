@@ -6,6 +6,18 @@ interface Snapshotable<T> {
   loadSnapshot(snapshot: T): void;
 }
 
+const compareRedisStreamId = (id1: string, id2: string): -1 | 0 | 1 => {
+  const [lhs1, rhs1] = id1.split("-").map(BigInt);
+  const [lhs2, rhs2] = id2.split("-").map(BigInt);
+
+  if (lhs1 == lhs2) {
+    if (rhs1 == rhs2) return 0;
+    return rhs1! < rhs2! ? -1 : 1;
+  }
+
+  return lhs1! < lhs2! ? -1 : 1;
+};
+
 class SnapshotManager {
   private lastRedisStreamMessageId: string = "0";
   private lastFullyProcessedRedisStreamMessageId: string = "0";
@@ -22,7 +34,12 @@ class SnapshotManager {
   }
 
   onFullMessageProcessed(messageId: string) {
-    if (this.lastFullyProcessedRedisStreamMessageId < messageId)
+    if (
+      compareRedisStreamId(
+        this.lastFullyProcessedRedisStreamMessageId,
+        messageId,
+      ) == -1
+    )
       this.lastFullyProcessedRedisStreamMessageId = messageId;
   }
 
@@ -32,6 +49,8 @@ class SnapshotManager {
     let lastRedisMessageId = "0";
 
     let files = readdirSync(path.join(process.cwd(), "/data/snapshots"));
+
+    files.sort((a, b) => compareRedisStreamId(a, b));
 
     let lastProcessed: string | undefined = undefined;
 
@@ -51,11 +70,9 @@ class SnapshotManager {
           lastRedisMessageId,
         } = JSON.parse(fileData);
 
-        if (!lastProcessed) {
-          lastProcessed = lastFullyProcessedRedisStreamMessageId;
-        }
+        lastProcessed ??= lastFullyProcessedRedisStreamMessageId;
 
-        if (lastRedisMessageId <= lastProcessed!) {
+        if (compareRedisStreamId(lastRedisMessageId, lastProcessed!) != 1) {
           this.snapshotableClass.loadSnapshot(snapshot);
           lastRedisMessageId = lastRedisMessageId;
           break;
@@ -76,7 +93,14 @@ class SnapshotManager {
   }
 
   onMessageProcessed = (messageId: string) => {
-    if (messageId <= this.lastFullyProcessedRedisStreamMessageId) return; // this will happen during replay
+    if (
+      compareRedisStreamId(
+        messageId,
+        this.lastFullyProcessedRedisStreamMessageId,
+      ) != 1
+    )
+      return; // this will happen during replay
+
     this.lastRedisStreamMessageId = messageId;
 
     this.snapshotCounter++;

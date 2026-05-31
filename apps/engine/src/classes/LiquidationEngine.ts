@@ -129,10 +129,10 @@ class LiquidationEngine implements Snapshotable<LIQUIDATION_SNAPSHOT> {
     // console.log(symbol, newPrice, this.indexPrices[symbol]);
     if (!this.indexPrices[symbol]) this.indexPrices[symbol] = newPrice;
     else {
-      this.indexPrices[symbol] = newPrice;
-
       // handle liquidation based on chagne
       let prevPrice = this.indexPrices[symbol]!;
+
+      this.indexPrices[symbol] = newPrice;
 
       if (prevPrice != newPrice) {
         let sideToLiquidate: POSITION_TYPE =

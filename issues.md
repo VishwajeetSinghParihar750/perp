@@ -135,7 +135,7 @@ Should be `8 * 60 * 60 * 1000`.
 
 ---
 
-### B7. `SnapshotManger` — Lexicographic string comparison of Redis message IDs
+### B7. `SnapshotManger` — Lexicographic string comparison of Redis message IDs 💚
 
 **File:** `apps/engine/src/classes/SnapshotManger.ts:38,55-61`
 

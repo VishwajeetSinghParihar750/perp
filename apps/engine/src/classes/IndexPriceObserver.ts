@@ -53,7 +53,7 @@ class IndexPriceObserver {
     };
 
     ws.onerror = () => {
-      assert(true);
+      throw new Error("mark price udpates ws server error");
     };
 
     ws.onmessage = ({ data }) => {

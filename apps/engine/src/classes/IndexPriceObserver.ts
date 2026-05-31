@@ -60,7 +60,7 @@ class IndexPriceObserver {
       ws.send(subRequest);
     };
 
-    ws.onerror = () => {
+    ws.onerror = (ev) => {
       throw new Error("mark price udpates ws server error");
     };
 

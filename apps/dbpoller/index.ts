@@ -195,6 +195,7 @@ const handleEvent = async (passedEvent: any) => {
       break;
     case "order.created":
       await handleOrderCreated(event as ORDER_CREATED_EVENT);
+      break;
     case "order.cancelled":
       await handleOrderCancelled(event as ORDER_CANCELLED_EVENT);
 

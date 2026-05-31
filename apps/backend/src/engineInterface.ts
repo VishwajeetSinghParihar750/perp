@@ -178,6 +178,11 @@ class EngineInterface {
           newResolver || res,
           rej,
         ];
+
+        setTimeout(() => {
+          rej("REQUEST_TIMED_OUT");
+          delete this.pendingRequests[engineRequest.requestId];
+        }, 20 * 1000); // timeout request if 20s pass before response comes
       },
     );
     await this.sendEngineRequest(engineRequest);

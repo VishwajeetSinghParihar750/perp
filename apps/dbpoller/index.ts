@@ -8,6 +8,7 @@ import {
 import {
   DB_POLLER_SCHEMA,
   type FILLS_CREATED_EVENT,
+  type ORDER_CANCELLED_EVENT,
   type ORDER_CREATED_EVENT,
 } from "./validations.js";
 
@@ -158,6 +159,30 @@ const handleOrderCreated = async (event: ORDER_CREATED_EVENT) => {
   });
 };
 
+const handleOrderCancelled = async (event: ORDER_CANCELLED_EVENT) => {
+  const { idempotencyKey } = event;
+  const { orderId } = event.payload.data;
+
+  await prismaClient.$transaction(async (tx) => {
+    let exists = await tx.processedEvent.findFirst({
+      where: { id: idempotencyKey },
+    });
+
+    if (exists) return;
+
+    await tx.processedEvent.create({
+      data: { id: idempotencyKey },
+    });
+
+    await tx.order.update({
+      where: { id: orderId },
+      data: {
+        status: "CANCELLED",
+      },
+    });
+  });
+};
+
 const handleEvent = async (passedEvent: any) => {
   // TODO : WHAT IF ERROR HAPPENS HERE
 
@@ -169,6 +194,8 @@ const handleEvent = async (passedEvent: any) => {
       break;
     case "order.created":
       await handleOrderCreated(event as ORDER_CREATED_EVENT);
+    case "order.cancelled":
+      await handleOrderCancelled(event as ORDER_CANCELLED_EVENT);
 
       break;
 

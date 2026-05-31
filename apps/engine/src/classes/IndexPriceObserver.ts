@@ -69,6 +69,7 @@ class IndexPriceObserver {
         data = JSON.parse(data);
         // this needs to be pushed on redis input stream
         // to keep input to engien determinstic
+        console.log(data);
         await this.redisClient.xAdd(process.env.REDIS_ENGINE_STREAM!, "*", {
           data: JSON.stringify({
             type: "indexprice_updated",

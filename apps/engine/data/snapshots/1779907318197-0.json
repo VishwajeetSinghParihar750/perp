@@ -2,11 +2,10 @@
   "snapshot": {
     "eventPublisher": {
       "idempotencyKey": {
-        "markprice.updated": 195,
         "order.created": 1,
         "fills.created": 1
       },
-      "globalidempotencyKey": 197,
+      "globalidempotencyKey": 2,
       "subscriptions": {}
     },
     "exchange": {
@@ -31,7 +30,7 @@
         },
         "orders": {
           "0": {
-            "createdAt": "2026-05-27T19:21:00.739Z",
+            "createdAt": "2026-05-31T07:28:32.708Z",
             "filledQty": 0,
             "orderId": "0",
             "price": 4500,
@@ -48,7 +47,8 @@
         "ids": {
           "orderId": 1,
           "fillId": 0
-        }
+        },
+        "lastTradedPrices": {}
       },
       "position": {
         "isolatedPositions": {},
@@ -57,14 +57,9 @@
         }
       },
       "liquidation": {
-        "indexPrices": {
-          "ETHUSD": 2049.80522152,
-          "BTCUSD": 74823.78523266,
-          "SOLUSD": 83.54392468
-        },
+        "indexPrices": {},
         "liquidationPrice": {},
-        "positions": {},
-        "positionsBeingLiquidated": []
+        "positions": {}
       }
     }
   },

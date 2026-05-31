@@ -143,7 +143,7 @@ Redis message IDs like `"1680000000000-0"` (13 digits) and `"999999999999-0"` (1
 
 ---
 
-### B8. `IndexPriceObserver` — WebSocket errors silently swallowed
+### B8. `IndexPriceObserver` — WebSocket errors silently swallowed 💚
 
 **File:** `apps/engine/src/classes/IndexPriceObserver.ts:55-57`
 
@@ -157,7 +157,7 @@ If the Binance WebSocket disconnects or errors, the engine silently loses its pr
 
 ---
 
-### B9. `IndexPriceObserver` — No symbol case conversion
+### B9. `IndexPriceObserver` — No symbol case conversion 💚
 
 **File:** `apps/engine/src/classes/IndexPriceObserver.ts:75`
 

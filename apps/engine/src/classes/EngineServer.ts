@@ -58,37 +58,46 @@ class EngineServer implements Snapshotable<ENGINE_SERVER_SNAPSHOT> {
         for (let perStreamRespone of xReadResponse) {
           if (perStreamRespone.name == process.env.REDIS_ENGINE_STREAM) {
             for (let { id, message } of perStreamRespone.messages) {
-              this.eventPublisher.startObservingEvents();
-
               // json parsing
               let request: EngineRequest.ENGINE_REQUEST = JSON.parse(
                 message.data!,
               );
 
-              // zod validation
-              EngineRequest.ENGINE_REQUEST_SCHEMA.parse(request);
-
-              // here switch based on info types
-              if (EngineRequest.isEngineInfoRequst(request)) {
-                this.handleEngineInfoRequest(request);
-                this.snapshotManager.onMessageProcessed(id);
-
-                await this.eventPublisher.publishEvents();
-                this.snapshotManager.onFullMessageProcessed(id);
-              } else {
-                // here sned to request handler
-                let result = this.handleEngineRequest(request);
-
+              let zodError = false;
+              try {
+                // zod validation
+                EngineRequest.ENGINE_REQUEST_SCHEMA.parse(request);
+              } catch (error) {
+                zodError = true;
                 // this message processed
                 this.snapshotManager.onMessageProcessed(id);
+                this.snapshotManager.onFullMessageProcessed(id); //
+              }
 
-                //
-                await this.eventPublisher.publishEvents();
-                await redisClient.xAdd(request.stream, "*", {
-                  data: JSON.stringify(result),
-                });
+              if (!zodError) {
+                this.eventPublisher.startObservingEvents();
+                if (EngineRequest.isEngineInfoRequst(request)) {
+                  // here switch based on info types
+                  this.handleEngineInfoRequest(request);
+                  this.snapshotManager.onMessageProcessed(id);
 
-                this.snapshotManager.onFullMessageProcessed(id);
+                  await this.eventPublisher.publishEvents();
+                  this.snapshotManager.onFullMessageProcessed(id);
+                } else {
+                  // here sned to request handler
+                  let result = this.handleEngineRequest(request);
+
+                  // this message processed
+                  this.snapshotManager.onMessageProcessed(id);
+
+                  //
+                  await this.eventPublisher.publishEvents();
+                  await redisClient.xAdd(request.stream, "*", {
+                    data: JSON.stringify(result),
+                  });
+
+                  this.snapshotManager.onFullMessageProcessed(id);
+                }
               }
 
               lastRedisMessageId = id;

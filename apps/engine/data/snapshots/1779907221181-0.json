@@ -1,10 +1,8 @@
 {
   "snapshot": {
     "eventPublisher": {
-      "idempotencyKey": {
-        "markprice.updated": 98
-      },
-      "globalidempotencyKey": 98,
+      "idempotencyKey": {},
+      "globalidempotencyKey": 0,
       "subscriptions": {}
     },
     "exchange": {
@@ -28,7 +26,8 @@
         "ids": {
           "orderId": 0,
           "fillId": 0
-        }
+        },
+        "lastTradedPrices": {}
       },
       "position": {
         "isolatedPositions": {},
@@ -37,14 +36,9 @@
         }
       },
       "liquidation": {
-        "indexPrices": {
-          "ETHUSD": 2049.13415204,
-          "BTCUSD": 74800.68922807,
-          "SOLUSD": 83.43500771
-        },
+        "indexPrices": {},
         "liquidationPrice": {},
-        "positions": {},
-        "positionsBeingLiquidated": []
+        "positions": {}
       }
     }
   },

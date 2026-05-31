@@ -19,8 +19,8 @@ const compareRedisStreamId = (id1: string, id2: string): -1 | 0 | 1 => {
 };
 
 class SnapshotManager {
-  private lastRedisStreamMessageId: string = "0";
-  private lastFullyProcessedRedisStreamMessageId: string = "0";
+  private lastRedisStreamMessageId: string = "0-0";
+  private lastFullyProcessedRedisStreamMessageId: string = "0-0";
   private snapshotableClass: Snapshotable<any>;
   private snapshotCounter: number = 0;
 
@@ -46,11 +46,15 @@ class SnapshotManager {
   private loadSnapshot(): string {
     // get max number redis messgae id snapshot
 
-    let lastRedisMessageId = "0";
+    let lastRedisMessageId = "0-0";
 
     let files = readdirSync(path.join(process.cwd(), "/data/snapshots"));
 
-    files.sort((a, b) => compareRedisStreamId(a, b));
+    files.sort((a, b) => {
+      let ca = a.replace(".json", "");
+      let cb = b.replace(".json", "");
+      return compareRedisStreamId(ca, cb);
+    });
 
     let lastProcessed: string | undefined = undefined;
 
@@ -82,7 +86,7 @@ class SnapshotManager {
         // TODO : if this fails we should restart the engine server,, coz some might have got the state loaded ,and others failed
       } catch (error) {
         // start from 0
-        lastRedisMessageId = "0";
+        lastRedisMessageId = "0-0";
         break;
       }
     }

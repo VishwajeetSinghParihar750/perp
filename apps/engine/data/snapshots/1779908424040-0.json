@@ -2,11 +2,10 @@
   "snapshot": {
     "eventPublisher": {
       "idempotencyKey": {
-        "markprice.updated": 782,
         "order.created": 5,
         "fills.created": 5
       },
-      "globalidempotencyKey": 792,
+      "globalidempotencyKey": 10,
       "subscriptions": {}
     },
     "exchange": {
@@ -31,7 +30,7 @@
         },
         "orders": {
           "3": {
-            "createdAt": "2026-05-27T19:21:00.963Z",
+            "createdAt": "2026-05-31T07:28:32.821Z",
             "filledQty": 0.020000000000000004,
             "orderId": "3",
             "price": 4495,
@@ -45,7 +44,7 @@
             "status": "PARTIALLY_FILLED"
           },
           "4": {
-            "createdAt": "2026-05-27T19:21:00.979Z",
+            "createdAt": "2026-05-31T07:28:32.831Z",
             "filledQty": 0,
             "orderId": "4",
             "price": 4495,
@@ -62,14 +61,17 @@
         "ids": {
           "orderId": 5,
           "fillId": 3
+        },
+        "lastTradedPrices": {
+          "BTCUSD": 4500
         }
       },
       "position": {
         "isolatedPositions": {
-          "92dcb382-58ca-4025-9bf4-75ffd00e87db": {
-            "BTCUSD": {
+          "BTCUSD": {
+            "92dcb382-58ca-4025-9bf4-75ffd00e87db": {
               "positionId": "0",
-              "createdAt": "2026-05-27T19:21:00.925Z",
+              "createdAt": "2026-05-31T07:28:32.787Z",
               "margin": 500,
               "marginType": "ISOLATED",
               "price": 4500,
@@ -77,12 +79,10 @@
               "symbol": "BTCUSD",
               "type": "LONG",
               "userId": "92dcb382-58ca-4025-9bf4-75ffd00e87db"
-            }
-          },
-          "9a8a6f59-c812-4a2c-90e4-8556e85689b3": {
-            "BTCUSD": {
+            },
+            "9a8a6f59-c812-4a2c-90e4-8556e85689b3": {
               "positionId": "1",
-              "createdAt": "2026-05-27T19:21:00.925Z",
+              "createdAt": "2026-05-31T07:28:32.787Z",
               "margin": 366.6666666666667,
               "marginType": "ISOLATED",
               "price": 4500,
@@ -98,19 +98,15 @@
         }
       },
       "liquidation": {
-        "indexPrices": {
-          "ETHUSD": 2053.05018907,
-          "BTCUSD": 74894.75514325,
-          "SOLUSD": 83.8251342
-        },
+        "indexPrices": {},
         "liquidationPrice": {
-          "0": 9250,
-          "1": 10305.555555555555
+          "0": -250,
+          "1": -1305.5555555555557
         },
         "positions": {
           "0": {
             "positionId": "0",
-            "createdAt": "2026-05-27T19:21:00.925Z",
+            "createdAt": "2026-05-31T07:28:32.787Z",
             "margin": 500,
             "marginType": "ISOLATED",
             "price": 4500,
@@ -121,7 +117,7 @@
           },
           "1": {
             "positionId": "1",
-            "createdAt": "2026-05-27T19:21:00.925Z",
+            "createdAt": "2026-05-31T07:28:32.787Z",
             "margin": 366.6666666666667,
             "marginType": "ISOLATED",
             "price": 4500,
@@ -130,8 +126,7 @@
             "type": "LONG",
             "userId": "9a8a6f59-c812-4a2c-90e4-8556e85689b3"
           }
-        },
-        "positionsBeingLiquidated": []
+        }
       }
     }
   },

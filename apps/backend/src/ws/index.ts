@@ -1,5 +1,8 @@
 import { WebSocketServer } from "ws";
-import { handleWebSocketMessage } from "./handlers/index.js";
+import {
+  handleWebSocketMessage,
+  handleWsDisconnected,
+} from "./handlers/index.js";
 import { verifyJwtToken } from "./utils/verification.js";
 import { createServer } from "node:http";
 import { sendMessageOnWebSocket } from "./utils/messaging.js";
@@ -10,15 +13,17 @@ const wss = new WebSocketServer({ noServer: true });
 
 httpServer.on("upgrade", (req, socket, head) => {
   wss.handleUpgrade(req, socket, head, (ws) => {
+    if (!verifyJwtToken(ws, req)) {
+      return;
+    }
     wss.emit("connection", ws, req);
   });
 });
 
 wss.on("connection", (ws, req) => {
-  if (!verifyJwtToken(ws, req)) {
-    ws.close();
-    return;
-  }
+  ws.on("close", async (code) => {
+    await handleWsDisconnected(ws);
+  });
 
   ws.on("message", async (networkData, isBinary) => {
     if (isBinary) {

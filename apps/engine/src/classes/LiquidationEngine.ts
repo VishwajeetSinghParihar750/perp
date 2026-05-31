@@ -110,6 +110,7 @@ class LiquidationEngine implements Snapshotable<LIQUIDATION_SNAPSHOT> {
     // E is time thing, price is in string
     // maybe let the server run for 2 mins, get mark price updates, then only start serving requests
 
+    let prevPrice = this.indexPrices[symbol];
     // update index price
     this.indexPrices[symbol] = newPrice;
 
@@ -127,12 +128,8 @@ class LiquidationEngine implements Snapshotable<LIQUIDATION_SNAPSHOT> {
     };
 
     // console.log(symbol, newPrice, this.indexPrices[symbol]);
-    if (!this.indexPrices[symbol]) this.indexPrices[symbol] = newPrice;
-    else {
+    if (prevPrice) {
       // handle liquidation based on chagne
-      let prevPrice = this.indexPrices[symbol]!;
-
-      this.indexPrices[symbol] = newPrice;
 
       if (prevPrice != newPrice) {
         let sideToLiquidate: POSITION_TYPE =

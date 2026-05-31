@@ -284,7 +284,7 @@ No `expiresIn` option. Stolen tokens are valid forever and cannot be revoked.
 
 ---
 
-### B22. `shared-types` — Non-existent Zod APIs break compilation
+### B22. `shared-types` — Non-existent Zod APIs break compilation 💚
 
 Multiple Zod v4 API incompatibilities:
 
@@ -296,42 +296,9 @@ Multiple Zod v4 API incompatibilities:
 
 These will all cause TypeScript compilation failures.
 
----
-
-### B23. `ws.d.ts` — `user` typed as non-optional but is undefined before auth
-
-**File:** `apps/backend/src/types/ws.d.ts`
-
-```ts
-user: {
-  id: string;
-  username: string;
-} // no ?
-```
-
-`ws.user` is only assigned after `verifyJwtToken` succeeds. Before that it is `undefined`. The type lies to developers. Accessing `ws.user.id` before auth throws `TypeError`.
-
----
-
-### B24. `db/redis/index.ts` — Redis client never connected
-
-**File:** `packages/db/redis/index.ts:2-3`
-
-The Redis client is created but `connect()` is never called. Modern `redis` (v4+) throws `Error: The client is closed` on first command.
-
----
-
-### B25. `db/pg/index.ts` — `dotenv/config` loads from wrong directory in monorepo
-
-**File:** `packages/db/pg/index.ts:1`
-
-`dotenv/config` loads `.env` from the current working directory. If the app is started from the monorepo root (which Turborepo does), it reads the root `.env`, not `packages/db/.env`. `DATABASE_URL` is silently `undefined`.
-
----
-
 ## Category C — Logic Bugs (Wrong Behavior, No Crash)
 
-### C1. `OrderBook.getDepth` — BIDS count uses ASKS size
+### C1. `OrderBook.getDepth` — BIDS count uses ASKS size 💚
 
 **File:** `apps/engine/src/classes/OrderBook.ts:722`
 
@@ -343,7 +310,7 @@ The same `countToReturn` is used for both ASKS and BIDS iteration. When ASKS is 
 
 ---
 
-### C2. `OrderBook.getDepth` — BIDS returned in ascending order
+### C2. `OrderBook.getDepth` — BIDS returned in ascending order 💚
 
 **File:** `apps/engine/src/classes/OrderBook.ts:737-746`
 
@@ -351,15 +318,7 @@ The `OrderedMap` for BIDS uses default comparator `(x, y) => x - y` (ascending).
 
 ---
 
-### C3. `OrderBook` — Fill `filledQty` stores cumulative value, not per-fill delta
-
-**File:** `apps/engine/src/classes/OrderBook.ts:199-225`
-
-`currentOrder.filledQty` is cumulative across all fills, not the quantity filled in this specific fill event. The field name `filledQty` in `FILL_INFO` is ambiguous. Downstream consumers could misinterpret the data.
-
----
-
-### C4. `LiquidationEngine.handleIndexPriceUpdate` — Falsy price check
+### C4. `LiquidationEngine.handleIndexPriceUpdate` — Falsy price check 💚
 
 **File:** `apps/engine/src/classes/LiquidationEngine.ts:130-133`
 
@@ -368,18 +327,6 @@ if (!this.indexPrices[symbol]) this.indexPrices[symbol] = newPrice;
 ```
 
 If an index price is literally `0`, this branch incorrectly treats it as unset and overwrites it.
-
----
-
-### C5. `LiquidationEngine.getMarginRequired` — Truthy price check omits price = 0
-
-**File:** `apps/engine/src/classes/LiquidationEngine.ts:165`
-
-```ts
-if (order.price) return (order.price * order.qty) / 10;
-```
-
-`order.price === 0` falls through to the index price branch. Valid for market orders with zero slippage, but a LIMIT order with price 0 would also skip.
 
 ---
 
@@ -395,47 +342,7 @@ When flipping (SHORT→LONG): keeps old entry price (incorrect — should use ne
 
 ---
 
-### C7. `PositionManager.applyFunding` — Margin can go negative
-
-**File:** `apps/engine/src/classes/PositionManager.ts:256`
-
-```ts
-position.margin -= toUpdateMargin;
-```
-
-No check that margin stays positive. A position with negative margin should be flagged for liquidation.
-
----
-
-### C8. `Exchange.handleFunding` — Event emitted before state is updated
-
-**File:** `apps/engine/src/classes/Exchange.ts:276-284`
-
-`funding.created` event is emitted on line 276, but `applyFunding` (which actually changes position state) is called on line 282. Downstream consumers see the event before the state change.
-
----
-
-### C9. `Exchange.handleFunding` — `interestRate` hardcoded to 20
-
-**File:** `apps/engine/src/classes/Exchange.ts:256`
-
-```ts
-let interestRate = 20;
-```
-
-This is a magic number with no documentation. Should be configurable.
-
----
-
-### C10. `Exchange.handleFunding` — `!indexPrices[typedSymbol]` skips on zero price
-
-**File:** `apps/engine/src/classes/Exchange.ts:252\*\*
-
-If an index price is literally `0`, funding for that symbol is silently skipped.
-
----
-
-### C11. `PositionManager.performAdl` — Losing position's entry price used for winners
+### C11. `PositionManager.performAdl` — Losing position's entry price used for winners 💚
 
 **File:** `apps/engine/src/classes/PositionManager.ts:318`
 
@@ -443,7 +350,7 @@ ADL transfers quantity at the **losing position's entry price**, not at the curr
 
 ---
 
-### C12. `PositionManager.getPosition` — Optional symbol always returns undefined
+### C12. `PositionManager.getPosition` — Optional symbol always returns undefined 💚
 
 **File:** `apps/engine/src/classes/PositionManager.ts:62-66`
 
@@ -451,7 +358,7 @@ When called without a symbol, returns `undefined` instead of returning all posit
 
 ---
 
-### C13. `engineInterface.ts` — Catch block dead code (`gotRequestId` always `""`)
+### C13. `engineInterface.ts` — Catch block dead code (`gotRequestId` always `""`) 💚
 
 **File:** `apps/backend/src/engineInterface.ts:93\*\*
 
@@ -465,7 +372,7 @@ When message parsing fails, the caller is never notified. The WebSocket client h
 
 ---
 
-### C14. `BroadcastEvent` can throw on closed sockets
+### C14. `BroadcastEvent` can throw on closed sockets 💚
 
 **File:** `apps/backend/src/engineInterface.ts:72`
 
@@ -477,7 +384,7 @@ If a WebSocket client has disconnected, `ws.send()` throws. The `forEach` loop p
 
 ---
 
-### C15. `shared-types` — `ORDER_SCHEMA.symbol` allows "USD"
+### C15. `shared-types` — `ORDER_SCHEMA.symbol` allows "USD" 💚
 
 **File:** `packages/shared-types/shared-engine-types/engineResponse.ts:16`
 
@@ -485,7 +392,7 @@ If a WebSocket client has disconnected, `ws.send()` throws. The `forEach` loop p
 
 ---
 
-### C16. `shared-types` — `SYMBOL_ORDERBOOK_SCHEMA` missing ASKS
+### C16. `shared-types` — `SYMBOL_ORDERBOOK_SCHEMA` missing ASKS 💚
 
 **File:** `packages/shared-types/shared-engine-types/engineResponse.ts:34-36`
 
@@ -493,7 +400,7 @@ The schema only has `BIDS`. The `ASKS` field is missing, so orderbook snapshots 
 
 ---
 
-### C17. `backendResponse.ts` — Exported identifiers misspelled
+### C17. `backendResponse.ts` — Exported identifiers misspelled 💚
 
 **File:** `packages/shared-types/shared-backend-types/backendResponse.ts:6,10,12,13\*\*
 
@@ -511,15 +418,15 @@ Incoming engine-info requests use `"indexprice_updated"` (underscore), but the e
 
 ## Category D — Security Issues
 
-| #   | File                | Issue                                                                                   |
-| --- | ------------------- | --------------------------------------------------------------------------------------- |
-| D1  | `routes/auth.ts:21` | **Passwords stored in plaintext** (no hashing)                                          |
-| D2  | `routes/auth.ts:44` | **JWT tokens never expire** (no `expiresIn`)                                            |
-| D3  | `routes/order.ts`   | **No auth middleware** on GET /order — anyone can query any order                       |
-| D4  | `app.ts`            | **No CORS middleware**                                                                  |
-| D5  | `app.ts`            | **No security headers** (helmet)                                                        |
-| D6  | `app.ts`            | **No body size limit** on `express.json()` — DoS vector                                 |
-| D7  | `ws/index.ts`       | **WebSocket upgrade completes before auth** — unauthenticated clients consume resources |
+| #   | File                | Issue                                                                                      |
+| --- | ------------------- | ------------------------------------------------------------------------------------------ |
+| D1  | `routes/auth.ts:21` | **Passwords stored in plaintext** (no hashing)                                             |
+| D2  | `routes/auth.ts:44` | **JWT tokens never expire** (no `expiresIn`) 💚                                            |
+| D3  | `routes/order.ts`   | **No auth middleware** on GET /order — anyone can query any order 💚                       |
+| D4  | `app.ts`            | **No CORS middleware**                                                                     |
+| D5  | `app.ts`            | **No security headers** (helmet)                                                           |
+| D6  | `app.ts`            | **No body size limit** on `express.json()` — DoS vector                                    |
+| D7  | `ws/index.ts`       | **WebSocket upgrade completes before auth** — unauthenticated clients consume resources 💚 |
 
 ---
 

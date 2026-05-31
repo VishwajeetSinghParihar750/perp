@@ -61,7 +61,15 @@ class PositionManager implements Snapshotable<POSITION_SNAPSHOT> {
   }
   getPosition(userId: string, symbol?: TRADABLE_CURRENCY_SYMBOL) {
     if (!symbol) {
-      return undefined;
+      return Object.entries(this.isolatedPositions).reduce(
+        (toRet, [symbol, usersMap]) => {
+          if (usersMap[userId]) {
+            toRet[symbol as TRADABLE_CURRENCY_SYMBOL] = usersMap[userId];
+          }
+          return toRet;
+        },
+        {} as Partial<Record<TRADABLE_CURRENCY_SYMBOL, POSITION>>,
+      );
     }
     return this.isolatedPositions[symbol]?.[userId];
   }
@@ -126,7 +134,6 @@ class PositionManager implements Snapshotable<POSITION_SNAPSHOT> {
           marginType,
         },
       ] of Object.entries(orderUpdate)) {
-        //
         if (positionUpdateQty == 0) continue;
 
         let weighedAvgPrice = positionUpdatePriceQtyProduct / positionUpdateQty;
@@ -295,7 +302,7 @@ class PositionManager implements Snapshotable<POSITION_SNAPSHOT> {
           margin: 0,
           marginType: "ISOLATED",
           positionUpdatePriceQtyProduct:
-            position.qty * position.price * (position.type == "LONG" ? -1 : 1),
+            position.qty * indexPrice * (position.type == "LONG" ? -1 : 1),
           positionUpdateQty: position.qty,
           symbol: position.symbol,
           totalQty: position.qty,
@@ -311,7 +318,7 @@ class PositionManager implements Snapshotable<POSITION_SNAPSHOT> {
           margin: 0,
           marginType: "ISOLATED",
           positionUpdatePriceQtyProduct:
-            qtyToAdl * position.price * (position.type == "LONG" ? -1 : 1),
+            qtyToAdl * indexPrice * (position.type == "LONG" ? -1 : 1),
           positionUpdateQty: position.qty,
           symbol: position.symbol,
           totalQty: qtyToAdl,

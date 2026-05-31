@@ -178,6 +178,10 @@ async function handleEngineRequest(
   }
 }
 
+const handleWsDisconnected = async (ws: WebSocket) => {
+  await engine.handleWsDisconnected(ws);
+};
+
 const handleWebSocketMessage = async (
   ws: WebSocket,
   request: BackendRequest.BACKEND_REQUEST,
@@ -195,4 +199,8 @@ const handleWebSocketMessage = async (
     }
 };
 
-export { handleWebSocketMessage, engine as wsEngineInterface };
+export {
+  handleWebSocketMessage,
+  handleWsDisconnected,
+  engine as wsEngineInterface,
+};

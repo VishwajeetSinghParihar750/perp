@@ -365,17 +365,6 @@ class EngineServer implements Snapshotable<ENGINE_SERVER_SNAPSHOT> {
   private handleEngineRequest = (
     engineRequest: EngineRequest.ENGINE_REQUEST_FROM_BACKEND,
   ): EngineResponse.ENGINE_RESPONSE => {
-    let { success, data } =
-      EngineRequest.ENGINE_REQUEST_SCHEMA.safeParse(engineRequest);
-
-    if (!success && "requestId" in engineRequest) {
-      return {
-        type: "error",
-        requestId: engineRequest.requestId,
-        payload: "INVALID_REQUEST_FORMAT",
-      };
-    }
-
     let response;
     switch (engineRequest.type) {
       case "add_balance":

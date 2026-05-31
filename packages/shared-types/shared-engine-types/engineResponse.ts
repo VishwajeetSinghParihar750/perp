@@ -5,7 +5,11 @@ import {
   MARGIN_TYPE_SCHEMA,
 } from "../shared-backend-types/backendRequest.js";
 
-import { ENGINE_EVENT_SCHEMA, ORDER_STATUS_SCHEMA } from "./engineEvent.js";
+import {
+  ENGINE_EVENT_SCHEMA,
+  ORDER_STATUS_SCHEMA,
+  TRADBLE_SYMBOL_SCHEMA,
+} from "./engineEvent.js";
 
 const ORDER_TYPE_SCHEMA = z.union([z.literal("MARKET"), z.literal("LIMIT")]);
 const ORDER_SCHEMA = z.object({
@@ -13,7 +17,7 @@ const ORDER_SCHEMA = z.object({
   price: z.number(),
   qty: z.number(),
   side: SIDE_SCHEMA,
-  symbol: CURRENCY_SYMBOL_SCHEMA,
+  symbol: TRADBLE_SYMBOL_SCHEMA,
   type: ORDER_TYPE_SCHEMA,
   filledQty: z.number(),
   orderId: z.string(),
@@ -33,6 +37,7 @@ const PRICE_LEVEL_SCHEMA = z.object({
 });
 const SYMBOL_ORDERBOOK_SCHEMA = z.object({
   BIDS: z.array(z.tuple([z.number(), PRICE_LEVEL_SCHEMA])),
+  ASKS: z.array(z.tuple([z.number(), PRICE_LEVEL_SCHEMA])),
 });
 
 const POSITION_TYPE_SCHEMA = z.union([z.literal("LONG"), z.literal("SHORT")]);

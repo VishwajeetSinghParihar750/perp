@@ -16,7 +16,6 @@ import EventBus from "./EventBus.js";
 import PositionManager, { type POSITION_SNAPSHOT } from "./PositionManager.js";
 import LiquidationEngine, {
   type LIQUIDATION_SNAPSHOT,
-  type LiquidationOrderInfo,
 } from "./LiquidationEngine.js";
 import type { Snapshotable } from "./SnapshotManger.js";
 import type { POSITION } from "../types/positions.js";
@@ -196,16 +195,7 @@ export default class Exchange implements Snapshotable<EXCHANGE_SNAPSHOT> {
     return this.orderBook.getOrderbookSnapshot(symbol);
   }
 
-  handleIndexPriceUpdate({
-    newPrice,
-    symbol,
-  }: {
-    newPrice: number;
-    symbol: TRADABLE_CURRENCY_SYMBOL;
-  }) {
-    let { toLiquidatePositions } =
-      this.liquidationEngine.handleIndexPriceUpdate({ symbol, newPrice });
-
+  private handleLiquidation(toLiquidatePositions: POSITION[]) {
     toLiquidatePositions.forEach((position) => {
       let price = this.liquidationEngine.indexPrices[position.symbol]!;
 
@@ -247,6 +237,17 @@ export default class Exchange implements Snapshotable<EXCHANGE_SNAPSHOT> {
       }
     });
   }
+  handleIndexPriceUpdate({
+    newPrice,
+    symbol,
+  }: {
+    newPrice: number;
+    symbol: TRADABLE_CURRENCY_SYMBOL;
+  }) {
+    let { toLiquidatePositions } =
+      this.liquidationEngine.handleIndexPriceUpdate({ symbol, newPrice });
+    this.handleLiquidation(toLiquidatePositions);
+  }
 
   handleFunding() {
     let indexPrices = this.liquidationEngine.indexPrices;
@@ -258,17 +259,16 @@ export default class Exchange implements Snapshotable<EXCHANGE_SNAPSHOT> {
       (toRet, [symbol, lastTradedPrice]) => {
         let typedSymbol = symbol as TRADABLE_CURRENCY_SYMBOL;
 
-        if (indexPrices[typedSymbol]) {
-          let premium =
-            (lastTradedPrice - indexPrices[typedSymbol]) /
-            indexPrices[typedSymbol];
-          let interestRate = 20;
-          let fundingRate =
-            premium + Math.min(Math.max(interestRate - premium, -30), 30);
-          toRet[typedSymbol] = fundingRate;
+        let premium =
+          (lastTradedPrice - indexPrices[typedSymbol]!) /
+          indexPrices[typedSymbol]!; // index price must exist before server starts
 
-          symbols.push(typedSymbol);
-        }
+        let interestRate = 20;
+        let fundingRate =
+          premium + Math.min(Math.max(interestRate - premium, -30), 30);
+        toRet[typedSymbol] = fundingRate;
+
+        symbols.push(typedSymbol);
         return toRet;
       },
       {} as Partial<Record<TRADABLE_CURRENCY_SYMBOL, number>>,

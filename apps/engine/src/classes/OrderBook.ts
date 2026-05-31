@@ -113,7 +113,7 @@ export default class OrderBook implements Snapshotable<ORDERBOOK_SNAPSHOT> {
     let addToOrderbook = (order: ORDER) => {
       if (!this.orderBook[order.symbol])
         this.orderBook[order.symbol] = {
-          BIDS: new OrderedMap(),
+          BIDS: new OrderedMap([], (x, y) => y - x),
           ASKS: new OrderedMap(),
         };
       // this.orderBook[order.symbol][order.side][order.price] = {}
@@ -139,7 +139,7 @@ export default class OrderBook implements Snapshotable<ORDERBOOK_SNAPSHOT> {
     if (!this.orderBook[symbol]) {
       this.orderBook[symbol] = {
         ASKS: new OrderedMap(),
-        BIDS: new OrderedMap(),
+        BIDS: new OrderedMap([], (x, y) => y - x),
       };
     }
   }

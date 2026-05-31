@@ -2,11 +2,13 @@ import { Router } from "express";
 import { BackendRequest } from "@repo/shared-types";
 import { zodBodyVerification } from "../middlewares/zodBodyVerification.js";
 import { prismaClient } from "@repo/db";
+import { authMiddleware } from "../middlewares/auth.js";
 
 const router = Router();
 
 router.get(
   "/order:orderId",
+  authMiddleware,
   zodBodyVerification(BackendRequest.GET_ORDER_SCHEMA, true),
   async (req, res) => {
     //

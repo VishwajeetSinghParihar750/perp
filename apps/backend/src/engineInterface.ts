@@ -5,7 +5,6 @@ import type { RedisClientType } from "@repo/db";
 import { EngineRequest, EngineResponse, EngineEvent } from "@repo/shared-types";
 
 import { sendMessageOnWebSocket } from "./ws/utils/messaging.js";
-import { response } from "express";
 
 class EngineInterface {
   redisClient: RedisClientType;
@@ -31,12 +30,19 @@ class EngineInterface {
     });
   }
   private unsubscribeEvent(
-    eventTypes: EngineEvent.ENGINE_EVENT_TYPE[],
+    eventTypes: EngineEvent.ENGINE_EVENT_TYPE[] | "ALL_EVENTS",
     ws: WebSocket,
   ) {
-    eventTypes.forEach((eventType) => {
-      this.eventSubscriptions[eventType]?.delete(ws);
-    });
+    if (eventTypes == "ALL_EVENTS") {
+      Object.keys(this.engineSubscriptions).forEach((eventType) => {
+        this.eventSubscriptions[
+          eventType as EngineEvent.ENGINE_EVENT_TYPE
+        ]?.delete(ws);
+      });
+    } else
+      eventTypes.forEach((eventType) => {
+        this.eventSubscriptions[eventType]?.delete(ws);
+      });
   }
 
   private setupEventHandling = async () => {
@@ -72,6 +78,10 @@ class EngineInterface {
       sendMessageOnWebSocket(ws, event);
     });
   };
+
+  async handleWsDisconnected(ws: WebSocket) {
+    this.unsubscribeEvent("ALL_EVENTS", ws);
+  }
 
   async handleEngineMessages(
     redisClient: RedisClientType,
@@ -120,7 +130,6 @@ class EngineInterface {
             }
           } catch (error) {
             console.log("error in parsing engine message");
-            this.pendingRequests[gotRequestId]?.[1]?.(error);
             delete this.pendingRequests[gotRequestId];
           }
           lastRedisMessageId = id;

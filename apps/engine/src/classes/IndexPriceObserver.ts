@@ -21,13 +21,21 @@ class IndexPriceObserver {
   ];
   // private eventBus: EventBus;
 
+  private initResolver: ((val: unknown) => void) | undefined = undefined;
+
   async initialize() {
     await this.redisClient.connect();
+
+    let promise = new Promise((res, rej) => {
+      this.initResolver = res;
+    });
+
+    this.setupPriceSubscriptions();
+
+    return promise;
   }
   constructor(redisClient: RedisClientType) {
     this.redisClient = redisClient;
-
-    this.setupPriceSubscriptions();
 
     // this.eventBus = eventBus;
   }
@@ -76,6 +84,12 @@ class IndexPriceObserver {
             payload: { price: data.p, symbol: data.i },
           }),
         });
+
+        // here the init should resolve
+        if (this.initResolver) {
+          this.initResolver("got index price udpate");
+          this.initResolver = undefined;
+        }
       };
     };
   }

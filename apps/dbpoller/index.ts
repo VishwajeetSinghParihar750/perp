@@ -61,13 +61,17 @@ const tryCreatingConsumerGroup = async () => {
 
 const handleFillsCreated = async (event: FILLS_CREATED_EVENT) => {
   const { idempotencyKey } = event;
+  console.log(`[DB_POLLER] Processing fills.created event (idempotencyKey: ${idempotencyKey})`);
 
   await prismaClient.$transaction(async (tx) => {
     let exists = await tx.processedEvent.findFirst({
       where: { id: idempotencyKey },
     });
 
-    if (exists) return;
+    if (exists) {
+      console.log(`[DB_POLLER] Event already processed: ${idempotencyKey}`);
+      return;
+    }
 
     await tx.processedEvent.create({ data: { id: idempotencyKey } });
 
@@ -82,6 +86,7 @@ const handleFillsCreated = async (event: FILLS_CREATED_EVENT) => {
         symbol,
       } = fill;
 
+      console.log(`[DB_POLLER] Creating fill: ${fillId} for symbol: ${symbol}, price: ${price}, qty: ${qty}`);
       await tx.fill.create({
         data: {
           id: fillId,
@@ -96,6 +101,7 @@ const handleFillsCreated = async (event: FILLS_CREATED_EVENT) => {
         },
       });
 
+      console.log(`[DB_POLLER] Updating long order status: ${buyOrderInfo.orderId} to status: ${buyOrderInfo.orderStatus}`);
       await tx.order.update({
         where: { id: fill.buyOrderInfo.orderId },
         data: {
@@ -104,6 +110,7 @@ const handleFillsCreated = async (event: FILLS_CREATED_EVENT) => {
         },
       });
 
+      console.log(`[DB_POLLER] Updating short order status: ${sellOrderInfo.orderId} to status: ${sellOrderInfo.orderStatus}`);
       await tx.order.update({
         where: { id: fill.sellOrderInfo.orderId },
         data: {
@@ -130,18 +137,23 @@ const handleOrderCreated = async (event: ORDER_CREATED_EVENT) => {
     type,
     userId,
   } = event.payload.data;
+  console.log(`[DB_POLLER] Processing order.created event for order: ${orderId} (idempotencyKey: ${idempotencyKey})`);
 
   await prismaClient.$transaction(async (tx) => {
     let exists = await tx.processedEvent.findFirst({
       where: { id: idempotencyKey },
     });
 
-    if (exists) return;
+    if (exists) {
+      console.log(`[DB_POLLER] Event already processed: ${idempotencyKey}`);
+      return;
+    }
 
     await tx.processedEvent.create({
       data: { id: idempotencyKey },
     });
 
+    console.log(`[DB_POLLER] Inserting order: ${orderId} in database, side: ${side}, status: ${status}`);
     await tx.order.create({
       data: {
         id: orderId,
@@ -163,18 +175,23 @@ const handleOrderCreated = async (event: ORDER_CREATED_EVENT) => {
 const handleOrderCancelled = async (event: ORDER_CANCELLED_EVENT) => {
   const { idempotencyKey } = event;
   const { orderId } = event.payload.data;
+  console.log(`[DB_POLLER] Processing order.cancelled event for order: ${orderId} (idempotencyKey: ${idempotencyKey})`);
 
   await prismaClient.$transaction(async (tx) => {
     let exists = await tx.processedEvent.findFirst({
       where: { id: idempotencyKey },
     });
 
-    if (exists) return;
+    if (exists) {
+      console.log(`[DB_POLLER] Event already processed: ${idempotencyKey}`);
+      return;
+    }
 
     await tx.processedEvent.create({
       data: { id: idempotencyKey },
     });
 
+    console.log(`[DB_POLLER] Updating order: ${orderId} status to CANCELLED in database`);
     await tx.order.update({
       where: { id: orderId },
       data: {
@@ -221,8 +238,7 @@ const processPendingUnackedEvents = async () => {
       let messages: any[] = xreadGroupRes[0].messages;
 
       for (const { id, message } of messages) {
-        //
-        console.log(message.data);
+        console.log(`[DB_POLLER] Processing pending unacked message ID: ${id}`);
         const event = JSON.parse(message.data);
         await handleEvent(event);
         await redisClient.xAck(
@@ -230,6 +246,7 @@ const processPendingUnackedEvents = async () => {
           "group",
           id,
         );
+        console.log(`[DB_POLLER] Successfully processed and ACKed message ID: ${id}`);
       }
 
       if (messages.length == 0) break;
@@ -253,8 +270,7 @@ const processNewEvents = async () => {
       let messages: any[] = xreadGroupRes[0].messages;
 
       for (const { id, message } of messages) {
-        //
-        console.log(message.data);
+        console.log(`[DB_POLLER] Processing new message ID: ${id}`);
         const event = JSON.parse(message.data);
         await handleEvent(event);
 
@@ -263,6 +279,7 @@ const processNewEvents = async () => {
           "group",
           id,
         );
+        console.log(`[DB_POLLER] Successfully processed and ACKed message ID: ${id}`);
       }
     } else throw new Error("xreadGroupRes is falsy , this should not happen");
   }

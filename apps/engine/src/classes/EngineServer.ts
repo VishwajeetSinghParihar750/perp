@@ -40,6 +40,10 @@ class EngineServer implements Snapshotable<ENGINE_SERVER_SNAPSHOT> {
     redisClient: RedisClientType,
     lastRedisMessageId: string,
   ) {
+    console.log(
+      "handling messgaes from stream  ",
+      process.env.REDIS_ENGINE_STREAM!,
+    );
     // getting connected client
     while (true) {
       const xReadResponse = await redisClient.xRead(
@@ -62,12 +66,14 @@ class EngineServer implements Snapshotable<ENGINE_SERVER_SNAPSHOT> {
               let request: EngineRequest.ENGINE_REQUEST = JSON.parse(
                 message.data!,
               );
+              console.log(`[ENGINE_SERVER] Received message ID: ${id}, request type: ${request.type}`);
 
               let zodError = false;
               try {
                 // zod validation
                 EngineRequest.ENGINE_REQUEST_SCHEMA.parse(request);
               } catch (error) {
+                console.error(`[ENGINE_SERVER] Zod validation failed for message ID: ${id}`, error);
                 zodError = true;
                 // this message processed
                 this.snapshotManager.onMessageProcessed(id);
@@ -78,13 +84,16 @@ class EngineServer implements Snapshotable<ENGINE_SERVER_SNAPSHOT> {
                 this.eventPublisher.startObservingEvents();
                 if (EngineRequest.isEngineInfoRequst(request)) {
                   // here switch based on info types
+                  console.log(`[ENGINE_SERVER] Processing info request: ${request.type}`);
                   this.handleEngineInfoRequest(request);
                   this.snapshotManager.onMessageProcessed(id);
 
                   await this.eventPublisher.publishEvents();
                   this.snapshotManager.onFullMessageProcessed(id);
+                  console.log(`[ENGINE_SERVER] Info request processed successfully for ID: ${id}`);
                 } else {
                   // here sned to request handler
+                  console.log(`[ENGINE_SERVER] Processing trade request: ${request.type} (requestId: ${request.requestId})`);
                   let result = this.handleEngineRequest(request);
 
                   // this message processed
@@ -97,6 +106,7 @@ class EngineServer implements Snapshotable<ENGINE_SERVER_SNAPSHOT> {
                   });
 
                   this.snapshotManager.onFullMessageProcessed(id);
+                  console.log(`[ENGINE_SERVER] Trade request processed and result published to stream: ${request.stream}, result type: ${result.type}`);
                 }
               }
 

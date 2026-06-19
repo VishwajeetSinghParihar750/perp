@@ -7,13 +7,14 @@ import jwt from "jsonwebtoken";
 const router: Router = Router();
 router.post("/signup", zodBodyVerification(SIGNUP_SCHEMA), async (req, res) => {
   //
-  console.log(req.body);
+  const { username, password } = req.body;
+  console.log(`[AUTH] Signup attempt for username: ${username}`);
   try {
-    const { username, password } = req.body;
     const findUser = await prismaClient.user.findUnique({
       where: { username },
     });
     if (findUser) {
+      console.log(`[AUTH] Signup failed: Username ${username} already exists`);
       res.status(403).json({ error: true, payload: "username already exists" });
       return;
     }
@@ -21,21 +22,23 @@ router.post("/signup", zodBodyVerification(SIGNUP_SCHEMA), async (req, res) => {
       data: { username, password },
     });
 
+    console.log(`[AUTH] Signup successful for username: ${username}, userId: ${user.id}`);
     res.status(201).json({ error: false, payload: user.id });
   } catch (e) {
-    console.error(e);
+    console.error(`[AUTH] Signup error for username: ${username}`, e);
     res.status(500).json({ error: true, payload: "server error" });
   }
 });
 
 router.post("/signin", zodBodyVerification(SIGNIN_SCHEMA), async (req, res) => {
+  const { username, password } = req.body;
+  console.log(`[AUTH] Signin attempt for username: ${username}`);
   try {
-    const { username, password } = req.body;
-
     const user = await prismaClient.user.findUnique({
       where: { username },
     });
     if (!user || user.password != password) {
+      console.log(`[AUTH] Signin failed: Incorrect credentials for username: ${username}`);
       res.status(400).json({ error: true, payload: "incorrect credentials" });
       return;
     }
@@ -52,6 +55,7 @@ router.post("/signin", zodBodyVerification(SIGNIN_SCHEMA), async (req, res) => {
       process.env.JWT_SECRET_KEY!,
     );
 
+    console.log(`[AUTH] Signin successful for username: ${username}, userId: ${user.id}`);
     res.status(200).json({
       error: false,
       payload: {
@@ -59,7 +63,7 @@ router.post("/signin", zodBodyVerification(SIGNIN_SCHEMA), async (req, res) => {
       },
     });
   } catch (error) {
-    console.error(error);
+    console.error(`[AUTH] Signin error for username: ${username}`, error);
     res.status(500).json({ error: true, payload: "server error" });
   }
 });

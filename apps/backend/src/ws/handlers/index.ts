@@ -16,6 +16,7 @@ async function handleAddBalanceRequest(
   if (
     zodBodyVerificationWebSocket(BackendRequest.ADD_BALANCE_SCHEMA, req, ws)
   ) {
+    console.log(`[WS_HANDLER] Add balance request from user: ${ws.user?.username} (${ws.user?.id}) for amount: ${req.payload.amount} symbol: ${req.payload.symbol}`);
     try {
       const res = await engine.getEngineResponseForRequest({
         type: "add_balance",
@@ -29,10 +30,12 @@ async function handleAddBalanceRequest(
         },
       });
 
+      console.log(`[WS_HANDLER] Add balance response for user: ${ws.user?.username}: ${JSON.stringify(res)}`);
       if (res.type == "error") {
         sendMessageOnWebSocket(ws, res);
       } else sendMessageOnWebSocket(ws, res);
     } catch (error) {
+      console.error(`[WS_HANDLER] Add balance failed for user: ${ws.user?.username}`, error);
       sendMessageOnWebSocket(ws, {
         type: "error",
         payload: "INTERNAL_SERVER_ERROR",
@@ -49,10 +52,10 @@ async function handleCreateOrderRequest(
   if (
     zodBodyVerificationWebSocket(BackendRequest.CREATE_ORDER_SCHEMA, req, ws)
   ) {
+    const { type, price, qty, symbol, side, margin, marginType } =
+      req.payload;
+    console.log(`[WS_HANDLER] Create order request from user: ${ws.user?.username} (${ws.user?.id}) - ${side} ${qty} ${symbol} @ $${price} (Margin: ${margin} ${marginType}, Type: ${type})`);
     try {
-      const { type, price, qty, symbol, side, margin, marginType } =
-        req.payload;
-
       const res = await engine.getEngineResponseForRequest({
         type: "create_order",
         requestId: crypto.randomUUID(),
@@ -70,6 +73,7 @@ async function handleCreateOrderRequest(
         },
       });
 
+      console.log(`[WS_HANDLER] Create order response for user: ${ws.user?.username}: ${JSON.stringify(res)}`);
       if (res.type == "error") {
         sendMessageOnWebSocket(ws, {
           payload: res.payload,
@@ -85,7 +89,7 @@ async function handleCreateOrderRequest(
 
       console.log(res);
     } catch (error) {
-      console.log(error);
+      console.error(`[WS_HANDLER] Create order failed for user: ${ws.user?.username}`, error);
 
       sendMessageOnWebSocket(ws, {
         type: "error",
@@ -100,7 +104,8 @@ async function handleGetBalanceRequest(
   req: BackendRequest.GET_BALANCE_REQUEST,
   ws: WebSocket,
 ) {
-  if (zodBodyVerificationWebSocket(BackendRequest.GET_BALANCE_SCHEMA, req, ws))
+  if (zodBodyVerificationWebSocket(BackendRequest.GET_BALANCE_SCHEMA, req, ws)) {
+    console.log(`[WS_HANDLER] Get balance request from user: ${ws.user?.username} (${ws.user?.id})`);
     try {
       const res = await engine.getEngineResponseForRequest({
         type: "get_balance",
@@ -109,21 +114,25 @@ async function handleGetBalanceRequest(
         stream: process.env.REDIS_ENGINE_RECEIVE_STREAM_NAME!,
       });
 
+      console.log(`[WS_HANDLER] Get balance response for user: ${ws.user?.username}: ${JSON.stringify(res)}`);
       sendMessageOnWebSocket(ws, res);
     } catch (error) {
+      console.error(`[WS_HANDLER] Get balance failed for user: ${ws.user?.username}`, error);
       sendMessageOnWebSocket(ws, {
         type: "error",
         payload: "INTERNAL_SERVER_ERROR",
         requestId: req.requestId,
       });
     }
+  }
 }
 
 async function handleGetPositionsRequest(
   req: BackendRequest.GET_POSITION_REQUEST,
   ws: WebSocket,
 ) {
-  if (zodBodyVerificationWebSocket(BackendRequest.GET_POSITION_SCHEMA, req, ws))
+  if (zodBodyVerificationWebSocket(BackendRequest.GET_POSITION_SCHEMA, req, ws)) {
+    console.log(`[WS_HANDLER] Get position request from user: ${ws.user?.username} (${ws.user?.id})`);
     try {
       const res = await engine.getEngineResponseForRequest({
         type: "get_position",
@@ -132,14 +141,17 @@ async function handleGetPositionsRequest(
         stream: process.env.REDIS_ENGINE_RECEIVE_STREAM_NAME!,
       });
 
+      console.log(`[WS_HANDLER] Get position response for user: ${ws.user?.username}: ${JSON.stringify(res)}`);
       sendMessageOnWebSocket(ws, res);
     } catch (error) {
+      console.error(`[WS_HANDLER] Get position failed for user: ${ws.user?.username}`, error);
       sendMessageOnWebSocket(ws, {
         type: "error",
         payload: "INTERNAL_SERVER_ERROR",
         requestId: req.requestId,
       });
     }
+  }
 }
 async function handleEngineRequest(
   req: BackendRequest.ENGINE_REQUEST,
@@ -157,6 +169,7 @@ async function handleEngineRequest(
       else if (req.type == "get_position")
         await handleGetPositionsRequest(req, ws);
       else {
+        console.log(`[WS_HANDLER] Fallback engine request of type: ${req.type} from user: ${ws.user?.username} (${ws.user?.id})`);
         let res = await engine.getEngineResponseForRequest(
           {
             ...req,
@@ -165,10 +178,11 @@ async function handleEngineRequest(
           ws,
         );
 
+        console.log(`[WS_HANDLER] Fallback engine request response for type: ${req.type}, user: ${ws.user?.username}: ${JSON.stringify(res)}`);
         sendMessageOnWebSocket(ws, res);
       }
     } catch (error) {
-      // console.log(error);
+      console.error(`[WS_HANDLER] Engine request failed of type: ${req.type} for user: ${ws.user?.username}`, error);
       sendMessageOnWebSocket(ws, {
         type: "error",
         payload: "INTERNAL_SERVER_ERROR",
@@ -179,6 +193,7 @@ async function handleEngineRequest(
 }
 
 const handleWsDisconnected = async (ws: WebSocket) => {
+  console.log(`[WS_HANDLER] Handling disconnect for user: ${ws.user?.username} (${ws.user?.id})`);
   await engine.handleWsDisconnected(ws);
 };
 
@@ -186,8 +201,8 @@ const handleWebSocketMessage = async (
   ws: WebSocket,
   request: BackendRequest.BACKEND_REQUEST,
 ) => {
-  // console.log(request);
-  if (BackendRequest.isEngineRequset(request))
+  if (BackendRequest.isEngineRequset(request)) {
+    console.log(`[WS_HANDLER] Processing WebSocket engine message of type: ${request.type} from user: ${ws.user?.username} (${ws.user?.id})`);
     if (
       zodBodyVerificationWebSocket(
         BackendRequest.ENGINE_REQUEST_SCHEMA,
@@ -197,6 +212,9 @@ const handleWebSocketMessage = async (
     ) {
       await handleEngineRequest(request, ws);
     }
+  } else {
+    console.log(`[WS_HANDLER] Processing other/DB WebSocket message from user: ${ws.user?.username} (${ws.user?.id})`);
+  }
 };
 
 export {

@@ -5,13 +5,14 @@ import WebSocket from "ws";
 import { BackendRequest } from "@repo/shared-types";
 
 const zodBodyVerification =
-  (schema: z.ZodObject, params: boolean = false) =>
+  (schema: z.ZodObject<any>, params: boolean = false) =>
   (req: Request, res: Response, next: NextFunction) => {
     try {
       if (params) schema.parse(req.params);
       else schema.parse(req.body);
       next();
     } catch (error) {
+      console.error(`[ZOD_VERIFICATION] Schema validation failed for HTTP route: ${req.originalUrl}`, error);
       res.status(400).json({ error: true, payload: "WRONG_REQUEST_FORMAT" });
     }
   };
@@ -23,10 +24,8 @@ const zodBodyVerificationWebSocket = (
 ): boolean => {
   const { success, error } = schema.safeParse(request);
 
-  console.log(request);
-
   if (!success) {
-    // console.log(request, error);
+    console.error(`[ZOD_VERIFICATION] WebSocket schema validation failed for user: ${ws.user?.username} (${ws.user?.id}) on type: ${request.type}`, error);
     sendMessageOnWebSocket(ws, {
       requestId: request.requestId,
       type: "error",

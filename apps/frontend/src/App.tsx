@@ -8,12 +8,11 @@ import {
   TrendingUp,
   LogOut,
   TrendingDown,
-  LineChart,
   Layers,
-  Sparkles,
   CheckCircle2,
   AlertCircle,
-  Briefcase
+  Briefcase,
+  ShieldAlert
 } from "lucide-react";
 
 const MainLayout: React.FC = () => {
@@ -173,63 +172,11 @@ const MainLayout: React.FC = () => {
       {/* MAIN CONTAINER */}
       <main className="flex-1 overflow-hidden flex flex-col lg:flex-row p-4 gap-4 h-full">
         
-        {/* LEFT COLUMN: Chart & Open Positions */}
+        {/* LEFT COLUMN: Open Positions & Balances */}
         <div className="flex-1 flex flex-col gap-4 overflow-hidden h-full">
-          {/* Mock Realtime Canvas Chart */}
-          <div className="bg-[#0B0D10] border border-gray-900 rounded-2xl p-4 flex flex-col justify-between h-[340px] shrink-0 relative overflow-hidden">
-            <div className="flex justify-between items-center text-xs mb-2 z-10">
-              <div className="flex items-center gap-2 font-bold">
-                <LineChart className="w-4 h-4 text-emerald-500" />
-                <span>{currentSymbol} Realtime Price Chart</span>
-              </div>
-              <div className="flex gap-1 bg-[#14171E] p-0.5 rounded-lg text-[10px] font-semibold text-gray-400">
-                <span className="px-1.5 py-0.5 rounded bg-gray-800 text-white">1m</span>
-                <span className="px-1.5 py-0.5 rounded hover:text-white">5m</span>
-                <span className="px-1.5 py-0.5 rounded hover:text-white">1h</span>
-                <span className="px-1.5 py-0.5 rounded hover:text-white">1d</span>
-              </div>
-            </div>
-
-            {/* Simulated Live SVG Line Chart */}
-            <div className="flex-1 flex items-end justify-center py-4 relative z-0">
-              {lastTradedPrice ? (
-                <svg className="w-full h-full overflow-visible" preserveAspectRatio="none">
-                  {/* Grid lines */}
-                  <line x1="0" y1="20%" x2="100%" y2="20%" stroke="#14171E" strokeWidth="1" />
-                  <line x1="0" y1="50%" x2="100%" y2="50%" stroke="#14171E" strokeWidth="1" />
-                  <line x1="0" y1="80%" x2="100%" y2="80%" stroke="#14171E" strokeWidth="1" />
-                  
-                  {/* Decorative price trend line */}
-                  <path
-                    d={`M 0 150 C 100 120, 200 ${100 + (lastTradedPrice % 50)}, 300 140 T 400 180 T 500 120 T 600 80 T 700 90 T 800 130`}
-                    fill="none"
-                    stroke="rgba(16, 185, 129, 0.45)"
-                    strokeWidth="3.5"
-                    strokeLinecap="round"
-                    className="animate-[pulse_4s_infinite]"
-                  />
-                  
-                  {/* Live glow marker */}
-                  <circle cx="800" cy="130" r="5" className="fill-emerald-400 animate-ping" />
-                  <circle cx="800" cy="130" r="3.5" className="fill-emerald-400" />
-                </svg>
-              ) : (
-                <div className="text-gray-600 text-xs text-center flex flex-col items-center gap-2">
-                  <Sparkles className="w-8 h-8 text-gray-700 animate-spin" />
-                  <span>Awaiting live network stream...</span>
-                </div>
-              )}
-            </div>
-
-            {/* Bottom Chart Stats */}
-            <div className="flex justify-between items-center text-[10px] text-gray-500 font-mono border-t border-gray-900/60 pt-2 z-10">
-              <span>VOL: $1,284,954 USD</span>
-              <span className="text-emerald-500">Live feed connected</span>
-            </div>
-          </div>
-
+          
           {/* POSITIONS & BALANCES BOX */}
-          <div className="flex-1 bg-[#0B0D10] border border-gray-900 rounded-2xl flex flex-col overflow-hidden min-h-[180px]">
+          <div className="flex-1 bg-[#0B0D10] border border-gray-900 rounded-2xl flex flex-col overflow-hidden h-full">
             {/* Tabs */}
             <div className="flex bg-[#11131A] px-4 py-2 border-b border-gray-900 justify-between items-center">
               <div className="flex gap-4">
@@ -261,7 +208,15 @@ const MainLayout: React.FC = () => {
 
             {/* Tab content */}
             <div className="flex-1 overflow-y-auto p-3 text-xs">
-              {activeBottomTab === "positions" ? (
+              {!isAuthenticated ? (
+                <div className="flex flex-col items-center justify-center h-full text-center py-16 text-gray-600 gap-2">
+                  <ShieldAlert className="w-8 h-8 text-amber-500/80 animate-pulse" />
+                  <span className="font-bold text-gray-400 text-sm">Authentication Required</span>
+                  <span className="text-[10px] text-gray-500 max-w-xs">
+                    Please log in or sign up to access your active leverage positions, asset balances, and real-time market data.
+                  </span>
+                </div>
+              ) : activeBottomTab === "positions" ? (
                 /* POSITIONS LIST */
                 Object.keys(positions).length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-full text-center py-6 text-gray-600 gap-1">

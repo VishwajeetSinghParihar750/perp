@@ -231,7 +231,7 @@ class EngineServer implements Snapshotable<ENGINE_SERVER_SNAPSHOT> {
       return {
         requestId: engineRequest.requestId,
         type: "balance",
-        payload: balance,
+        payload: balance as any,
       };
     } catch (error) {
       return {
@@ -294,7 +294,7 @@ class EngineServer implements Snapshotable<ENGINE_SERVER_SNAPSHOT> {
       return {
         requestId: engineRequest.requestId,
         type: "order_created",
-        payload: { status, fills, orderId },
+        payload: { status, fills, orderId } as any,
       };
     } catch (error) {
       return {
@@ -313,7 +313,7 @@ class EngineServer implements Snapshotable<ENGINE_SERVER_SNAPSHOT> {
 
       this.exchange.addBalance(userId, amount, symbol);
 
-      return { requestId: engineRequest.requestId, type: "balance_updated" };
+      return { requestId: engineRequest.requestId, type: "balance_updated" } as any;
     } catch (error) {
       return {
         requestId: engineRequest.requestId,
@@ -362,7 +362,7 @@ class EngineServer implements Snapshotable<ENGINE_SERVER_SNAPSHOT> {
       //
       let payload = this.exchange.getOrderbookSnapshot(symbol);
 
-      return { requestId: engineRequest.requestId, type: "orderbook", payload };
+      return { requestId: engineRequest.requestId, type: "orderbook", payload: payload as any };
     } catch (error) {
       return {
         requestId: engineRequest.requestId,

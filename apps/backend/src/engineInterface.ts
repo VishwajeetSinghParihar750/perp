@@ -148,10 +148,19 @@ class EngineInterface {
                   `[ENGINE_INTERFACE] Engine response matches pending requestId: ${requestId}, type: ${type}`,
                 );
                 if (type == "error")
-                  this.pendingRequests[requestId]?.[1]?.({ type, payload });
-                else this.pendingRequests[requestId]?.[0]?.({ type, payload });
+                  this.pendingRequests[requestId]?.[1]?.({
+                    type,
+                    payload,
+                    requestId,
+                  });
+                else
+                  this.pendingRequests[requestId]?.[0]?.({
+                    type,
+                    payload,
+                    requestId,
+                  });
 
-                delete this.pendingRequests[requestId];
+                delete this.pendingRequests?.[requestId];
               } else if (type == "event") {
                 this.broadcastEvent(response);
               } else {
@@ -165,7 +174,7 @@ class EngineInterface {
                 error,
               );
               if (gotRequestId) {
-                delete this.pendingRequests[gotRequestId];
+                delete this.pendingRequests?.[gotRequestId];
               }
             }
             lastRedisMessageId = id;

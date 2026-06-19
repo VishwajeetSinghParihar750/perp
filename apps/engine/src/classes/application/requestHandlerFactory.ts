@@ -10,6 +10,8 @@ import Orderbook from "../domain/orderbook.js";
 import { TradeFactory } from "../domain/trade.js";
 import type { Result } from "../types.js";
 import AddBalanceHandler from "./addBalanceHandler.js";
+import PositionManager from "../domain/positionManager.js";
+import GetBalanceHandler from "./getBalanceHandler.js";
 
 const eventBus = new EventBus();
 const account = new Account(eventBus);
@@ -30,10 +32,14 @@ const createOrderHandler = new CreateOrderHandler(
   account,
 );
 const addBalanceHandler = new AddBalanceHandler(account);
+const getBalanceHandler = new GetBalanceHandler(account);
+
+const positionManager = new PositionManager(eventBus, riskEngine);
 
 const responseHelper = (
   req: EngineRequest.ENGINE_REQUEST,
   res: Result<any>,
+  type: any,
 ): EngineResponse.ENGINE_RESPONSE => {
   if (!res.success)
     return {
@@ -43,7 +49,7 @@ const responseHelper = (
     };
 
   return {
-    type: "order_created",
+    type,
     payload: res.value,
     requestId: (req as any).requestId,
   };
@@ -61,7 +67,7 @@ const requestHandler = (
         marketId: req.payload.symbol,
         quantity: req.payload.qty,
       });
-      return responseHelper(req, res);
+      return responseHelper(req, res, "order_created");
     }
 
     case "add_balance": {
@@ -70,13 +76,24 @@ const requestHandler = (
         amount: req.payload.amount,
         userId: req.payload.userId,
       });
-      return responseHelper(req, res);
+      return responseHelper(req, res, "balance_updated");
     }
+
+    case "get_balance": {
+      let req = request as EngineRequest.GET_BALANCE_REQUEST;
+      let res = getBalanceHandler.handle({ userId: req.payload.userId });
+      return responseHelper(req, res, "balance");
+    }
+
     default:
-      return responseHelper(request, {
-        success: false,
-        error: new Error("INVALID_REQUEST_TYPE"),
-      });
+      return responseHelper(
+        request,
+        {
+          success: false,
+          error: new Error("INVALID_REQUEST_TYPE"),
+        },
+        "error",
+      );
   }
 };
 

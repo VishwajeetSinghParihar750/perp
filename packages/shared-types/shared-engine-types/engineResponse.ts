@@ -89,9 +89,7 @@ const baseResponseSchema = z.object({ requestId: z.string() });
 
 const ORDER_CREATED_SCHEMA = baseResponseSchema.extend({
   type: z.literal("order_created"),
-  payload: z.object({
-    ...ORDER_SCHEMA.shape,
-  }),
+  payload: ORDER_SCHEMA,
 });
 
 const ORDER_CANCELLED_SCHEMA = baseResponseSchema.extend({

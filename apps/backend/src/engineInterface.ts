@@ -2,7 +2,12 @@ import "dotenv/config";
 import WebSocket from "ws";
 import { redisClient as redisClientGlobal } from "@repo/db";
 import type { RedisClientType } from "@repo/db";
-import { EngineRequest, EngineResponse, EngineEvent, EngineEventType } from "@repo/shared-types";
+import {
+  EngineRequest,
+  EngineResponse,
+  EngineEvent,
+  EngineEventType,
+} from "@repo/shared-types";
 
 import { sendMessageOnWebSocket } from "./ws/utils/messaging.js";
 
@@ -22,7 +27,9 @@ class EngineInterface {
     eventTypes: EngineEventType.ENGINE_EVENT_TYPE[],
     ws: WebSocket,
   ) {
-    console.log(`[ENGINE_INTERFACE] User ${ws.user?.username} subscribing to events: ${eventTypes.join(", ")}`);
+    console.log(
+      `[ENGINE_INTERFACE] User ${ws.user?.username} subscribing to events: ${eventTypes.join(", ")}`,
+    );
     eventTypes.forEach((eventType) => {
       if (!this.eventSubscriptions[eventType])
         this.eventSubscriptions[eventType] = new Set();
@@ -35,14 +42,18 @@ class EngineInterface {
     ws: WebSocket,
   ) {
     if (eventTypes == "ALL_EVENTS") {
-      console.log(`[ENGINE_INTERFACE] User ${ws.user?.username} unsubscribing from ALL events`);
+      console.log(
+        `[ENGINE_INTERFACE] User ${ws.user?.username} unsubscribing from ALL events`,
+      );
       Object.keys(this.engineSubscriptions).forEach((eventType) => {
         this.eventSubscriptions[
           eventType as EngineEventType.ENGINE_EVENT_TYPE
         ]?.delete(ws);
       });
     } else {
-      console.log(`[ENGINE_INTERFACE] User ${ws.user?.username} unsubscribing from events: ${eventTypes.join(", ")}`);
+      console.log(
+        `[ENGINE_INTERFACE] User ${ws.user?.username} unsubscribing from events: ${eventTypes.join(", ")}`,
+      );
       eventTypes.forEach((eventType) => {
         this.eventSubscriptions[eventType]?.delete(ws);
       });
@@ -78,7 +89,9 @@ class EngineInterface {
   private broadcastEvent = (event: EngineEvent.ENGINE_EVENT) => {
     let { type } = event.payload;
     const subscribersCount = this.eventSubscriptions[type]?.size || 0;
-    console.log(`[ENGINE_INTERFACE] Broadcasting event of type: ${type} to ${subscribersCount} subscribers`);
+    console.log(
+      `[ENGINE_INTERFACE] Broadcasting event of type: ${type} to ${subscribersCount} subscribers`,
+    );
     this.eventSubscriptions[type]?.forEach((ws) => {
       sendMessageOnWebSocket(ws, event);
     });
@@ -92,7 +105,9 @@ class EngineInterface {
     redisClient: RedisClientType,
     lastRedisMessageId = "$",
   ) {
-    console.log(`[ENGINE_INTERFACE] Starting Redis subscription reader stream: ${process.env.REDIS_ENGINE_RECEIVE_STREAM_NAME}`);
+    console.log(
+      `[ENGINE_INTERFACE] Starting Redis subscription reader stream: ${process.env.REDIS_ENGINE_RECEIVE_STREAM_NAME}`,
+    );
     while (true) {
       let xreadRes = await redisClient.xRead(
         [
@@ -110,8 +125,11 @@ class EngineInterface {
             let gotRequestId = "";
             try {
               const rawData = message.data!;
-              console.log(`[ENGINE_INTERFACE] Received engine response from stream (id: ${id})`);
+              console.log(
+                `[ENGINE_INTERFACE] Received engine response from stream (id: ${id})`,
+              );
 
+              console.log(JSON.parse(rawData));
               // zod validation
               let response: EngineResponse.ENGINE_RESPONSE =
                 EngineResponse.ENGINE_RESPONSE_SCHEMA.parse(
@@ -126,7 +144,9 @@ class EngineInterface {
                 let payload = undefined;
                 if ("payload" in response) payload = response.payload;
 
-                console.log(`[ENGINE_INTERFACE] Engine response matches pending requestId: ${requestId}, type: ${type}`);
+                console.log(
+                  `[ENGINE_INTERFACE] Engine response matches pending requestId: ${requestId}, type: ${type}`,
+                );
                 if (type == "error")
                   this.pendingRequests[requestId]?.[1]?.({ type, payload });
                 else this.pendingRequests[requestId]?.[0]?.({ type, payload });
@@ -135,10 +155,15 @@ class EngineInterface {
               } else if (type == "event") {
                 this.broadcastEvent(response);
               } else {
-                console.error(`[ENGINE_INTERFACE] Unknown/unexpected response type received (id: ${id})`);
+                console.error(
+                  `[ENGINE_INTERFACE] Unknown/unexpected response type received (id: ${id})`,
+                );
               }
             } catch (error) {
-              console.error(`[ENGINE_INTERFACE] Error processing/parsing engine message for request ID ${gotRequestId || "unknown"}:`, error);
+              console.error(
+                `[ENGINE_INTERFACE] Error processing/parsing engine message for request ID ${gotRequestId || "unknown"}:`,
+                error,
+              );
               if (gotRequestId) {
                 delete this.pendingRequests[gotRequestId];
               }
@@ -152,8 +177,11 @@ class EngineInterface {
   private sendEngineRequest = async (
     engineRequest: EngineRequest.ENGINE_REQUEST,
   ) => {
-    const reqId = "requestId" in engineRequest ? (engineRequest as any).requestId : "N/A";
-    console.log(`[ENGINE_INTERFACE] Sending request of type: ${engineRequest.type} (requestId: ${reqId}) to Redis stream: ${process.env.REDIS_ENGINE_SEND_STREAM_NAME}`);
+    const reqId =
+      "requestId" in engineRequest ? (engineRequest as any).requestId : "N/A";
+    console.log(
+      `[ENGINE_INTERFACE] Sending request of type: ${engineRequest.type} (requestId: ${reqId}) to Redis stream: ${process.env.REDIS_ENGINE_SEND_STREAM_NAME}`,
+    );
     let res = await this.redisClient.xAdd(
       process.env.REDIS_ENGINE_SEND_STREAM_NAME!,
       "*",
@@ -161,27 +189,36 @@ class EngineInterface {
         data: JSON.stringify(engineRequest),
       },
     );
-    console.log(`[ENGINE_INTERFACE] Request type: ${engineRequest.type} (requestId: ${reqId}) added to stream with ID: ${res}`);
+    console.log(
+      `[ENGINE_INTERFACE] Request type: ${engineRequest.type} (requestId: ${reqId}) added to stream with ID: ${res}`,
+    );
   };
 
   getEngineResponseForRequest = async (
     engineRequest: EngineRequest.ENGINE_REQUEST_FROM_BACKEND,
     ws?: WebSocket,
   ): Promise<EngineResponse.ENGINE_RESPONSE> => {
-    const reqId = "requestId" in engineRequest ? (engineRequest as any).requestId : "N/A";
-    console.log(`[ENGINE_INTERFACE] Queueing promise for request: ${reqId} (type: ${engineRequest.type})`);
+    const reqId =
+      "requestId" in engineRequest ? (engineRequest as any).requestId : "N/A";
+    console.log(
+      `[ENGINE_INTERFACE] Queueing promise for request: ${reqId} (type: ${engineRequest.type})`,
+    );
     let promiseToReturn = new Promise<EngineResponse.ENGINE_RESPONSE>(
       (res, rej) => {
         let newResolver;
         if (engineRequest.type == "subscribe_event") {
           newResolver = (data: any) => {
-            console.log(`[ENGINE_INTERFACE] Request resolved: subscribing events for ${ws?.user?.username}`);
+            console.log(
+              `[ENGINE_INTERFACE] Request resolved: subscribing events for ${ws?.user?.username}`,
+            );
             this.subscribeEvent(engineRequest.payload.events, ws!);
             res(data);
           };
         } else if (engineRequest.type == "unsubscribe_event") {
           newResolver = (data: any) => {
-            console.log(`[ENGINE_INTERFACE] Request resolved: unsubscribing events for ${ws?.user?.username}`);
+            console.log(
+              `[ENGINE_INTERFACE] Request resolved: unsubscribing events for ${ws?.user?.username}`,
+            );
             this.unsubscribeEvent(engineRequest.payload.events, ws!);
             res(data);
           };
@@ -193,7 +230,9 @@ class EngineInterface {
         ];
 
         setTimeout(() => {
-          console.warn(`[ENGINE_INTERFACE] Request TIMEOUT: ${engineRequest.requestId} (type: ${engineRequest.type}) has timed out after 20 seconds`);
+          console.warn(
+            `[ENGINE_INTERFACE] Request TIMEOUT: ${engineRequest.requestId} (type: ${engineRequest.type}) has timed out after 20 seconds`,
+          );
           rej("REQUEST_TIMED_OUT");
           delete this.pendingRequests[engineRequest.requestId];
         }, 20 * 1000); // timeout request if 20s pass before response comes

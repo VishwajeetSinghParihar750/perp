@@ -21,11 +21,11 @@ const ORDER_SCHEMA = z.object({
   userId: USER_ID_SCHEMA,
   price: PRICE_SCHEMA,
 
-  qty: QUANTITY_SCHEMA,
+  quantity: QUANTITY_SCHEMA,
   side: SIDE_SCHEMA,
-  symbol: TRADBLE_SYMBOL_SCHEMA,
+  marketId: TRADBLE_SYMBOL_SCHEMA,
   type: ORDER_TYPE_SCHEMA,
-  filledQty: QUANTITY_SCHEMA,
+  filledQuantity: QUANTITY_SCHEMA,
   orderId: ORDER_ID_SCHEMA,
   //
   createdAt: z.iso.datetime(),
@@ -90,9 +90,7 @@ const baseResponseSchema = z.object({ requestId: z.string() });
 const ORDER_CREATED_SCHEMA = baseResponseSchema.extend({
   type: z.literal("order_created"),
   payload: z.object({
-    status: ORDER_STATUS_SCHEMA,
-    fills: FILLS_SCHEMA,
-    orderId: ORDER_ID_SCHEMA,
+    ...ORDER_SCHEMA.shape,
   }),
 });
 
@@ -105,15 +103,20 @@ const EVENT_SUBSCRIBED_SCHEMA = baseResponseSchema.extend({
 const EVENT_UNSUBSCRIBED_SCHEMA = baseResponseSchema.extend({
   type: z.literal("event_unsubscribed"),
 });
+
 const BALANCE_SCHEMA = baseResponseSchema.extend({
   type: z.literal("balance"),
-  payload: z.union([
-    z.number(),
-    z.partialRecord(CURRENCY_SYMBOL_SCHEMA, z.number()),
-  ]),
+  payload: z.object({
+    balance: QUANTITY_SCHEMA,
+    lockedBalance: QUANTITY_SCHEMA,
+  }),
 });
 const BALANCE_UPDATED_SCHEMA = baseResponseSchema.extend({
   type: z.literal("balance_updated"),
+  payload: z.object({
+    balance: QUANTITY_SCHEMA,
+    lockedBalance: QUANTITY_SCHEMA,
+  }),
 });
 
 const DEPTH_SCHEMA = baseResponseSchema.extend({

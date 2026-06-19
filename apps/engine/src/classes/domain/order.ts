@@ -25,15 +25,12 @@ export interface Order {
 }
 
 export class OrderFactory {
-  private marketId: MARKET_ID;
-  private orderIdCounter: number = 0;
+  private counters: Map<string, number> = new Map();
 
-  constructor(marketId: MARKET_ID) {
-    this.marketId = marketId;
-  }
-
-  private getNextOrderId(): ORDER_ID {
-    return this.marketId + (this.orderIdCounter++).toString();
+  private getNextOrderId(marketId: string): string {
+    const count = this.counters.get(marketId) ?? 0;
+    this.counters.set(marketId, count + 1);
+    return marketId + count.toString();
   }
 
   create(
@@ -49,7 +46,7 @@ export class OrderFactory {
     status: ORDER_STATUS = "OPEN"
   ): Order {
     return {
-      orderId: this.getNextOrderId(),
+      orderId: this.getNextOrderId(marketId),
       userId,
       price,
       quantity,

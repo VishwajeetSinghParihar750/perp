@@ -1,6 +1,6 @@
 import type { EngineTypes } from "@repo/shared-types";
 
-type TRADABLE_SYMBOL = EngineTypes.TRADABLE_SYMBOL;
+type TRADE_SYMBOL = EngineTypes.TRADABLE_SYMBOL;
 
 export type TradeOrderInfo = {
   buyerId?: string;
@@ -13,7 +13,7 @@ export type TradeOrderInfo = {
 
 export type Trade = {
   fillId: string;
-  symbol: TRADABLE_SYMBOL;
+  symbol: TRADE_SYMBOL;
   qty: number;
   price: number;
   bidPrice: number;
@@ -34,21 +34,18 @@ export type Trade = {
 };
 
 export class TradeFactory {
-  private symbol: TRADABLE_SYMBOL;
-  private tradeIdCounter: number = 0;
+  private counters: Map<string, number> = new Map();
 
-  constructor(symbol: TRADABLE_SYMBOL) {
-    this.symbol = symbol;
-  }
-
-  private getNextTradeId(): string {
-    return this.symbol + (this.tradeIdCounter++).toString();
+  private getNextTradeId(symbol: string): string {
+    const count = this.counters.get(symbol) ?? 0;
+    this.counters.set(symbol, count + 1);
+    return symbol + count.toString();
   }
 
   create(
     price: EngineTypes.PRICE,
     filledQty: EngineTypes.QUANTITY,
-    symbol: TRADABLE_SYMBOL,
+    symbol: TRADE_SYMBOL,
     longOrderInfo: {
       buyerId: string;
       orderId: string;
@@ -65,7 +62,7 @@ export class TradeFactory {
     },
   ): Trade {
     return {
-      fillId: this.getNextTradeId(),
+      fillId: this.getNextTradeId(symbol),
       symbol,
       qty: filledQty,
       price,

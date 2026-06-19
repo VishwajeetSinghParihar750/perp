@@ -11,7 +11,7 @@ import {
 import { assert } from "node:console";
 import type EventBus from "./EventBus.js";
 import type { Snapshotable } from "./SnapshotManger.js";
-import type { EngineEvent } from "@repo/shared-types";
+import type { EngineEvent, EngineEventPayload } from "@repo/shared-types";
 
 import type { FILLS_INFO, TRADABLE_CURRENCY_SYMBOL } from "../types/order.js";
 
@@ -328,7 +328,7 @@ export default class OrderBook implements Snapshotable<ORDERBOOK_SNAPSHOT> {
     };
   };
 
-  private emitEvent(event: EngineEvent.ENGINE_EVENT_PAYLOAD) {
+  private emitEvent(event: EngineEventPayload.ENGINE_EVENT_PAYLOAD) {
     this.eventBus.emit(event);
   }
 

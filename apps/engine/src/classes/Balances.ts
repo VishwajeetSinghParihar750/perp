@@ -1,4 +1,4 @@
-import type { EngineEvent } from "@repo/shared-types";
+import type { EngineEventPayload } from "@repo/shared-types";
 
 import { CURRENCY_SYMBOL_ARRAY, type CURRENCY_SYMBOL } from "../types/order.js";
 import { InsufficientBalanceError } from "./Errors/Balances.js";
@@ -21,13 +21,13 @@ export default class BalanceManager implements Snapshotable<BALANCE_SNAPSHOT> {
   private lockedAccounts: Partial<Record<CURRENCY_SYMBOL, Set<string>>> = {};
 
   private handleLiquidationStarted = (
-    event: EngineEvent.LIQUIDATION_STARTED_EVENT_PAYLOAD,
+    event: EngineEventPayload.LIQUIDATION_STARTED_EVENT_PAYLOAD,
   ) => {
     const { userId, symbol } = event.data;
     this.lockAccount(userId, symbol);
   };
   private handleLiquidtationCompleted = (
-    event: EngineEvent.LIQUIDATION_COMPLETED_EVENT_PAYLOAD,
+    event: EngineEventPayload.LIQUIDATION_COMPLETED_EVENT_PAYLOAD,
   ) => {
     const { userId, symbol } = event.data;
     this.unlockAccount(userId, symbol);

@@ -2,16 +2,16 @@ import "dotenv/config";
 import WebSocket from "ws";
 import { redisClient as redisClientGlobal } from "@repo/db";
 import type { RedisClientType } from "@repo/db";
-import { EngineRequest, EngineResponse, EngineEvent } from "@repo/shared-types";
+import { EngineRequest, EngineResponse, EngineEvent, EngineEventType } from "@repo/shared-types";
 
 import { sendMessageOnWebSocket } from "./ws/utils/messaging.js";
 
 class EngineInterface {
   redisClient: RedisClientType;
 
-  engineSubscriptions: Set<EngineEvent.ENGINE_EVENT_TYPE> = new Set();
+  engineSubscriptions: Set<EngineEventType.ENGINE_EVENT_TYPE> = new Set();
   eventSubscriptions: Partial<
-    Record<EngineEvent.ENGINE_EVENT_TYPE, Set<WebSocket>>
+    Record<EngineEventType.ENGINE_EVENT_TYPE, Set<WebSocket>>
   > = {};
 
   // saving resolve, reject functions of promise
@@ -19,7 +19,7 @@ class EngineInterface {
     {};
 
   private subscribeEvent(
-    eventTypes: EngineEvent.ENGINE_EVENT_TYPE[],
+    eventTypes: EngineEventType.ENGINE_EVENT_TYPE[],
     ws: WebSocket,
   ) {
     console.log(`[ENGINE_INTERFACE] User ${ws.user?.username} subscribing to events: ${eventTypes.join(", ")}`);
@@ -31,14 +31,14 @@ class EngineInterface {
     });
   }
   private unsubscribeEvent(
-    eventTypes: EngineEvent.ENGINE_EVENT_TYPE[] | "ALL_EVENTS",
+    eventTypes: EngineEventType.ENGINE_EVENT_TYPE[] | "ALL_EVENTS",
     ws: WebSocket,
   ) {
     if (eventTypes == "ALL_EVENTS") {
       console.log(`[ENGINE_INTERFACE] User ${ws.user?.username} unsubscribing from ALL events`);
       Object.keys(this.engineSubscriptions).forEach((eventType) => {
         this.eventSubscriptions[
-          eventType as EngineEvent.ENGINE_EVENT_TYPE
+          eventType as EngineEventType.ENGINE_EVENT_TYPE
         ]?.delete(ws);
       });
     } else {

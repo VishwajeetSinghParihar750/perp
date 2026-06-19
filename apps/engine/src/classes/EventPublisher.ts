@@ -1,23 +1,23 @@
 import type { RedisClientType } from "@repo/db";
 
-import { EngineEvent } from "@repo/shared-types";
+import type { EngineEventType, EngineEventPayload } from "@repo/shared-types";
 import type EventBus from "./EventBus.js";
 import type { Snapshotable } from "./SnapshotManger.js";
 
 type EVENT_PUBLISHER_SNAPSHOT = {
-  subscriptions: Record<EngineEvent.ENGINE_EVENT_TYPE, string[]>;
-  idempotencyKey: Partial<Record<EngineEvent.ENGINE_EVENT_TYPE, number>>;
+  subscriptions: Record<EngineEventType.ENGINE_EVENT_TYPE, string[]>;
+  idempotencyKey: Partial<Record<EngineEventType.ENGINE_EVENT_TYPE, number>>;
   globalidempotencyKey: number;
 };
 
 class EventPublisher implements Snapshotable<EVENT_PUBLISHER_SNAPSHOT> {
-  subscriptions: Map<EngineEvent.ENGINE_EVENT_TYPE, Set<string>> = new Map(); // string represents stream name that is subscribed to that event
+  subscriptions: Map<EngineEventType.ENGINE_EVENT_TYPE, Set<string>> = new Map(); // string represents stream name that is subscribed to that event
   redisClient: RedisClientType;
 
-  idempotencyKey: Partial<Record<EngineEvent.ENGINE_EVENT_TYPE, number>> = {};
+  idempotencyKey: Partial<Record<EngineEventType.ENGINE_EVENT_TYPE, number>> = {};
   globalidempotencyKey: number = 0;
 
-  eventsBuffer: EngineEvent.ENGINE_EVENT_PAYLOAD[] = []; // this is not needed in snaposhot coz
+  eventsBuffer: EngineEventPayload.ENGINE_EVENT_PAYLOAD[] = []; // this is not needed in snaposhot coz
 
   eventBus: EventBus;
 
@@ -38,7 +38,7 @@ class EventPublisher implements Snapshotable<EVENT_PUBLISHER_SNAPSHOT> {
     this.subscriptions = new Map();
     Object.entries(data.subscriptions).forEach(([key, sub]) => {
       this.subscriptions.set(
-        key as EngineEvent.ENGINE_EVENT_TYPE,
+        key as EngineEventType.ENGINE_EVENT_TYPE,
         new Set(sub),
       );
     });
@@ -52,7 +52,7 @@ class EventPublisher implements Snapshotable<EVENT_PUBLISHER_SNAPSHOT> {
       let perEventIdemNumber = (this.idempotencyKey[event.type] ??= 0);
       let globalIdemNumber = this.globalidempotencyKey;
 
-      this.idempotencyKey[event.type]++;
+      this.idempotencyKey[event.type] = perEventIdemNumber + 1;
       this.globalidempotencyKey++;
 
       // send to all backends who are subbed
@@ -93,7 +93,7 @@ class EventPublisher implements Snapshotable<EVENT_PUBLISHER_SNAPSHOT> {
     this.eventsBuffer = [];
   };
 
-  handleEvent = async (event: EngineEvent.ENGINE_EVENT_PAYLOAD) => {
+  handleEvent = async (event: EngineEventPayload.ENGINE_EVENT_PAYLOAD) => {
     this.eventsBuffer.push(event);
   };
 
@@ -107,7 +107,7 @@ class EventPublisher implements Snapshotable<EVENT_PUBLISHER_SNAPSHOT> {
     this.eventBus = eventBus;
   }
 
-  subscribeEvent(event: EngineEvent.ENGINE_EVENT_TYPE, stream: string) {
+  subscribeEvent(event: EngineEventType.ENGINE_EVENT_TYPE, stream: string) {
     // later TOOD: ideally should limit what outsiders can sub to
     let subs = this.subscriptions.get(event);
     if (!subs) subs = new Set();
@@ -115,7 +115,7 @@ class EventPublisher implements Snapshotable<EVENT_PUBLISHER_SNAPSHOT> {
     subs.add(stream);
     this.subscriptions.set(event, subs);
   }
-  unsubscribeEvent(event: EngineEvent.ENGINE_EVENT_TYPE, stream: string) {
+  unsubscribeEvent(event: EngineEventType.ENGINE_EVENT_TYPE, stream: string) {
     // later TOOD: ideally should limit what outsiders can sub to
     this.subscriptions?.get(event)?.delete(stream);
   }

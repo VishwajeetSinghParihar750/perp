@@ -2,12 +2,14 @@ import z from "zod";
 import {
   type CURRENCY_SYMBOL,
   CURRENCY_SYMBOL_SCHEMA,
-  ENGINE_EVENT_TYPE_SCHEMA,
   MARGIN_TYPE_SCHEMA,
   SIDE_SCHEMA,
   TRADBLE_SYMBOL_SCHEMA,
   TYPE_SCHEMA,
-} from "../shared-engine-types/engineEvent.js";
+} from "../shared-engine-types/types.js";
+import {
+  ENGINE_EVENT_TYPE_SCHEMA,
+} from "../shared-engine-types/engineEventType.js";
 
 const ENGINE_REQUEST_TYPE_SCHEMA = z.union([
   z.literal("create_order"),

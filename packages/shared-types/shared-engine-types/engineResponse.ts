@@ -5,72 +5,77 @@ import {
   MARGIN_TYPE_SCHEMA,
 } from "../shared-backend-types/backendRequest.js";
 
+import { ENGINE_EVENT_SCHEMA } from "./engineEvent.js";
 import {
-  ENGINE_EVENT_SCHEMA,
+  FILL_ID_SCHEMA,
+  ORDER_ID_SCHEMA,
   ORDER_STATUS_SCHEMA,
+  PRICE_SCHEMA,
+  QUANTITY_SCHEMA,
   TRADBLE_SYMBOL_SCHEMA,
-} from "./engineEvent.js";
+  USER_ID_SCHEMA,
+} from "./types.js";
 
 const ORDER_TYPE_SCHEMA = z.union([z.literal("MARKET"), z.literal("LIMIT")]);
 const ORDER_SCHEMA = z.object({
-  userId: z.string(),
-  price: z.number(),
-  qty: z.number(),
+  userId: USER_ID_SCHEMA,
+  price: PRICE_SCHEMA,
+
+  qty: QUANTITY_SCHEMA,
   side: SIDE_SCHEMA,
   symbol: TRADBLE_SYMBOL_SCHEMA,
   type: ORDER_TYPE_SCHEMA,
-  filledQty: z.number(),
-  orderId: z.string(),
+  filledQty: QUANTITY_SCHEMA,
+  orderId: ORDER_ID_SCHEMA,
   //
   createdAt: z.iso.datetime(),
 
   //  for perp
-  margin: z.number(),
+  margin: PRICE_SCHEMA,
   marginType: MARGIN_TYPE_SCHEMA,
 
   status: ORDER_STATUS_SCHEMA,
 });
 
 const PRICE_LEVEL_SCHEMA = z.object({
-  totalQuantity: z.number(),
+  totalQuantity: QUANTITY_SCHEMA,
   orders: z.array(ORDER_SCHEMA),
 });
 const SYMBOL_ORDERBOOK_SCHEMA = z.object({
-  BIDS: z.array(z.tuple([z.number(), PRICE_LEVEL_SCHEMA])),
-  ASKS: z.array(z.tuple([z.number(), PRICE_LEVEL_SCHEMA])),
+  BIDS: z.array(z.tuple([PRICE_SCHEMA, PRICE_LEVEL_SCHEMA])),
+  ASKS: z.array(z.tuple([PRICE_SCHEMA, PRICE_LEVEL_SCHEMA])),
 });
 
 const POSITION_TYPE_SCHEMA = z.union([z.literal("LONG"), z.literal("SHORT")]);
 const POSITION_SCHEMA = z.object({
-  positionId: z.string(),
-  userId: z.string(),
-  price: z.number(),
+  userId: USER_ID_SCHEMA,
+  price: PRICE_SCHEMA,
   qty: z.number(),
   type: POSITION_TYPE_SCHEMA,
   symbol: CURRENCY_SYMBOL_SCHEMA,
   createdAt: z.iso.datetime(),
-  margin: z.number(),
+  margin: PRICE_SCHEMA,
   marginType: MARGIN_TYPE_SCHEMA,
 });
 
 const FILL_SCHEMA = z.object({
-  fillId: z.string(),
+  fillId: FILL_ID_SCHEMA,
   symbol: CURRENCY_SYMBOL_SCHEMA,
   qty: z.number(),
-  price: z.number(),
-  bidPrice: z.number(),
+  price: PRICE_SCHEMA,
+  bidPrice: PRICE_SCHEMA,
   buyOrderInfo: z.object({
     buyerId: z.string(),
-    orderId: z.string(),
+    orderId: ORDER_ID_SCHEMA,
     totalQty: z.number(),
-    margin: z.number(),
+    margin: PRICE_SCHEMA,
     marginType: MARGIN_TYPE_SCHEMA,
   }),
   sellOrderInfo: z.object({
     sellerId: z.string(),
-    orderId: z.string(),
+    orderId: ORDER_ID_SCHEMA,
     totalQty: z.number(),
-    margin: z.number(),
+    margin: PRICE_SCHEMA,
     marginType: MARGIN_TYPE_SCHEMA,
   }),
 });
@@ -87,7 +92,7 @@ const ORDER_CREATED_SCHEMA = baseResponseSchema.extend({
   payload: z.object({
     status: ORDER_STATUS_SCHEMA,
     fills: FILLS_SCHEMA,
-    orderId: z.string(),
+    orderId: ORDER_ID_SCHEMA,
   }),
 });
 
@@ -114,8 +119,8 @@ const BALANCE_UPDATED_SCHEMA = baseResponseSchema.extend({
 const DEPTH_SCHEMA = baseResponseSchema.extend({
   type: z.literal("depth"),
   payload: z.object({
-    BIDS: z.array(z.object({ price: z.number(), quantity: z.number() })),
-    ASKS: z.array(z.object({ price: z.number(), quantity: z.number() })),
+    BIDS: z.array(z.object({ price: PRICE_SCHEMA, quantity: z.number() })),
+    ASKS: z.array(z.object({ price: PRICE_SCHEMA, quantity: z.number() })),
   }),
 });
 
@@ -154,5 +159,5 @@ const ENGINE_RESPONSE_SCHEMA = z.union([
 
 type ENGINE_RESPONSE = z.infer<typeof ENGINE_RESPONSE_SCHEMA>;
 
-export { ENGINE_RESPONSE_SCHEMA };
-export type { ENGINE_RESPONSE };
+export { ENGINE_RESPONSE_SCHEMA, FILL_SCHEMA, FILLS_SCHEMA };
+export type { ENGINE_RESPONSE, FILL, FILLS };

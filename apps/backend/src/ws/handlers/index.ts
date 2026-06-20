@@ -17,7 +17,7 @@ async function handleAddBalanceRequest(
     zodBodyVerificationWebSocket(BackendRequest.ADD_BALANCE_SCHEMA, req, ws)
   ) {
     console.log(
-      `[WS_HANDLER] Add balance request from user: ${ws.user?.username} (${ws.user?.id}) for amount: ${req.payload.amount} symbol: ${req.payload.symbol}`,
+      `[WS_HANDLER] Add balance request from user: ${ws.user?.username} (${ws.user?.id}) for amount: ${req.payload.amount} marketSymbol: ${req.payload.marketSymbol}`,
     );
     try {
       const res = await engine.getEngineResponseForRequest({
@@ -28,7 +28,7 @@ async function handleAddBalanceRequest(
         payload: {
           userId: ws.user.id,
           amount: req.payload.amount,
-          symbol: req.payload.symbol,
+          marketSymbol: req.payload.marketSymbol,
         },
       });
 
@@ -59,9 +59,10 @@ async function handleCreateOrderRequest(
   if (
     zodBodyVerificationWebSocket(BackendRequest.CREATE_ORDER_SCHEMA, req, ws)
   ) {
-    const { type, price, qty, symbol, side, margin, marginType } = req.payload;
+    const { type, price, qty, marketSymbol, side, margin, marginType } =
+      req.payload;
     console.log(
-      `[WS_HANDLER] Create order request from user: ${ws.user?.username} (${ws.user?.id}) - ${side} ${qty} ${symbol} @ $${price} (Margin: ${margin} ${marginType}, Type: ${type})`,
+      `[WS_HANDLER] Create order request from user: ${ws.user?.username} (${ws.user?.id}) - ${side} ${qty} ${marketSymbol} @ $${price} (Margin: ${margin} ${marginType}, Type: ${type})`,
     );
     try {
       const res = await engine.getEngineResponseForRequest({
@@ -75,7 +76,7 @@ async function handleCreateOrderRequest(
           type,
           price,
           qty,
-          symbol,
+          marketSymbol,
           side,
           userId: ws.user.id,
         },

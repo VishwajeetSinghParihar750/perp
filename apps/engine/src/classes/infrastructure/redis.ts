@@ -4,7 +4,7 @@ import {
 } from "@repo/db";
 
 import { EngineRequest } from "@repo/shared-types";
-import requestHandler from "../application/requestHandlerFactory.js";
+import requestHandler from "../application/requestHandler.js";
 
 export default class Redis {
   //

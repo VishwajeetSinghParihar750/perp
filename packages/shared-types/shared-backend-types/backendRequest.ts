@@ -26,7 +26,7 @@ const CREATE_ORDER_PAYLOAD_SCHEMA = z.object({
   side: SIDE_SCHEMA,
   price: z.number(),
   qty: z.number(),
-  symbol: TRADBLE_SYMBOL_SCHEMA,
+  marketSymbol: TRADBLE_SYMBOL_SCHEMA,
   margin: z.number(),
   marginType: MARGIN_TYPE_SCHEMA,
   type: TYPE_SCHEMA,
@@ -48,14 +48,14 @@ const CANCEL_ORDER_SCHEMA = BASE_SCHEMA.extend({
 const GET_BALANCE_SCHEMA = BASE_SCHEMA.extend({
   type: z.literal("get_balance"),
   payload: z.object({
-    symbol: CURRENCY_SYMBOL_SCHEMA.optional(),
+    marketSymbol: CURRENCY_SYMBOL_SCHEMA.optional(),
   }),
 });
 
 const ADD_BALANCE_SCHEMA = BASE_SCHEMA.extend({
   type: z.literal("add_balance"),
   payload: z.object({
-    symbol: CURRENCY_SYMBOL_SCHEMA,
+    marketSymbol: CURRENCY_SYMBOL_SCHEMA,
     amount: z.number(),
   }),
 });
@@ -63,19 +63,19 @@ const ADD_BALANCE_SCHEMA = BASE_SCHEMA.extend({
 const GET_DEPTH_SCHEMA = BASE_SCHEMA.extend({
   type: z.literal("get_depth"),
   payload: z.object({
-    symbol: TRADBLE_SYMBOL_SCHEMA,
+    marketSymbol: TRADBLE_SYMBOL_SCHEMA,
   }),
 });
 const GET_ORDERBOOK_SCHEMA = BASE_SCHEMA.extend({
   type: z.literal("get_orderbook"),
   payload: z.object({
-    symbol: TRADBLE_SYMBOL_SCHEMA,
+    marketSymbol: TRADBLE_SYMBOL_SCHEMA,
   }),
 });
 const GET_POSITION_SCHEMA = BASE_SCHEMA.extend({
   type: z.literal("get_position"),
   payload: z.object({
-    symbol: TRADBLE_SYMBOL_SCHEMA.optional(),
+    marketSymbol: TRADBLE_SYMBOL_SCHEMA.optional(),
   }),
 });
 const SUBSCRIBE_EVENT_SCHEMA = BASE_SCHEMA.extend({

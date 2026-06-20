@@ -6,11 +6,10 @@ import RiskEngine from "./riskEngine.js";
 import { LinkList, OrderedMap } from "js-sdsl";
 import assert from "node:assert";
 import type { Result } from "../types.js";
-import { success } from "zod";
 
 type USER_ID = EngineTypes.USER_ID;
 type ORDER_ID = EngineTypes.ORDER_ID;
-type MARKET_ID = EngineTypes.TRADABLE_SYMBOL;
+type MARKET_SYMBOL = EngineTypes.TRADABLE_SYMBOL;
 type PRICE = EngineTypes.PRICE;
 type QUANTITY = EngineTypes.QUANTITY;
 type SIDE = EngineTypes.SIDE;
@@ -28,7 +27,7 @@ export class SingleMarketOrderbook {
   private riskEngine: RiskEngine;
   private tradeFactory: TradeFactory;
   private eventBus: EventBus;
-  private marketId: MARKET_ID;
+  private marketSymbol: MARKET_SYMBOL;
 
   bids: OrderedMap<PRICE, PriceLevel>;
   asks: OrderedMap<PRICE, PriceLevel>;
@@ -39,12 +38,12 @@ export class SingleMarketOrderbook {
     riskEngine: RiskEngine,
     tradeFactory: TradeFactory,
     eventBus: EventBus,
-    marketId: MARKET_ID,
+    marketSymbol: MARKET_SYMBOL,
   ) {
     this.riskEngine = riskEngine;
     this.tradeFactory = tradeFactory;
     this.eventBus = eventBus;
-    this.marketId = marketId;
+    this.marketSymbol = marketSymbol;
 
     this.asks = new OrderedMap();
     this.bids = new OrderedMap([], (a, b) => b - a);
@@ -112,7 +111,7 @@ export class SingleMarketOrderbook {
     const tradeEvent = this.tradeFactory.create(
       tradePrice,
       tradeQuantity,
-      this.marketId,
+      this.marketSymbol,
       (order1.side === "BUY" ? order1Info : order2Info) as any,
       (order1.side === "SELL" ? order1Info : order2Info) as any,
     );
@@ -303,7 +302,8 @@ export default class Orderbook {
   private tradeFactory: TradeFactory;
   private eventBus: EventBus;
 
-  private marketOrderbooks: Map<MARKET_ID, SingleMarketOrderbook> = new Map();
+  private marketOrderbooks: Map<MARKET_SYMBOL, SingleMarketOrderbook> =
+    new Map();
   private orders: Map<ORDER_ID, SingleMarketOrderbook> = new Map();
 
   constructor(
@@ -317,23 +317,23 @@ export default class Orderbook {
   }
 
   private getOrCreateMarketOrderbook(
-    marketId: MARKET_ID,
+    marketSymbol: MARKET_SYMBOL,
   ): SingleMarketOrderbook {
-    let ob = this.marketOrderbooks.get(marketId);
+    let ob = this.marketOrderbooks.get(marketSymbol);
     if (!ob) {
       ob = new SingleMarketOrderbook(
         this.riskEngine,
         this.tradeFactory,
         this.eventBus,
-        marketId,
+        marketSymbol,
       );
-      this.marketOrderbooks.set(marketId, ob);
+      this.marketOrderbooks.set(marketSymbol, ob);
     }
     return ob;
   }
 
   placeOrder(order: Order): Order {
-    const ob = this.getOrCreateMarketOrderbook(order.marketId);
+    const ob = this.getOrCreateMarketOrderbook(order.marketSymbol);
     const placed = ob.placeOrder(order);
     if (
       placed.status !== "CANCELLED" &&
@@ -354,13 +354,15 @@ export default class Orderbook {
     return { success: false, error: new Error("ORDER_DOES_NOT_EXIST") };
   }
 
-  getDepth(marketId: MARKET_ID): [[PRICE, QUANTITY][], [PRICE, QUANTITY][]] {
-    const ob = this.getOrCreateMarketOrderbook(marketId);
+  getDepth(
+    marketSymbol: MARKET_SYMBOL,
+  ): [[PRICE, QUANTITY][], [PRICE, QUANTITY][]] {
+    const ob = this.getOrCreateMarketOrderbook(marketSymbol);
     return ob.getDepth();
   }
 
-  getOrderbook(marketId: MARKET_ID): SingleMarketOrderbook {
-    return this.getOrCreateMarketOrderbook(marketId);
+  getOrderbook(marketSymbol: MARKET_SYMBOL): SingleMarketOrderbook {
+    return this.getOrCreateMarketOrderbook(marketSymbol);
   }
 }
 

@@ -12,7 +12,7 @@ const GET_POSITION_SCHEMA = BASE_REQUEST_SCHEMA.extend({
   type: z.literal("get_position"),
   payload: z.object({
     userId: z.string(),
-    symbol: BackendRequest.TRADBLE_SYMBOL_SCHEMA.optional(),
+    marketSymbol: BackendRequest.TRADBLE_SYMBOL_SCHEMA.optional(),
   }),
 });
 
@@ -32,7 +32,7 @@ const GET_BALANCE_SCHEMA = BASE_REQUEST_SCHEMA.extend({
   type: z.literal("get_balance"),
   payload: z.object({
     userId: z.string(),
-    symbol: BackendRequest.CURRENCY_SYMBOL_SCHEMA.optional(),
+    marketSymbol: BackendRequest.CURRENCY_SYMBOL_SCHEMA.optional(),
   }),
 });
 type GET_BALANCE_REQUEST = z.infer<typeof GET_BALANCE_SCHEMA>;
@@ -42,7 +42,7 @@ const ADD_BALANCE_SCHEMA = BASE_REQUEST_SCHEMA.extend({
   type: z.literal("add_balance"),
   payload: z.object({
     userId: z.string(),
-    symbol: BackendRequest.CURRENCY_SYMBOL_SCHEMA,
+    marketSymbol: BackendRequest.CURRENCY_SYMBOL_SCHEMA,
     amount: z.number(),
   }),
 });
@@ -99,7 +99,7 @@ const MARK_PRICE_UDPATED_SCHEMA = z.object({
   type: z.literal("indexprice_updated"),
   payload: z.object({
     price: z.string(),
-    symbol: MARK_PRICE_UPDATE_SYMBOL_SCHEMA,
+    marketSymbol: MARK_PRICE_UPDATE_SYMBOL_SCHEMA,
   }),
 });
 

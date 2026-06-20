@@ -11,7 +11,7 @@ export interface CreateOrderCommand {
   price: EngineTypes.PRICE;
   quantity: EngineTypes.QUANTITY;
   margin: EngineTypes.PRICE;
-  marketId: EngineTypes.TRADABLE_SYMBOL;
+  marketSymbol: EngineTypes.TRADABLE_SYMBOL;
   side: EngineTypes.SIDE;
   type: EngineTypes.TYPE;
   marginType: EngineTypes.MARGIN_TYPE;
@@ -41,7 +41,7 @@ export default class CreateOrderHandler {
       command.price,
       command.quantity,
       command.margin,
-      command.marketId,
+      command.marketSymbol,
       command.side,
       command.type,
       command.marginType,

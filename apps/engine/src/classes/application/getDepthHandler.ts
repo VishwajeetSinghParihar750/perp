@@ -3,12 +3,12 @@ import type { Result } from "../domain/account.js";
 import type Orderbook from "../domain/orderbook.js";
 
 export interface GetDepthCommand {
-  marketId: EngineTypes.TRADABLE_SYMBOL;
+  marketSymbol: EngineTypes.TRADABLE_SYMBOL;
 }
 
 type DepthResponse = {
-  asks: [number, number][];
-  bids: [number, number][];
+  asks: { price: number; quantity: number }[];
+  bids: { price: number; quantity: number }[];
 };
 
 export default class GetDepthHandler {
@@ -19,14 +19,14 @@ export default class GetDepthHandler {
   }
 
   handle(command: GetDepthCommand): Result<DepthResponse> {
-    let symOrderbook = this.orderbook.getOrderbook(command.marketId);
+    let symOrderbook = this.orderbook.getOrderbook(command.marketSymbol);
 
     let value: DepthResponse = { asks: [], bids: [] };
     symOrderbook.asks.forEach((askLevel) => {
-      value.asks.push([askLevel[0], askLevel[1].totalQty]);
+      value.asks.push({ price: askLevel[0], quantity: askLevel[1].totalQty });
     });
     symOrderbook.bids.forEach((bidLevel) => {
-      value.asks.push([bidLevel[0], bidLevel[1].totalQty]);
+      value.asks.push({ price: bidLevel[0], quantity: bidLevel[1].totalQty });
     });
 
     return {

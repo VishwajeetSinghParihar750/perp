@@ -16,19 +16,19 @@ export default class Market {
 
   private handleFills(fills: EngineEventPayload.FILLS_CREATED_EVENT_PAYLOAD) {
     for (const fill of fills.data.fills) {
-      this.markPrices.set(fill.symbol, fill.price);
+      this.markPrices.set(fill.marketSymbol, fill.price);
     }
   }
 
-  getIndexPrice(marketId: string): number {
-    return this.indexPrices.get(marketId) ?? 0;
+  getIndexPrice(marketSymbol: string): number {
+    return this.indexPrices.get(marketSymbol) ?? 0;
   }
 
-  getMarkPrice(marketId: string): number {
-    return this.markPrices.get(marketId) ?? 0;
+  getMarkPrice(marketSymbol: string): number {
+    return this.markPrices.get(marketSymbol) ?? 0;
   }
 
-  setIndexPrice(marketId: string, indexPrice: number) {
-    this.indexPrices.set(marketId, indexPrice);
+  setIndexPrice(marketSymbol: string, indexPrice: number) {
+    this.indexPrices.set(marketSymbol, indexPrice);
   }
 }

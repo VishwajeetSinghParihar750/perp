@@ -7,14 +7,16 @@ export interface GetPositionCommand {
   userId: EngineTypes.USER_ID;
 }
 
-export default class GetDepthHandler {
+export default class GetPositionHandler {
   private positionManager: PositionManager;
 
   constructor(positionManager: PositionManager) {
     this.positionManager = positionManager;
   }
 
-  handle(command: GetPositionCommand): Result<Position> {
+  handle(
+    command: GetPositionCommand,
+  ): Result<Partial<Record<EngineTypes.TRADABLE_SYMBOL, Position>>> {
     return this.positionManager.getPosition(command.userId);
   }
 }

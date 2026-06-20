@@ -7,9 +7,13 @@ import type {
   EngineTypes,
   EngineEventPayload,
 } from "@repo/shared-types";
+import assert from "node:assert";
 
 export default class PositionManager {
-  private positions: Map<EngineTypes.USER_ID, Position> = new Map();
+  private positions: Map<
+    EngineTypes.USER_ID,
+    Map<EngineTypes.TRADABLE_SYMBOL, Position>
+  > = new Map();
   private eventBus: EventBus;
   private riskEngine: RiskEngine;
 
@@ -41,22 +45,30 @@ export default class PositionManager {
         ? trade.buyOrderInfo.buyerId
         : trade.sellOrderInfo.sellerId;
 
-    let position = this.positions.get(userId);
+    const marketSymbol = trade.marketSymbol;
+    let userPositions = this.positions.get(userId);
+    if (!userPositions) {
+      userPositions = new Map();
+      this.positions.set(userId, userPositions);
+    }
+
+    let position = userPositions.get(marketSymbol);
 
     if (!position) {
       position = {
         userId: userId,
         price: price,
         quantity: qty,
-        side: "BUY",
-        marketId: trade.symbol,
+        type: side === "BUY" ? "LONG" : "SHORT",
+        marketSymbol: trade.marketSymbol,
         margin: (curSideTrade as any).margin ?? 0,
         marginType: ((curSideTrade as any).marginType ?? "ISOLATED") as any,
         liquidationPrice: 0,
+        createdAt: new Date().toISOString(),
       };
-      this.positions.set(userId, position);
+      userPositions.set(marketSymbol, position);
     } else {
-      if (position.side === "BUY") {
+      if (position.type === (side === "BUY" ? "LONG" : "SHORT")) {
         const priceQtyProductSum =
           position.price * position.quantity + price * qty;
         const weighedAvgPrice = priceQtyProductSum / (position.quantity + qty);
@@ -70,7 +82,8 @@ export default class PositionManager {
         const ogAmountSpent = position.price * minQty;
         const gettingAmount = price * minQty;
 
-        const pnl = (gettingAmount - ogAmountSpent) * (side === "BUY" ? 1 : -1);
+        const pnl =
+          (gettingAmount - ogAmountSpent) * (position.type === "LONG" ? 1 : -1);
         let releasedMargin = 0;
 
         position.margin += (curSideTrade as any).margin ?? 0;
@@ -78,6 +91,7 @@ export default class PositionManager {
           // price will stay same
           position.quantity -= qty;
         } else if (qty > position.quantity) {
+          position.type = side === "BUY" ? "LONG" : "SHORT";
           position.price = price;
           position.quantity = qty - position.quantity;
         } else {
@@ -99,21 +113,34 @@ export default class PositionManager {
     }
 
     // update liquidation price
-    const userIdToUpdate =
-      side === "BUY"
-        ? trade.buyOrderInfo.buyerId
-        : trade.sellOrderInfo.sellerId;
-    const positionToUpdate = this.positions.get(userIdToUpdate)!;
-    positionToUpdate.liquidationPrice =
-      this.riskEngine.getLiquidationPrice(positionToUpdate);
+    const userPositionsToUpdate = this.positions.get(userId);
+    const positionToUpdate = userPositionsToUpdate?.get(marketSymbol);
+    if (positionToUpdate && userPositionsToUpdate) {
+      if (positionToUpdate.quantity === 0) {
+        userPositionsToUpdate.delete(marketSymbol);
+      } else {
+        positionToUpdate.liquidationPrice =
+          this.riskEngine.getLiquidationPrice(positionToUpdate);
+      }
+    }
+
+    if (userPositionsToUpdate && userPositionsToUpdate.size === 0) {
+      this.positions.delete(userId);
+    }
   }
 
-  getPosition(userId: EngineTypes.USER_ID): Result<Position> {
-    const pos = this.positions.get(userId);
-    if (!pos) {
-      return { success: false, error: new Error("NOT_FOUND") };
+  getPosition(
+    userId: EngineTypes.USER_ID,
+  ): Result<Partial<Record<EngineTypes.TRADABLE_SYMBOL, Position>>> {
+    const userPositions = this.positions.get(userId);
+    if (!userPositions || userPositions.size === 0) {
+      return { success: true, value: {} };
     }
-    return { success: true, value: pos };
+    const result: Partial<Record<EngineTypes.TRADABLE_SYMBOL, Position>> = {};
+    for (const [marketSymbol, pos] of userPositions) {
+      result[marketSymbol] = pos;
+    }
+    return { success: true, value: result };
   }
 
   applyFunding() {}

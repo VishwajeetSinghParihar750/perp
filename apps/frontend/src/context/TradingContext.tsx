@@ -18,7 +18,7 @@ export interface Position {
   price: number;
   qty: number;
   type: "LONG" | "SHORT";
-  symbol: SymbolType;
+  marketSymbol: SymbolType;
   margin: number;
   marginType: MarginType;
 }
@@ -28,7 +28,7 @@ export interface TradingContextProps {
   user: { username: string; id: string } | null;
   token: string | null;
   currentSymbol: SymbolType;
-  setCurrentSymbol: (symbol: SymbolType) => void;
+  setCurrentSymbol: (marketSymbol: SymbolType) => void;
   orderbook: { asks: [number, number][]; bids: [number, number][] };
   lastTradedPrice: number | null;
   indexPrice: number | null;
@@ -52,7 +52,7 @@ export interface TradingContextProps {
     margin: number;
     marginType: MarginType;
   }) => void;
-  addBalance: (symbol: string, amount: number) => void;
+  addBalance: (marketSymbol: string, amount: number) => void;
   fetchBalanceAndPositions: () => void;
 }
 
@@ -231,7 +231,7 @@ export const TradingProvider: React.FC<{ children: React.ReactNode }> = ({
           qty: params.qty,
           margin: params.margin,
           marginType: params.marginType,
-          symbol: currentSymbol,
+          marketSymbol: currentSymbol,
         },
       });
     },
@@ -239,13 +239,13 @@ export const TradingProvider: React.FC<{ children: React.ReactNode }> = ({
   );
 
   const addBalance = useCallback(
-    (symbol: string, amount: number) => {
+    (marketSymbol: string, amount: number) => {
       if (!token) return;
       sendWsMessage({
         requestId: getNextRequestId(),
         type: "add_balance",
         payload: {
-          symbol,
+          marketSymbol,
           amount,
         },
       });
@@ -304,7 +304,7 @@ export const TradingProvider: React.FC<{ children: React.ReactNode }> = ({
           requestId: `get_orderbook_${currentSymbol}`,
           type: "get_orderbook",
           payload: {
-            symbol: currentSymbol,
+            marketSymbol: currentSymbol,
           },
         }),
       );
@@ -382,7 +382,7 @@ export const TradingProvider: React.FC<{ children: React.ReactNode }> = ({
           if (
             eventType === "depth.updated" &&
             data &&
-            data.symbol === currentSymbol
+            data.marketSymbol === currentSymbol
           ) {
             setOrderbook((prev) => {
               const asksMap = new Map(prev.asks);
@@ -416,19 +416,19 @@ export const TradingProvider: React.FC<{ children: React.ReactNode }> = ({
           } else if (
             eventType === "lastTradedPrice.updated" &&
             data &&
-            data.symbol === currentSymbol
+            data.marketSymbol === currentSymbol
           ) {
             setLastTradedPrice(data.price);
           } else if (
             eventType === "indexprice.updated" &&
             data &&
-            data.symbol === currentSymbol
+            data.marketSymbol === currentSymbol
           ) {
             setIndexPrice(data.price);
           } else if (
             eventType === "trades.created" &&
             data &&
-            data.symbol === currentSymbol
+            data.marketSymbol === currentSymbol
           ) {
             const newTrades = (data.trades || []).map(([price, qty]: any) => ({
               price,
@@ -460,7 +460,7 @@ export const TradingProvider: React.FC<{ children: React.ReactNode }> = ({
         requestId: `get_orderbook_${currentSymbol}`,
         type: "get_orderbook",
         payload: {
-          symbol: currentSymbol,
+          marketSymbol: currentSymbol,
         },
       });
     }

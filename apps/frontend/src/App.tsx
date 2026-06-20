@@ -295,7 +295,7 @@ const MainLayout: React.FC = () => {
                       <span className="text-right">Margin</span>
                       <span className="text-right">Est. PnL</span>
                     </div>
-                    {Object.entries(positions).map(([symbol, pos]) => {
+                    {Object.entries(positions).map(([marketSymbol, pos]) => {
                       const isLong = pos.type === "LONG";
                       // Quick mock unrealized PnL based on current trade price
                       const priceDiff = lastTradedPrice
@@ -311,7 +311,7 @@ const MainLayout: React.FC = () => {
                           className="grid grid-cols-6 items-center px-3 py-2 bg-[#14171E] rounded-xl hover:bg-[#1A202D] transition-colors font-mono"
                         >
                           <span className="font-bold text-gray-200">
-                            {symbol}
+                            {marketSymbol}
                           </span>
                           <span
                             className={`font-semibold text-[10px] ${isLong ? "text-emerald-500 bg-emerald-500/10" : "text-red-500 bg-red-500/10"} px-1.5 py-0.5 rounded w-fit`}

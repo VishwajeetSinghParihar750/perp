@@ -31,14 +31,13 @@ const RESPONSE_TYPE_SCHEMA = z.union([
   z.literal("balance_updated"),
   z.literal("depth"),
   z.literal("position"),
-  z.literal("orderbook"),
   z.literal("error"),
 ]);
 type RESPONSE_TYPE = z.infer<typeof RESPONSE_TYPE_SCHEMA>;
 
 const FILL_SCHEMA = z.object({
   fillId: FILL_ID_SCHEMA,
-  symbol: CURRENCY_SYMBOL_SCHEMA,
+  marketSymbol: CURRENCY_SYMBOL_SCHEMA,
   qty: z.number(),
   price: PRICE_SCHEMA,
   bidPrice: PRICE_SCHEMA,

@@ -13,7 +13,7 @@ export type TradeOrderInfo = {
 
 export type Trade = {
   fillId: string;
-  symbol: TRADE_SYMBOL;
+  marketSymbol: TRADE_SYMBOL;
   qty: number;
   price: number;
   bidPrice: number;
@@ -36,16 +36,16 @@ export type Trade = {
 export class TradeFactory {
   private counters: Map<string, number> = new Map();
 
-  private getNextTradeId(symbol: string): string {
-    const count = this.counters.get(symbol) ?? 0;
-    this.counters.set(symbol, count + 1);
-    return symbol + count.toString();
+  private getNextTradeId(marketSymbol: string): string {
+    const count = this.counters.get(marketSymbol) ?? 0;
+    this.counters.set(marketSymbol, count + 1);
+    return marketSymbol + count.toString();
   }
 
   create(
     price: EngineTypes.PRICE,
     filledQty: EngineTypes.QUANTITY,
-    symbol: TRADE_SYMBOL,
+    marketSymbol: TRADE_SYMBOL,
     longOrderInfo: {
       buyerId: string;
       orderId: string;
@@ -62,8 +62,8 @@ export class TradeFactory {
     },
   ): Trade {
     return {
-      fillId: this.getNextTradeId(symbol),
-      symbol,
+      fillId: this.getNextTradeId(marketSymbol),
+      marketSymbol,
       qty: filledQty,
       price,
       bidPrice: price,

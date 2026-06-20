@@ -16,6 +16,9 @@ import type { Result } from "../types.js";
 import AddBalanceHandler from "./addBalanceHandler.js";
 import PositionManager from "../domain/positionManager.js";
 import GetBalanceHandler from "./getBalanceHandler.js";
+import GetDepthHandler from "./getDepthHandler.js";
+import CancelOrderHandler from "./cancelOrderHandler.js";
+import GetPositionHandler from "./getPositionHandler.js";
 
 const eventBus = new EventBus();
 const account = new Account(eventBus);
@@ -37,8 +40,11 @@ const createOrderHandler = new CreateOrderHandler(
 );
 const addBalanceHandler = new AddBalanceHandler(account);
 const getBalanceHandler = new GetBalanceHandler(account);
+const getDepthHandler = new GetDepthHandler(orderbook);
+const cancelOrderHandler = new CancelOrderHandler(orderbook);
 
 const positionManager = new PositionManager(eventBus, riskEngine);
+const getPositionHandler = new GetPositionHandler(positionManager);
 
 const responseHelper = (
   req: EngineRequest.ENGINE_REQUEST,
@@ -68,10 +74,18 @@ const requestHandler = (
 
       let res = createOrderHandler.handle({
         ...req.payload,
-        marketId: req.payload.symbol,
+        marketSymbol: req.payload.marketSymbol,
         quantity: req.payload.qty,
       });
       return responseHelper(req, res, "order_created");
+    }
+    case "cancel_order": {
+      let req = request as EngineRequest.CANCEL_ORDER_REQUEST;
+
+      let res = cancelOrderHandler.handle({
+        orderId: req.payload.orderId,
+      });
+      return responseHelper(req, res, "order_cancelled");
     }
 
     case "add_balance": {
@@ -87,6 +101,21 @@ const requestHandler = (
       let req = request as EngineRequest.GET_BALANCE_REQUEST;
       let res = getBalanceHandler.handle({ userId: req.payload.userId });
       return responseHelper(req, res, "balance");
+    }
+
+    case "get_depth": {
+      let req = request as EngineRequest.GET_DEPTH_REQUEST;
+      let res = getDepthHandler.handle({
+        marketSymbol: req.payload.marketSymbol,
+      });
+      return responseHelper(req, res, "depth");
+    }
+
+    case "get_position": {
+      let req = request as EngineRequest.GET_POSITION_REQUEST;
+      let res = getPositionHandler.handle({ userId: req.payload.userId });
+
+      return responseHelper(req, res, "position");
     }
 
     default:

@@ -26,6 +26,6 @@ export default class RiskEngine {
   }
 
   getLiquidationPrice(position: Position): EngineTypes.PRICE {
-    return 0;
+    return 100;
   }
 }

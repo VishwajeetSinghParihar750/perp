@@ -23,7 +23,7 @@ const ORDER_SCHEMA = z.object({
   price: PRICE_SCHEMA,
   quantity: QUANTITY_SCHEMA,
   side: SIDE_SCHEMA,
-  marketId: TRADBLE_SYMBOL_SCHEMA,
+  marketSymbol: TRADBLE_SYMBOL_SCHEMA,
   type: ORDER_TYPE_SCHEMA,
   filledQuantity: QUANTITY_SCHEMA,
   orderId: ORDER_ID_SCHEMA,
@@ -38,9 +38,9 @@ const POSITION_TYPE_SCHEMA = z.union([z.literal("LONG"), z.literal("SHORT")]);
 const POSITION_SCHEMA = z.object({
   userId: USER_ID_SCHEMA,
   price: PRICE_SCHEMA,
-  qty: z.number(),
+  quantity: z.number(),
   type: POSITION_TYPE_SCHEMA,
-  symbol: CURRENCY_SYMBOL_SCHEMA,
+  marketSymbol: CURRENCY_SYMBOL_SCHEMA,
   createdAt: z.iso.datetime(),
   margin: PRICE_SCHEMA,
   marginType: MARGIN_TYPE_SCHEMA,
@@ -63,14 +63,12 @@ const BALANCE_UPDATED_RESPONSE_PAYLOAD_SCHEMA = z.object({
 });
 
 const DEPTH_RESPONSE_PAYLOAD_SCHEMA = z.object({
-  BIDS: z.array(z.object({ price: PRICE_SCHEMA, quantity: z.number() })),
-  ASKS: z.array(z.object({ price: PRICE_SCHEMA, quantity: z.number() })),
+  bids: z.array(z.object({ price: PRICE_SCHEMA, quantity: z.number() })),
+  asks: z.array(z.object({ price: PRICE_SCHEMA, quantity: z.number() })),
 });
 
 const POSITION_RESPONSE_PAYLOAD_SCHEMA = z.union([
-  POSITION_SCHEMA,
-  z.partialRecord(CURRENCY_SYMBOL_SCHEMA, POSITION_SCHEMA),
-  z.undefined(),
+  z.partialRecord(TRADBLE_SYMBOL_SCHEMA, POSITION_SCHEMA),
 ]);
 
 const ERROR_RESPONSE_PAYLOAD_SCHEMA = z.string();

@@ -4,8 +4,9 @@ export interface Position {
   userId: EngineTypes.USER_ID;
   price: EngineTypes.PRICE;
   quantity: EngineTypes.QUANTITY;
-  side: EngineTypes.SIDE;
-  marketId: string;
+  type: "LONG" | "SHORT";
+  marketSymbol: EngineTypes.CURRENCY_SYMBOL;
+  createdAt: string;
   margin: EngineTypes.PRICE;
   marginType: EngineTypes.MARGIN_TYPE;
   liquidationPrice: EngineTypes.PRICE;

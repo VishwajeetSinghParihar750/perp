@@ -5,6 +5,8 @@ import EventBus from "./eventBus.js";
 import RiskEngine from "./riskEngine.js";
 import { LinkList, OrderedMap } from "js-sdsl";
 import assert from "node:assert";
+import type { Result } from "../types.js";
+import { success } from "zod";
 
 type USER_ID = EngineTypes.USER_ID;
 type ORDER_ID = EngineTypes.ORDER_ID;
@@ -238,9 +240,11 @@ export class SingleMarketOrderbook {
     return toReturn;
   }
 
-  cancelOrder(orderId: ORDER_ID) {
+  cancelOrder(orderId: ORDER_ID): Result<EngineTypes.ORDER_ID> {
     const it = this.orders.get(orderId);
-    assert(it, `Assertion failed: orders.has(${orderId})`);
+
+    if (!it)
+      return { success: false, error: new Error("ORDER_DOES_NOT_EXIST") };
 
     const order = it.pointer;
     const price = order.price;
@@ -274,6 +278,8 @@ export class SingleMarketOrderbook {
       type: "order.cancelled",
       data: { orderId },
     });
+
+    return { success: true, value: orderId };
   }
 
   getDepth(): [[PRICE, QUANTITY][], [PRICE, QUANTITY][]] {
@@ -339,12 +345,13 @@ export default class Orderbook {
     return placed;
   }
 
-  cancelOrder(orderId: ORDER_ID) {
+  cancelOrder(orderId: ORDER_ID): Result<EngineTypes.ORDER_ID> {
     const ob = this.orders.get(orderId);
     if (ob) {
-      ob.cancelOrder(orderId);
       this.orders.delete(orderId);
+      return ob.cancelOrder(orderId);
     }
+    return { success: false, error: new Error("ORDER_DOES_NOT_EXIST") };
   }
 
   getDepth(marketId: MARKET_ID): [[PRICE, QUANTITY][], [PRICE, QUANTITY][]] {

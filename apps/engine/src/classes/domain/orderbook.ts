@@ -3,6 +3,8 @@ import type { Order } from "./order.js";
 import { TradeFactory } from "./trade.js";
 import EventBus from "./eventBus.js";
 import RiskEngine from "./riskEngine.js";
+import { LinkList, OrderedMap } from "js-sdsl";
+import assert from "node:assert";
 
 type USER_ID = EngineTypes.USER_ID;
 type ORDER_ID = EngineTypes.ORDER_ID;
@@ -13,55 +15,44 @@ type SIDE = EngineTypes.SIDE;
 type ORDER_TYPE = EngineTypes.TYPE;
 type ORDER_STATUS = EngineTypes.ORDER_STATUS;
 
-interface PriceLevel {
+export interface PriceLevel {
   totalQty: QUANTITY;
-  orders: Order[];
+  orders: LinkList<Order>;
 }
 
-interface SingleMarketOrderbook {
-  asksPrices: PRICE[];
-  bidsPrices: PRICE[];
-  askPriceLevels: Map<PRICE, PriceLevel>;
-  bidPriceLevels: Map<PRICE, PriceLevel>;
-}
+type OrderIterator = ReturnType<LinkList<Order>["begin"]>;
 
-export default class Orderbook {
+export class SingleMarketOrderbook {
   private riskEngine: RiskEngine;
   private tradeFactory: TradeFactory;
   private eventBus: EventBus;
+  private marketId: MARKET_ID;
 
-  private marketOrderbooks: Map<MARKET_ID, SingleMarketOrderbook> = new Map();
-  private orders: Map<ORDER_ID, Order> = new Map();
+  bids: OrderedMap<PRICE, PriceLevel>;
+  asks: OrderedMap<PRICE, PriceLevel>;
+
+  private orders: Map<ORDER_ID, OrderIterator> = new Map();
 
   constructor(
     riskEngine: RiskEngine,
     tradeFactory: TradeFactory,
     eventBus: EventBus,
+    marketId: MARKET_ID,
   ) {
     this.riskEngine = riskEngine;
     this.tradeFactory = tradeFactory;
     this.eventBus = eventBus;
-  }
+    this.marketId = marketId;
 
-  private getOrCreateMarketOrderbook(marketId: MARKET_ID): SingleMarketOrderbook {
-    let ob = this.marketOrderbooks.get(marketId);
-    if (!ob) {
-      ob = {
-        asksPrices: [],
-        bidsPrices: [],
-        askPriceLevels: new Map(),
-        bidPriceLevels: new Map(),
-      };
-      this.marketOrderbooks.set(marketId, ob);
-    }
-    return ob;
+    this.asks = new OrderedMap();
+    this.bids = new OrderedMap([], (a, b) => b - a);
   }
 
   private cancelOrderStatusAndEmit(order: Order) {
     order.status = "CANCELLED";
     this.eventBus.emit({
       type: "order.cancelled",
-      data: { orderId: order.orderId }
+      data: { orderId: order.orderId },
     });
   }
 
@@ -77,9 +68,7 @@ export default class Orderbook {
       order1.quantity - order1.filledQuantity,
     );
 
-    if (tradeQuantity <= 0) {
-      throw new Error("Assertion failed: tradeQuantity > 0");
-    }
+    assert(tradeQuantity > 0, "Assertion failed: tradeQuantity > 0");
 
     order1.margin -= margin1Required;
     order2.margin -= margin2Required;
@@ -95,29 +84,9 @@ export default class Orderbook {
     order2.filledQuantity += tradeQuantity;
 
     order1.status =
-      order1.filledQuantity === order1.quantity
-        ? "FILLED"
-        : "PARTIALLY_FILLED";
+      order1.filledQuantity === order1.quantity ? "FILLED" : "PARTIALLY_FILLED";
     order2.status =
-      order2.filledQuantity === order2.quantity
-        ? "FILLED"
-        : "PARTIALLY_FILLED";
-
-    const ob = this.getOrCreateMarketOrderbook(order1.marketId as MARKET_ID);
-
-    // Update level quantities
-    const lvl1 = (
-      order1.side === "BUY" ? ob.bidPriceLevels : ob.askPriceLevels
-    ).get(order1.price);
-    if (lvl1) {
-      lvl1.totalQty -= tradeQuantity;
-    }
-    const lvl2 = (
-      order2.side === "BUY" ? ob.bidPriceLevels : ob.askPriceLevels
-    ).get(order2.price);
-    if (lvl2) {
-      lvl2.totalQty -= tradeQuantity;
-    }
+      order2.filledQuantity === order2.quantity ? "FILLED" : "PARTIALLY_FILLED";
 
     // emit trade
     const order1Info = {
@@ -141,28 +110,29 @@ export default class Orderbook {
     const tradeEvent = this.tradeFactory.create(
       tradePrice,
       tradeQuantity,
-      order1.marketId as MARKET_ID,
+      this.marketId,
       (order1.side === "BUY" ? order1Info : order2Info) as any,
       (order1.side === "SELL" ? order1Info : order2Info) as any,
     );
 
     this.eventBus.emit({
       type: "fills.created",
-      data: { fills: [tradeEvent] }
+      data: { fills: [tradeEvent] },
     });
   }
 
   private matchAgainstBook(
     order: Order,
-    oppositePrices: PRICE[],
-    oppositePriceLevels: Map<PRICE, PriceLevel>,
+    oppositePriceLevels: OrderedMap<PRICE, PriceLevel>,
   ) {
-    while (oppositePrices.length > 0 && order.filledQuantity < order.quantity) {
-      const bestOppositePrice = oppositePrices[0]!;
+    while (
+      !oppositePriceLevels.empty() &&
+      order.filledQuantity < order.quantity
+    ) {
+      const [bestOppositePrice, oppositeLevel] = oppositePriceLevels.front()!;
 
-      const oppositeLevel = oppositePriceLevels.get(bestOppositePrice);
-      if (!oppositeLevel || oppositeLevel.orders.length === 0) {
-        oppositePrices.shift();
+      if (!oppositeLevel || oppositeLevel.orders.empty()) {
+        oppositePriceLevels.eraseElementByKey(bestOppositePrice);
         continue;
       }
 
@@ -175,19 +145,19 @@ export default class Orderbook {
         break;
       }
 
-      let i = 0;
+      let it = oppositeLevel.orders.begin();
       while (
-        i < oppositeLevel.orders.length &&
+        !it.equals(oppositeLevel.orders.end()) &&
         order.filledQuantity < order.quantity
       ) {
-        const makerOrder = oppositeLevel.orders[i]!;
+        const makerOrder = it.pointer;
         const [marginRequired1, marginRequired2] =
           this.riskEngine.evaluateTrade(makerOrder, order);
 
         if (marginRequired1 > makerOrder.margin) {
           this.cancelOrderStatusAndEmit(makerOrder);
           this.orders.delete(makerOrder.orderId);
-          oppositeLevel.orders.splice(i, 1);
+          it = oppositeLevel.orders.eraseElementByIterator(it);
           oppositeLevel.totalQty -=
             makerOrder.quantity - makerOrder.filledQuantity;
           continue;
@@ -202,61 +172,50 @@ export default class Orderbook {
 
         if (makerOrder.filledQuantity === makerOrder.quantity) {
           this.orders.delete(makerOrder.orderId);
-          oppositeLevel.orders.splice(i, 1);
+          it = oppositeLevel.orders.eraseElementByIterator(it);
         } else {
-          i++;
+          it = it.next();
         }
       }
 
-      if (oppositeLevel.orders.length === 0) {
-        oppositePriceLevels.delete(bestOppositePrice);
-        oppositePrices.shift();
+      if (oppositeLevel.orders.empty()) {
+        oppositePriceLevels.eraseElementByKey(bestOppositePrice);
       }
     }
   }
 
   private match(order: Order) {
-    const ob = this.getOrCreateMarketOrderbook(order.marketId as MARKET_ID);
     if (order.side === "BUY") {
-      this.matchAgainstBook(order, ob.asksPrices, ob.askPriceLevels);
+      this.matchAgainstBook(order, this.asks);
     } else {
-      this.matchAgainstBook(order, ob.bidsPrices, ob.bidPriceLevels);
+      this.matchAgainstBook(order, this.bids);
     }
   }
 
-  private sitOnBook(
-    order: Order,
-    priceLevels: Map<PRICE, PriceLevel>,
-    oppositePrices: PRICE[],
-    isAscending: boolean,
-  ) {
-    if (order.quantity <= order.filledQuantity) {
-      throw new Error(
-        "Assertion failed: order.quantity > order.filledQuantity",
-      );
-    }
-    if (this.orders.has(order.orderId)) {
-      throw new Error("Assertion failed: !orders.has(order.orderId)");
-    }
+  private sitOnBook(order: Order, priceLevels: OrderedMap<PRICE, PriceLevel>) {
+    assert(
+      order.quantity > order.filledQuantity,
+      "Assertion failed: order.quantity > order.filledQuantity",
+    );
+    assert(
+      !this.orders.has(order.orderId),
+      "Assertion failed: !orders.has(order.orderId)",
+    );
 
     const orderId = order.orderId;
     const price = order.price;
 
-    let level = priceLevels.get(price);
+    let level = priceLevels.getElementByKey(price);
     if (!level) {
-      oppositePrices.push(price);
-      if (isAscending) {
-        oppositePrices.sort((a, b) => a - b);
-      } else {
-        oppositePrices.sort((a, b) => b - a);
-      }
-      level = { totalQty: 0, orders: [] };
-      priceLevels.set(price, level);
+      level = { totalQty: 0, orders: new LinkList() };
+      priceLevels.setElement(price, level);
     }
 
     level.totalQty += order.quantity - order.filledQuantity;
-    level.orders.push(order);
-    this.orders.set(orderId, order);
+    level.orders.pushBack(order);
+
+    const it = level.orders.end().pre();
+    this.orders.set(orderId, it);
   }
 
   placeOrder(order: Order): Order {
@@ -269,11 +228,10 @@ export default class Orderbook {
       order.type === "LIMIT" &&
       order.filledQuantity < order.quantity
     ) {
-      const ob = this.getOrCreateMarketOrderbook(order.marketId as MARKET_ID);
       if (order.side === "BUY") {
-        this.sitOnBook(order, ob.bidPriceLevels, ob.bidsPrices, false);
+        this.sitOnBook(order, this.bids);
       } else {
-        this.sitOnBook(order, ob.askPriceLevels, ob.asksPrices, true);
+        this.sitOnBook(order, this.asks);
       }
     }
 
@@ -281,48 +239,30 @@ export default class Orderbook {
   }
 
   cancelOrder(orderId: ORDER_ID) {
-    const order = this.orders.get(orderId);
-    if (!order) {
-      throw new Error(`Assertion failed: orders.has(${orderId})`);
-    }
+    const it = this.orders.get(orderId);
+    assert(it, `Assertion failed: orders.has(${orderId})`);
 
+    const order = it.pointer;
     const price = order.price;
-    const ob = this.getOrCreateMarketOrderbook(order.marketId as MARKET_ID);
 
     if (order.side === "BUY") {
-      const level = ob.bidPriceLevels.get(price);
+      const level = this.bids.getElementByKey(price);
       if (level) {
-        const remaining = order.quantity - order.filledQuantity;
-        level.totalQty -= remaining;
-        const index = level.orders.findIndex((o) => o.orderId === orderId);
-        if (index !== -1) {
-          level.orders.splice(index, 1);
-        }
+        level.totalQty -= order.quantity - order.filledQuantity;
+        level.orders.eraseElementByIterator(it);
 
-        if (level.totalQty <= 0 || level.orders.length === 0) {
-          ob.bidPriceLevels.delete(price);
-          const pIndex = ob.bidsPrices.indexOf(price);
-          if (pIndex !== -1) {
-            ob.bidsPrices.splice(pIndex, 1);
-          }
+        if (level.totalQty <= 0 || level.orders.empty()) {
+          this.bids.eraseElementByKey(price);
         }
       }
     } else {
-      const level = ob.askPriceLevels.get(price);
+      const level = this.asks.getElementByKey(price);
       if (level) {
-        const remaining = order.quantity - order.filledQuantity;
-        level.totalQty -= remaining;
-        const index = level.orders.findIndex((o) => o.orderId === orderId);
-        if (index !== -1) {
-          level.orders.splice(index, 1);
-        }
+        level.totalQty -= order.quantity - order.filledQuantity;
+        level.orders.eraseElementByIterator(it);
 
-        if (level.totalQty <= 0 || level.orders.length === 0) {
-          ob.askPriceLevels.delete(price);
-          const pIndex = ob.asksPrices.indexOf(price);
-          if (pIndex !== -1) {
-            ob.asksPrices.splice(pIndex, 1);
-          }
+        if (level.totalQty <= 0 || level.orders.empty()) {
+          this.asks.eraseElementByKey(price);
         }
       }
     }
@@ -332,24 +272,89 @@ export default class Orderbook {
     // emit event
     this.eventBus.emit({
       type: "order.cancelled",
-      data: { orderId }
+      data: { orderId },
     });
   }
 
-  getDepth(marketId: MARKET_ID): [[PRICE, QUANTITY][], [PRICE, QUANTITY][]] {
-    const ob = this.getOrCreateMarketOrderbook(marketId);
+  getDepth(): [[PRICE, QUANTITY][], [PRICE, QUANTITY][]] {
     const longDepths: [PRICE, QUANTITY][] = [];
     const shortDepths: [PRICE, QUANTITY][] = [];
 
-    for (const [price, level] of ob.askPriceLevels) {
+    for (const [price, level] of this.asks) {
       longDepths.push([price, level.totalQty]);
     }
 
-    for (const [price, level] of ob.bidPriceLevels) {
+    for (const [price, level] of this.bids) {
       shortDepths.push([price, level.totalQty]);
     }
 
     return [longDepths, shortDepths];
   }
 }
+
+export default class Orderbook {
+  private riskEngine: RiskEngine;
+  private tradeFactory: TradeFactory;
+  private eventBus: EventBus;
+
+  private marketOrderbooks: Map<MARKET_ID, SingleMarketOrderbook> = new Map();
+  private orders: Map<ORDER_ID, SingleMarketOrderbook> = new Map();
+
+  constructor(
+    riskEngine: RiskEngine,
+    tradeFactory: TradeFactory,
+    eventBus: EventBus,
+  ) {
+    this.riskEngine = riskEngine;
+    this.tradeFactory = tradeFactory;
+    this.eventBus = eventBus;
+  }
+
+  private getOrCreateMarketOrderbook(
+    marketId: MARKET_ID,
+  ): SingleMarketOrderbook {
+    let ob = this.marketOrderbooks.get(marketId);
+    if (!ob) {
+      ob = new SingleMarketOrderbook(
+        this.riskEngine,
+        this.tradeFactory,
+        this.eventBus,
+        marketId,
+      );
+      this.marketOrderbooks.set(marketId, ob);
+    }
+    return ob;
+  }
+
+  placeOrder(order: Order): Order {
+    const ob = this.getOrCreateMarketOrderbook(order.marketId);
+    const placed = ob.placeOrder(order);
+    if (
+      placed.status !== "CANCELLED" &&
+      placed.status !== "FILLED" &&
+      placed.type === "LIMIT"
+    ) {
+      this.orders.set(placed.orderId, ob);
+    }
+    return placed;
+  }
+
+  cancelOrder(orderId: ORDER_ID) {
+    const ob = this.orders.get(orderId);
+    if (ob) {
+      ob.cancelOrder(orderId);
+      this.orders.delete(orderId);
+    }
+  }
+
+  getDepth(marketId: MARKET_ID): [[PRICE, QUANTITY][], [PRICE, QUANTITY][]] {
+    const ob = this.getOrCreateMarketOrderbook(marketId);
+    return ob.getDepth();
+  }
+
+  getOrderbook(marketId: MARKET_ID): SingleMarketOrderbook {
+    return this.getOrCreateMarketOrderbook(marketId);
+  }
+}
+
 export { Orderbook as Orderbook };

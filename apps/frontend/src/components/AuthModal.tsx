@@ -8,7 +8,11 @@ interface AuthModalProps {
   initialMode?: "signin" | "signup";
 }
 
-export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = "signin" }) => {
+export const AuthModal: React.FC<AuthModalProps> = ({
+  isOpen,
+  onClose,
+  initialMode = "signin",
+}) => {
   const { login, signUp, error, setError } = useTrading();
   const [mode, setMode] = useState<"signin" | "signup">(initialMode);
   const [username, setUsername] = useState("");
@@ -66,7 +70,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMo
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4">
       <div className="relative w-full max-w-md bg-[#0F1115] border border-gray-800 rounded-2xl shadow-2xl overflow-hidden text-gray-100">
-        
         {/* Header */}
         <div className="flex justify-between items-center px-6 py-4 border-b border-gray-800">
           <h2 className="text-xl font-bold tracking-tight">
@@ -97,7 +100,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMo
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Username Input */}
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-gray-400">Username</label>
+              <label className="text-xs font-semibold text-gray-400">
+                Username
+              </label>
               <div className="relative">
                 <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
                   <User className="w-4 h-4" />
@@ -114,7 +119,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMo
 
             {/* Password Input */}
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-gray-400">Password</label>
+              <label className="text-xs font-semibold text-gray-400">
+                Password
+              </label>
               <div className="relative">
                 <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
                   <Lock className="w-4 h-4" />
@@ -148,7 +155,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMo
 
           {/* Mode Toggle */}
           <div className="mt-4 text-center text-sm text-gray-500">
-            {mode === "signin" ? "Don't have an account?" : "Already have an account?"}{" "}
+            {mode === "signin"
+              ? "Don't have an account?"
+              : "Already have an account?"}{" "}
             <button
               onClick={() => {
                 setMode(mode === "signin" ? "signup" : "signin");
@@ -166,7 +175,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMo
               <div className="w-full border-t border-gray-800"></div>
             </div>
             <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-[#0F1115] px-3 text-gray-500">Or use instant login</span>
+              <span className="bg-[#0F1115] px-3 text-gray-500">
+                Or use instant login
+              </span>
             </div>
           </div>
 

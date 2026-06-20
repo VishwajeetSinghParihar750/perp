@@ -1,4 +1,4 @@
-import type { EngineTypes } from "@repo/shared-types";
+import type { EngineEvent, EngineTypes } from "@repo/shared-types";
 
 type SIDE = EngineTypes.SIDE;
 type ORDER_TYPE = EngineTypes.TYPE;
@@ -6,7 +6,7 @@ type MARGIN_TYPE = EngineTypes.MARGIN_TYPE;
 type ORDER_STATUS = EngineTypes.ORDER_STATUS;
 type USER_ID = EngineTypes.USER_ID;
 type ORDER_ID = EngineTypes.ORDER_ID;
-type MARKET_ID = string;
+type MARKET_ID = EngineTypes.TRADABLE_SYMBOL;
 type PRICE = EngineTypes.PRICE;
 type QUANTITY = EngineTypes.QUANTITY;
 
@@ -43,7 +43,7 @@ export class OrderFactory {
     type: ORDER_TYPE,
     marginType: MARGIN_TYPE,
     filledQuantity: QUANTITY = 0,
-    status: ORDER_STATUS = "OPEN"
+    status: ORDER_STATUS = "OPEN",
   ): Order {
     return {
       orderId: this.getNextOrderId(marketId),

@@ -2,7 +2,11 @@ import type { Position } from "./position.js";
 import EventBus from "./eventBus.js";
 import RiskEngine from "./riskEngine.js";
 import type { Result } from "./account.js";
-import type { EngineResponse, EngineTypes, EngineEventPayload } from "@repo/shared-types";
+import type {
+  EngineResponse,
+  EngineTypes,
+  EngineEventPayload,
+} from "@repo/shared-types";
 
 export default class PositionManager {
   private positions: Map<EngineTypes.USER_ID, Position> = new Map();
@@ -24,7 +28,10 @@ export default class PositionManager {
     );
   }
 
-  private applyTrade(trade: EngineEventPayload.FILLS_CREATED_EVENT_PAYLOAD["data"]["fills"][number], side: EngineTypes.SIDE) {
+  private applyTrade(
+    trade: EngineEventPayload.FILLS_CREATED_EVENT_PAYLOAD["data"]["fills"][number],
+    side: EngineTypes.SIDE,
+  ) {
     const price = trade.price;
     const qty = trade.qty;
     const curSideTrade =
@@ -86,7 +93,7 @@ export default class PositionManager {
             userId: position.userId,
             pnl,
             releasedMargin,
-          }
+          },
         });
       }
     }

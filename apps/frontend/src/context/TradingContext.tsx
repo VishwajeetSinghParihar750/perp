@@ -71,7 +71,9 @@ export const TradingProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const [token, setToken] = useState<string | null>(null);
-  const [user, setUser] = useState<{ username: string; id: string } | null>(null);
+  const [user, setUser] = useState<{ username: string; id: string } | null>(
+    null,
+  );
   const [currentSymbol, setCurrentSymbol] = useState<SymbolType>("BTCUSD");
   const [orderbook, setOrderbook] = useState<{
     asks: [number, number][];

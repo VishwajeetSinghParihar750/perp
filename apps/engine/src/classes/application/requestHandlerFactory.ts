@@ -56,7 +56,7 @@ const responseHelper = (
     type,
     payload: res.value,
     requestId: (req as any).requestId,
-  };
+  } as any;
 };
 
 const requestHandler = (

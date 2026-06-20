@@ -1,13 +1,19 @@
 import React, { useState, useEffect } from "react";
 import { useTrading } from "../context/TradingContext";
-import type { OrderSide, OrderType, MarginType } from "../context/TradingContext";
+import type {
+  OrderSide,
+  OrderType,
+  MarginType,
+} from "../context/TradingContext";
 import { Wallet, Info, DollarSign, ChevronDown } from "lucide-react";
 
 interface OrderPlacementProps {
   onOpenAuth: (mode: "signin" | "signup") => void;
 }
 
-export const OrderPlacement: React.FC<OrderPlacementProps> = ({ onOpenAuth }) => {
+export const OrderPlacement: React.FC<OrderPlacementProps> = ({
+  onOpenAuth,
+}) => {
   const {
     isAuthenticated,
     currentSymbol,
@@ -54,7 +60,8 @@ export const OrderPlacement: React.FC<OrderPlacementProps> = ({ onOpenAuth }) =>
   // Handle Qty slider percentage change
   const handleSliderChange = (pct: number) => {
     setSliderPct(pct);
-    const currentPrice = orderType === "MARKET" ? (lastTradedPrice || 0) : parseFloat(price || "0");
+    const currentPrice =
+      orderType === "MARKET" ? lastTradedPrice || 0 : parseFloat(price || "0");
     if (currentPrice <= 0) return;
 
     // Available buying power = usdBalance * leverage
@@ -69,7 +76,8 @@ export const OrderPlacement: React.FC<OrderPlacementProps> = ({ onOpenAuth }) =>
   const handleQtyChange = (val: string) => {
     setQty(val);
     const q = parseFloat(val || "0");
-    const currentPrice = orderType === "MARKET" ? (lastTradedPrice || 0) : parseFloat(price || "0");
+    const currentPrice =
+      orderType === "MARKET" ? lastTradedPrice || 0 : parseFloat(price || "0");
     if (currentPrice <= 0 || q <= 0) {
       setSliderPct(0);
       return;
@@ -85,7 +93,8 @@ export const OrderPlacement: React.FC<OrderPlacementProps> = ({ onOpenAuth }) =>
   const handleOrderValueChange = (val: string) => {
     setOrderValue(val);
     const valFloat = parseFloat(val || "0");
-    const currentPrice = orderType === "MARKET" ? (lastTradedPrice || 0) : parseFloat(price || "0");
+    const currentPrice =
+      orderType === "MARKET" ? lastTradedPrice || 0 : parseFloat(price || "0");
     if (currentPrice <= 0 || valFloat <= 0) {
       setQty("");
       setSliderPct(0);
@@ -104,7 +113,8 @@ export const OrderPlacement: React.FC<OrderPlacementProps> = ({ onOpenAuth }) =>
     e.preventDefault();
     if (!isAuthenticated) return;
 
-    const orderPrice = orderType === "MARKET" ? (lastTradedPrice || 0) : parseFloat(price);
+    const orderPrice =
+      orderType === "MARKET" ? lastTradedPrice || 0 : parseFloat(price);
     const orderQty = parseFloat(qty);
 
     if (!orderPrice || orderPrice <= 0) return;
@@ -132,7 +142,8 @@ export const OrderPlacement: React.FC<OrderPlacementProps> = ({ onOpenAuth }) =>
   };
 
   // Calculations for display
-  const priceVal = orderType === "MARKET" ? (lastTradedPrice || 0) : parseFloat(price || "0");
+  const priceVal =
+    orderType === "MARKET" ? lastTradedPrice || 0 : parseFloat(price || "0");
   const qtyVal = parseFloat(qty || "0");
   const valueOfOrder = priceVal * qtyVal;
   const marginRequired = valueOfOrder / leverage;
@@ -155,7 +166,9 @@ export const OrderPlacement: React.FC<OrderPlacementProps> = ({ onOpenAuth }) =>
           <button
             onClick={() => setSide("BUY")}
             className={`py-2 rounded-lg font-bold text-sm transition-all cursor-pointer ${
-              side === "BUY" ? "bg-emerald-500 text-black shadow-lg" : "text-emerald-500 hover:bg-gray-800"
+              side === "BUY"
+                ? "bg-emerald-500 text-black shadow-lg"
+                : "text-emerald-500 hover:bg-gray-800"
             }`}
           >
             Buy / Long
@@ -163,7 +176,9 @@ export const OrderPlacement: React.FC<OrderPlacementProps> = ({ onOpenAuth }) =>
           <button
             onClick={() => setSide("SELL")}
             className={`py-2 rounded-lg font-bold text-sm transition-all cursor-pointer ${
-              side === "SELL" ? "bg-red-500 text-black shadow-lg" : "text-red-500 hover:bg-gray-800"
+              side === "SELL"
+                ? "bg-red-500 text-black shadow-lg"
+                : "text-red-500 hover:bg-gray-800"
             }`}
           >
             Sell / Short
@@ -175,7 +190,9 @@ export const OrderPlacement: React.FC<OrderPlacementProps> = ({ onOpenAuth }) =>
           <button
             onClick={() => setOrderType("LIMIT")}
             className={`px-3 py-1.5 rounded-md transition-colors cursor-pointer ${
-              orderType === "LIMIT" ? "bg-[#1C202B] text-white" : "text-gray-400 hover:text-white"
+              orderType === "LIMIT"
+                ? "bg-[#1C202B] text-white"
+                : "text-gray-400 hover:text-white"
             }`}
           >
             Limit
@@ -183,7 +200,9 @@ export const OrderPlacement: React.FC<OrderPlacementProps> = ({ onOpenAuth }) =>
           <button
             onClick={() => setOrderType("MARKET")}
             className={`px-3 py-1.5 rounded-md transition-colors cursor-pointer ${
-              orderType === "MARKET" ? "bg-[#1C202B] text-white" : "text-gray-400 hover:text-white"
+              orderType === "MARKET"
+                ? "bg-[#1C202B] text-white"
+                : "text-gray-400 hover:text-white"
             }`}
           >
             Market
@@ -198,14 +217,20 @@ export const OrderPlacement: React.FC<OrderPlacementProps> = ({ onOpenAuth }) =>
           <span className="text-gray-400 flex items-center gap-1">
             <Wallet className="w-3.5 h-3.5" /> Available Equity
           </span>
-          <span className="font-mono text-gray-200">${usdBalance.toLocaleString("en-US", { minimumFractionDigits: 2 })} USD</span>
+          <span className="font-mono text-gray-200">
+            ${usdBalance.toLocaleString("en-US", { minimumFractionDigits: 2 })}{" "}
+            USD
+          </span>
         </div>
 
         {/* Price Input */}
         <div className="space-y-1.5 mb-4">
           <div className="flex justify-between text-xs">
             <span className="text-gray-400">Price</span>
-            <span className="text-emerald-400 font-mono flex items-center gap-1 cursor-pointer" onClick={() => setPrice(lastTradedPrice?.toString() || "")}>
+            <span
+              className="text-emerald-400 font-mono flex items-center gap-1 cursor-pointer"
+              onClick={() => setPrice(lastTradedPrice?.toString() || "")}
+            >
               Last Traded: {lastTradedPrice ? lastTradedPrice.toFixed(2) : "—"}
             </span>
           </div>
@@ -256,11 +281,36 @@ export const OrderPlacement: React.FC<OrderPlacementProps> = ({ onOpenAuth }) =>
             className="w-full h-1.5 bg-[#14171E] rounded-lg appearance-none cursor-pointer accent-emerald-500"
           />
           <div className="flex justify-between text-[10px] text-gray-500 font-semibold font-mono">
-            <span onClick={() => handleSliderChange(0)} className="cursor-pointer hover:text-white">0%</span>
-            <span onClick={() => handleSliderChange(25)} className="cursor-pointer hover:text-white">25%</span>
-            <span onClick={() => handleSliderChange(50)} className="cursor-pointer hover:text-white">50%</span>
-            <span onClick={() => handleSliderChange(75)} className="cursor-pointer hover:text-white">75%</span>
-            <span onClick={() => handleSliderChange(100)} className="cursor-pointer hover:text-white">100%</span>
+            <span
+              onClick={() => handleSliderChange(0)}
+              className="cursor-pointer hover:text-white"
+            >
+              0%
+            </span>
+            <span
+              onClick={() => handleSliderChange(25)}
+              className="cursor-pointer hover:text-white"
+            >
+              25%
+            </span>
+            <span
+              onClick={() => handleSliderChange(50)}
+              className="cursor-pointer hover:text-white"
+            >
+              50%
+            </span>
+            <span
+              onClick={() => handleSliderChange(75)}
+              className="cursor-pointer hover:text-white"
+            >
+              75%
+            </span>
+            <span
+              onClick={() => handleSliderChange(100)}
+              className="cursor-pointer hover:text-white"
+            >
+              100%
+            </span>
           </div>
         </div>
 
@@ -322,7 +372,9 @@ export const OrderPlacement: React.FC<OrderPlacementProps> = ({ onOpenAuth }) =>
               Margin Required <Info className="w-3 h-3" />
             </span>
             <span className="font-mono text-gray-300">
-              {marginRequired > 0 ? `$${marginRequired.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 4 })}` : "—"}
+              {marginRequired > 0
+                ? `$${marginRequired.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 4 })}`
+                : "—"}
             </span>
           </div>
           <div className="flex justify-between items-center">
@@ -330,7 +382,9 @@ export const OrderPlacement: React.FC<OrderPlacementProps> = ({ onOpenAuth }) =>
               Est. Liquidation Price <Info className="w-3 h-3" />
             </span>
             <span className="font-mono text-amber-500">
-              {estLiqPrice && estLiqPrice > 0 ? `$${estLiqPrice.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "—"}
+              {estLiqPrice && estLiqPrice > 0
+                ? `$${estLiqPrice.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                : "—"}
             </span>
           </div>
         </div>
@@ -347,7 +401,9 @@ export const OrderPlacement: React.FC<OrderPlacementProps> = ({ onOpenAuth }) =>
                 : "bg-red-500 hover:bg-red-400 text-black"
             }`}
           >
-            {side === "BUY" ? "Place Buy / Long Order" : "Place Sell / Short Order"}
+            {side === "BUY"
+              ? "Place Buy / Long Order"
+              : "Place Sell / Short Order"}
           </button>
         ) : (
           <div className="flex flex-col gap-2">
@@ -369,7 +425,9 @@ export const OrderPlacement: React.FC<OrderPlacementProps> = ({ onOpenAuth }) =>
         {/* USD Faucet Section */}
         {isAuthenticated && (
           <div className="bg-[#14171E] border border-gray-900 rounded-xl p-2.5 mt-2 space-y-1.5">
-            <div className="text-[10px] uppercase tracking-wider font-bold text-emerald-400">Testnet USD Faucet</div>
+            <div className="text-[10px] uppercase tracking-wider font-bold text-emerald-400">
+              Testnet USD Faucet
+            </div>
             <div className="grid grid-cols-3 gap-1.5">
               <button
                 onClick={() => handleDeposit(100)}

@@ -7,9 +7,7 @@ import {
   TRADBLE_SYMBOL_SCHEMA,
   TYPE_SCHEMA,
 } from "../shared-engine-types/types.js";
-import {
-  ENGINE_EVENT_TYPE_SCHEMA,
-} from "../shared-engine-types/engineEventType.js";
+import { ENGINE_EVENT_TYPE_SCHEMA } from "../shared-engine-types/engineEventType.js";
 
 const ENGINE_REQUEST_TYPE_SCHEMA = z.union([
   z.literal("create_order"),

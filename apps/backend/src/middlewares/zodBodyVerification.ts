@@ -12,7 +12,10 @@ const zodBodyVerification =
       else schema.parse(req.body);
       next();
     } catch (error) {
-      console.error(`[ZOD_VERIFICATION] Schema validation failed for HTTP route: ${req.originalUrl}`, error);
+      console.error(
+        `[ZOD_VERIFICATION] Schema validation failed for HTTP route: ${req.originalUrl}`,
+        error,
+      );
       res.status(400).json({ error: true, payload: "WRONG_REQUEST_FORMAT" });
     }
   };
@@ -25,7 +28,10 @@ const zodBodyVerificationWebSocket = (
   const { success, error } = schema.safeParse(request);
 
   if (!success) {
-    console.error(`[ZOD_VERIFICATION] WebSocket schema validation failed for user: ${ws.user?.username} (${ws.user?.id}) on type: ${request.type}`, error);
+    console.error(
+      `[ZOD_VERIFICATION] WebSocket schema validation failed for user: ${ws.user?.username} (${ws.user?.id}) on type: ${request.type}`,
+      error,
+    );
     sendMessageOnWebSocket(ws, {
       requestId: request.requestId,
       type: "error",

@@ -19,7 +19,9 @@ export default class Account {
     });
   }
 
-  private handleUserPnl(userPnl: EngineEventPayload.USER_PNL_CREATED_EVENT_PAYLOAD) {
+  private handleUserPnl(
+    userPnl: EngineEventPayload.USER_PNL_CREATED_EVENT_PAYLOAD,
+  ) {
     const bal = this.getBalance(userPnl.data.userId);
     bal.balance += userPnl.data.pnl;
     bal.lockedBalance -= userPnl.data.releasedMargin;

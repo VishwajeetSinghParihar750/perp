@@ -22,7 +22,9 @@ router.post("/signup", zodBodyVerification(SIGNUP_SCHEMA), async (req, res) => {
       data: { username, password },
     });
 
-    console.log(`[AUTH] Signup successful for username: ${username}, userId: ${user.id}`);
+    console.log(
+      `[AUTH] Signup successful for username: ${username}, userId: ${user.id}`,
+    );
     res.status(201).json({ error: false, payload: user.id });
   } catch (e) {
     console.error(`[AUTH] Signup error for username: ${username}`, e);
@@ -38,7 +40,9 @@ router.post("/signin", zodBodyVerification(SIGNIN_SCHEMA), async (req, res) => {
       where: { username },
     });
     if (!user || user.password != password) {
-      console.log(`[AUTH] Signin failed: Incorrect credentials for username: ${username}`);
+      console.log(
+        `[AUTH] Signin failed: Incorrect credentials for username: ${username}`,
+      );
       res.status(400).json({ error: true, payload: "incorrect credentials" });
       return;
     }
@@ -55,7 +59,9 @@ router.post("/signin", zodBodyVerification(SIGNIN_SCHEMA), async (req, res) => {
       process.env.JWT_SECRET_KEY!,
     );
 
-    console.log(`[AUTH] Signin successful for username: ${username}, userId: ${user.id}`);
+    console.log(
+      `[AUTH] Signin successful for username: ${username}, userId: ${user.id}`,
+    );
     res.status(200).json({
       error: false,
       payload: {

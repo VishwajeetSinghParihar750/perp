@@ -14,7 +14,9 @@ router.get(
     //
 
     const { orderId } = req.params as BackendRequest.GET_ORDER_REQUEST;
-    console.log(`[ORDER] Fetch order request for orderId: ${orderId} by user: ${req.user?.username} (${req.user?.id})`);
+    console.log(
+      `[ORDER] Fetch order request for orderId: ${orderId} by user: ${req.user?.username} (${req.user?.id})`,
+    );
     try {
       let order = await prismaClient.order.findUnique({
         where: {
@@ -22,10 +24,15 @@ router.get(
         },
       });
 
-      console.log(`[ORDER] Fetch order successful for orderId: ${orderId}. Found: ${!!order}`);
+      console.log(
+        `[ORDER] Fetch order successful for orderId: ${orderId}. Found: ${!!order}`,
+      );
       res.json({ error: false, payload: order });
     } catch (error) {
-      console.error(`[ORDER] Fetch order failed for orderId: ${orderId}`, error);
+      console.error(
+        `[ORDER] Fetch order failed for orderId: ${orderId}`,
+        error,
+      );
       res.json({
         error: "INTERNAL_SERVER_ERROR",
         payload: (error as Error).message,
@@ -42,15 +49,22 @@ router.get(
   zodBodyVerification(BackendRequest.GET_ORDERS_SCHEMA, true),
   async (req, res) => {
     const { marketSymbol } = req.params as BackendRequest.GET_ORDERS_REQUEST;
-    console.log(`[ORDER] Fetch orders request for marketSymbol: ${marketSymbol} by user: ${req.user?.username} (${req.user?.id})`);
+    console.log(
+      `[ORDER] Fetch orders request for marketSymbol: ${marketSymbol} by user: ${req.user?.username} (${req.user?.id})`,
+    );
     try {
       const orders = await prismaClient.order.findMany({
         where: { symbol: marketSymbol },
       });
-      console.log(`[ORDER] Fetch orders successful for marketSymbol: ${marketSymbol}. Count: ${orders.length}`);
+      console.log(
+        `[ORDER] Fetch orders successful for marketSymbol: ${marketSymbol}. Count: ${orders.length}`,
+      );
       res.status(200).json({ error: false, payload: orders });
     } catch (error) {
-      console.error(`[ORDER] Fetch orders failed for marketSymbol: ${marketSymbol}`, error);
+      console.error(
+        `[ORDER] Fetch orders failed for marketSymbol: ${marketSymbol}`,
+        error,
+      );
       res.json({
         error: "INTERNAL_SERVER_ERROR",
         payload: (error as Error).message,

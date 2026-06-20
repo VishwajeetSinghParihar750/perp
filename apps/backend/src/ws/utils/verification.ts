@@ -29,7 +29,9 @@ function verifyJwtToken(ws: WebSocket, req: IncomingMessage): boolean {
 
     //
     const currentTime = new Date(Date.now()).toISOString();
-    console.log(`[WS_VERIFY] Checking expiry: user expireAt = ${decodedUser.expireAt}, current time = ${currentTime}`);
+    console.log(
+      `[WS_VERIFY] Checking expiry: user expireAt = ${decodedUser.expireAt}, current time = ${currentTime}`,
+    );
     if (decodedUser.expireAt <= currentTime) {
       console.log("[WS_VERIFY] Token has expired");
       return false;

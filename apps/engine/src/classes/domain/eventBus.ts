@@ -14,7 +14,9 @@ class EventBus {
     [K in EngineEventType.ENGINE_EVENT_TYPE]?: EVENT_CALLBACK_FUNCTION<K>[];
   } = {};
 
-  allEventCallbacks: ((event: EngineEventPayload.ENGINE_EVENT_PAYLOAD) => void)[] = [];
+  allEventCallbacks: ((
+    event: EngineEventPayload.ENGINE_EVENT_PAYLOAD,
+  ) => void)[] = [];
 
   emit = <T extends EngineEventType.ENGINE_EVENT_TYPE>(
     event: EVENT_FROM_TYPE<T>,

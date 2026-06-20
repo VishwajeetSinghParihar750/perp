@@ -8,7 +8,6 @@ import {
   BALANCE_UPDATED_RESPONSE_PAYLOAD_SCHEMA,
   DEPTH_RESPONSE_PAYLOAD_SCHEMA,
   POSITION_RESPONSE_PAYLOAD_SCHEMA,
-  ORDERBOOK_RESPONSE_PAYLOAD_SCHEMA,
   ERROR_RESPONSE_PAYLOAD_SCHEMA,
   ENGINE_RESPONSE_PAYLOAD_SCHEMA,
 } from "./engineResponsePayload.js";
@@ -106,11 +105,6 @@ const POSITION_RES_SCHEMA = baseResponseSchema.extend({
   payload: POSITION_RESPONSE_PAYLOAD_SCHEMA,
 });
 
-const ORDERBOOK_RES_SCHEMA = baseResponseSchema.extend({
-  type: z.literal("orderbook"),
-  payload: ORDERBOOK_RESPONSE_PAYLOAD_SCHEMA,
-});
-
 const ERROR_SCHEMA = baseResponseSchema.extend({
   type: z.literal("error"),
   payload: ERROR_RESPONSE_PAYLOAD_SCHEMA,
@@ -126,7 +120,6 @@ type BALANCE_RESPONSE = z.infer<typeof BALANCE_SCHEMA>;
 type BALANCE_UPDATED_RESPONSE = z.infer<typeof BALANCE_UPDATED_SCHEMA>;
 type DEPTH_RESPONSE = z.infer<typeof DEPTH_SCHEMA>;
 type POSITION_RES = z.infer<typeof POSITION_RES_SCHEMA>;
-type ORDERBOOK_RES = z.infer<typeof ORDERBOOK_RES_SCHEMA>;
 type ERROR_RESPONSE = z.infer<typeof ERROR_SCHEMA>;
 
 // =======================================================================================
@@ -136,7 +129,6 @@ const ENGINE_RESPONSE_SCHEMA = z.union([
   ORDER_CANCELLED_SCHEMA,
   BALANCE_SCHEMA,
   ERROR_SCHEMA,
-  ORDERBOOK_RES_SCHEMA,
   POSITION_RES_SCHEMA,
   DEPTH_SCHEMA,
   BALANCE_UPDATED_SCHEMA,
@@ -162,7 +154,6 @@ export {
   BALANCE_UPDATED_SCHEMA,
   DEPTH_SCHEMA,
   POSITION_RES_SCHEMA,
-  ORDERBOOK_RES_SCHEMA,
   ERROR_SCHEMA,
   ENGINE_RESPONSE_PAYLOAD_SCHEMA,
 };
@@ -180,6 +171,5 @@ export type {
   BALANCE_UPDATED_RESPONSE,
   DEPTH_RESPONSE,
   POSITION_RES,
-  ORDERBOOK_RES,
   ERROR_RESPONSE,
 };

@@ -3,7 +3,7 @@ import type {
   EngineResponse,
   EngineResponsePayload,
 } from "@repo/shared-types";
-import CreateOrderHandler from "./createOrderHandler.js";
+import CreateOrderHandler from "../application/createOrderHandler.js";
 
 import RiskEngine from "../domain/riskEngine.js";
 import { OrderFactory } from "../domain/order.js";
@@ -13,17 +13,16 @@ import EventBus from "../domain/eventBus.js";
 import Orderbook from "../domain/orderbook.js";
 import { TradeFactory } from "../domain/trade.js";
 import type { Result } from "../types.js";
-import AddBalanceHandler from "./addBalanceHandler.js";
+import AddBalanceHandler from "../application/addBalanceHandler.js";
 import PositionManager from "../domain/positionManager.js";
-import GetBalanceHandler from "./getBalanceHandler.js";
-import GetDepthHandler from "./getDepthHandler.js";
-import CancelOrderHandler from "./cancelOrderHandler.js";
-import GetPositionHandler from "./getPositionHandler.js";
+import GetBalanceHandler from "../application/getBalanceHandler.js";
+import GetDepthHandler from "../application/getDepthHandler.js";
+import CancelOrderHandler from "../application/cancelOrderHandler.js";
+import GetPositionHandler from "../application/getPositionHandler.js";
 
 const eventBus = new EventBus();
 const account = new Account(eventBus);
 
-// get index price first
 const market = new Market(eventBus);
 const riskEngine = new RiskEngine(account, market);
 
@@ -74,7 +73,6 @@ const requestHandler = (
 
       let res = createOrderHandler.handle({
         ...req.payload,
-        marketSymbol: req.payload.marketSymbol,
         quantity: req.payload.qty,
       });
       return responseHelper(req, res, "order_created");
@@ -83,7 +81,7 @@ const requestHandler = (
       let req = request as EngineRequest.CANCEL_ORDER_REQUEST;
 
       let res = cancelOrderHandler.handle({
-        orderId: req.payload.orderId,
+        ...req.payload,
       });
       return responseHelper(req, res, "order_cancelled");
     }
@@ -91,31 +89,37 @@ const requestHandler = (
     case "add_balance": {
       let req = request as EngineRequest.ADD_BALANCE_REQUEST;
       let res = addBalanceHandler.handle({
-        amount: req.payload.amount,
-        userId: req.payload.userId,
+        ...req.payload,
       });
       return responseHelper(req, res, "balance_updated");
     }
 
     case "get_balance": {
       let req = request as EngineRequest.GET_BALANCE_REQUEST;
-      let res = getBalanceHandler.handle({ userId: req.payload.userId });
+      let res = getBalanceHandler.handle({ ...req.payload });
       return responseHelper(req, res, "balance");
     }
 
     case "get_depth": {
       let req = request as EngineRequest.GET_DEPTH_REQUEST;
       let res = getDepthHandler.handle({
-        marketSymbol: req.payload.marketSymbol,
+        ...req.payload,
       });
       return responseHelper(req, res, "depth");
     }
 
     case "get_position": {
       let req = request as EngineRequest.GET_POSITION_REQUEST;
-      let res = getPositionHandler.handle({ userId: req.payload.userId });
+      let res = getPositionHandler.handle({ ...req.payload });
 
       return responseHelper(req, res, "position");
+    }
+
+    case "subscribe_event": {
+      //
+    }
+    case "unsubscribe_event": {
+      //
     }
 
     default:

@@ -1,4 +1,4 @@
-import Redis from "./classes/infrastructure/redis.js";
+import InputStream from "./classes/infrastructure/Communicator.js";
 
 process.on("uncaughtException", (err) => {
   console.error("Uncaught Exception:", err);
@@ -12,5 +12,5 @@ process.on("unhandledRejection", (reason) => {
 
 // thats it
 // on error that is not caught, the owner of this process should restart the process and it will work fine
-const redis = new Redis();
-redis.handleClientRequsts();
+const inputStream = new InputStream();
+inputStream.processRequests();

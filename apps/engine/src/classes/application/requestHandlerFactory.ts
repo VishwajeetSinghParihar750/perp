@@ -1,4 +1,8 @@
-import type { EngineRequest, EngineResponse } from "@repo/shared-types";
+import type {
+  EngineRequest,
+  EngineResponse,
+  EngineResponsePayload,
+} from "@repo/shared-types";
 import CreateOrderHandler from "./createOrderHandler.js";
 
 import RiskEngine from "../domain/riskEngine.js";
@@ -38,8 +42,8 @@ const positionManager = new PositionManager(eventBus, riskEngine);
 
 const responseHelper = (
   req: EngineRequest.ENGINE_REQUEST,
-  res: Result<any>,
-  type: any,
+  res: Result<EngineResponsePayload.ENGINE_RESPONSE_PAYLOAD>,
+  type: EngineResponse.RESPONSE_TYPE,
 ): EngineResponse.ENGINE_RESPONSE => {
   if (!res.success)
     return {

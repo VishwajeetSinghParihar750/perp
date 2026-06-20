@@ -1,0 +1,156 @@
+import z from "zod";
+import {
+  SIDE_SCHEMA,
+  CURRENCY_SYMBOL_SCHEMA,
+  MARGIN_TYPE_SCHEMA,
+} from "../shared-backend-types/backendRequest.js";
+import { ENGINE_EVENT_PAYLOAD_SCHEMA } from "./engineEventPayload.js";
+import {
+  ORDER_ID_SCHEMA,
+  ORDER_STATUS_SCHEMA,
+  PRICE_SCHEMA,
+  QUANTITY_SCHEMA,
+  TRADBLE_SYMBOL_SCHEMA,
+  USER_ID_SCHEMA,
+} from "./types.js";
+
+// =======================================================================================
+
+const ORDER_TYPE_SCHEMA = z.union([z.literal("MARKET"), z.literal("LIMIT")]);
+
+const ORDER_SCHEMA = z.object({
+  userId: USER_ID_SCHEMA,
+  price: PRICE_SCHEMA,
+  quantity: QUANTITY_SCHEMA,
+  side: SIDE_SCHEMA,
+  marketId: TRADBLE_SYMBOL_SCHEMA,
+  type: ORDER_TYPE_SCHEMA,
+  filledQuantity: QUANTITY_SCHEMA,
+  orderId: ORDER_ID_SCHEMA,
+  // for perp
+  margin: PRICE_SCHEMA,
+  marginType: MARGIN_TYPE_SCHEMA,
+  status: ORDER_STATUS_SCHEMA,
+});
+
+const PRICE_LEVEL_SCHEMA = z.object({
+  totalQuantity: QUANTITY_SCHEMA,
+  orders: z.array(ORDER_SCHEMA),
+});
+
+const SYMBOL_ORDERBOOK_SCHEMA = z.object({
+  BIDS: z.array(z.tuple([PRICE_SCHEMA, PRICE_LEVEL_SCHEMA])),
+  ASKS: z.array(z.tuple([PRICE_SCHEMA, PRICE_LEVEL_SCHEMA])),
+});
+
+const POSITION_TYPE_SCHEMA = z.union([z.literal("LONG"), z.literal("SHORT")]);
+
+const POSITION_SCHEMA = z.object({
+  userId: USER_ID_SCHEMA,
+  price: PRICE_SCHEMA,
+  qty: z.number(),
+  type: POSITION_TYPE_SCHEMA,
+  symbol: CURRENCY_SYMBOL_SCHEMA,
+  createdAt: z.iso.datetime(),
+  margin: PRICE_SCHEMA,
+  marginType: MARGIN_TYPE_SCHEMA,
+});
+
+// =======================================================================================
+
+const ORDER_CREATED_RESPONSE_PAYLOAD_SCHEMA = ORDER_SCHEMA;
+
+const ORDER_CANCELLED_RESPONSE_PAYLOAD_SCHEMA = z.string();
+
+const BALANCE_RESPONSE_PAYLOAD_SCHEMA = z.object({
+  balance: QUANTITY_SCHEMA,
+  lockedBalance: QUANTITY_SCHEMA,
+});
+
+const BALANCE_UPDATED_RESPONSE_PAYLOAD_SCHEMA = z.object({
+  balance: QUANTITY_SCHEMA,
+  lockedBalance: QUANTITY_SCHEMA,
+});
+
+const DEPTH_RESPONSE_PAYLOAD_SCHEMA = z.object({
+  BIDS: z.array(z.object({ price: PRICE_SCHEMA, quantity: z.number() })),
+  ASKS: z.array(z.object({ price: PRICE_SCHEMA, quantity: z.number() })),
+});
+
+const POSITION_RESPONSE_PAYLOAD_SCHEMA = z.union([
+  POSITION_SCHEMA,
+  z.partialRecord(CURRENCY_SYMBOL_SCHEMA, POSITION_SCHEMA),
+  z.undefined(),
+]);
+
+const ORDERBOOK_RESPONSE_PAYLOAD_SCHEMA = SYMBOL_ORDERBOOK_SCHEMA;
+
+const ERROR_RESPONSE_PAYLOAD_SCHEMA = z.string();
+
+// =======================================================================================
+
+type ORDER_CREATED_RESPONSE_PAYLOAD = z.infer<
+  typeof ORDER_CREATED_RESPONSE_PAYLOAD_SCHEMA
+>;
+type ORDER_CANCELLED_RESPONSE_PAYLOAD = z.infer<
+  typeof ORDER_CANCELLED_RESPONSE_PAYLOAD_SCHEMA
+>;
+type BALANCE_RESPONSE_PAYLOAD = z.infer<typeof BALANCE_RESPONSE_PAYLOAD_SCHEMA>;
+type BALANCE_UPDATED_RESPONSE_PAYLOAD = z.infer<
+  typeof BALANCE_UPDATED_RESPONSE_PAYLOAD_SCHEMA
+>;
+type DEPTH_RESPONSE_PAYLOAD = z.infer<typeof DEPTH_RESPONSE_PAYLOAD_SCHEMA>;
+type POSITION_RESPONSE_PAYLOAD = z.infer<
+  typeof POSITION_RESPONSE_PAYLOAD_SCHEMA
+>;
+type ORDERBOOK_RESPONSE_PAYLOAD = z.infer<
+  typeof ORDERBOOK_RESPONSE_PAYLOAD_SCHEMA
+>;
+type ERROR_RESPONSE_PAYLOAD = z.infer<typeof ERROR_RESPONSE_PAYLOAD_SCHEMA>;
+
+// =======================================================================================
+
+const ENGINE_RESPONSE_PAYLOAD_SCHEMA = z.union([
+  ORDER_CREATED_RESPONSE_PAYLOAD_SCHEMA,
+  ORDER_CANCELLED_RESPONSE_PAYLOAD_SCHEMA,
+  BALANCE_RESPONSE_PAYLOAD_SCHEMA,
+  BALANCE_UPDATED_RESPONSE_PAYLOAD_SCHEMA,
+  DEPTH_RESPONSE_PAYLOAD_SCHEMA,
+  POSITION_RESPONSE_PAYLOAD_SCHEMA,
+  ORDERBOOK_RESPONSE_PAYLOAD_SCHEMA,
+  ERROR_RESPONSE_PAYLOAD_SCHEMA,
+  ENGINE_EVENT_PAYLOAD_SCHEMA,
+]);
+
+type ENGINE_RESPONSE_PAYLOAD = z.infer<typeof ENGINE_RESPONSE_PAYLOAD_SCHEMA>;
+
+// =======================================================================================
+export {
+  ORDER_TYPE_SCHEMA,
+  ORDER_SCHEMA,
+  PRICE_LEVEL_SCHEMA,
+  SYMBOL_ORDERBOOK_SCHEMA,
+  POSITION_TYPE_SCHEMA,
+  POSITION_SCHEMA,
+  ORDER_CREATED_RESPONSE_PAYLOAD_SCHEMA,
+  ORDER_CANCELLED_RESPONSE_PAYLOAD_SCHEMA,
+  BALANCE_RESPONSE_PAYLOAD_SCHEMA,
+  BALANCE_UPDATED_RESPONSE_PAYLOAD_SCHEMA,
+  DEPTH_RESPONSE_PAYLOAD_SCHEMA,
+  POSITION_RESPONSE_PAYLOAD_SCHEMA,
+  ORDERBOOK_RESPONSE_PAYLOAD_SCHEMA,
+  ERROR_RESPONSE_PAYLOAD_SCHEMA,
+  ENGINE_RESPONSE_PAYLOAD_SCHEMA,
+};
+
+export type {
+  ORDER_CREATED_RESPONSE_PAYLOAD,
+  ORDER_CANCELLED_RESPONSE_PAYLOAD,
+  BALANCE_RESPONSE_PAYLOAD,
+  BALANCE_UPDATED_RESPONSE_PAYLOAD,
+  DEPTH_RESPONSE_PAYLOAD,
+  POSITION_RESPONSE_PAYLOAD,
+  ORDERBOOK_RESPONSE_PAYLOAD,
+  ERROR_RESPONSE_PAYLOAD,
+  ENGINE_RESPONSE_PAYLOAD,
+};

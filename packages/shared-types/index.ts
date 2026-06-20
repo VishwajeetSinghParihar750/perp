@@ -8,3 +8,4 @@ export * as EngineEventType from "./shared-engine-types/engineEventType.js";
 export * as EngineEventPayload from "./shared-engine-types/engineEventPayload.js";
 export * as EngineRequest from "./shared-engine-types/engineRequest.js";
 export * as EngineResponse from "./shared-engine-types/engineResponse.js";
+export * as EngineResponsePayload from "./shared-engine-types/engineResponsePayload.js";

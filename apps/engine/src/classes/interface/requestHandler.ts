@@ -3,135 +3,148 @@ import type {
   EngineResponse,
   EngineResponsePayload,
 } from "@repo/shared-types";
-import CreateOrderHandler from "../application/createOrderHandler.js";
 
-import RiskEngine from "../domain/riskEngine.js";
-import { OrderFactory } from "../domain/order.js";
-import Account from "../domain/account.js";
-import Market from "../domain/market.js";
-import EventBus from "../domain/eventBus.js";
-import Orderbook from "../domain/orderbook.js";
-import { TradeFactory } from "../domain/trade.js";
 import type { Result } from "../types.js";
+
+import CreateOrderHandler from "../application/createOrderHandler.js";
 import AddBalanceHandler from "../application/addBalanceHandler.js";
-import PositionManager from "../domain/positionManager.js";
 import GetBalanceHandler from "../application/getBalanceHandler.js";
 import GetDepthHandler from "../application/getDepthHandler.js";
 import CancelOrderHandler from "../application/cancelOrderHandler.js";
 import GetPositionHandler from "../application/getPositionHandler.js";
+import SubscribeEventHandler from "../application/subscribeEventHandler.js";
+import type UnsubscribeEventHandler from "../application/unsubscribeEventHandler.js";
 
-const eventBus = new EventBus();
-const account = new Account(eventBus);
+export type RequestHandlerDeps = {
+  createOrderHandler: CreateOrderHandler;
+  cancelOrderHandler: CancelOrderHandler;
+  addBalanceHandler: AddBalanceHandler;
+  getBalanceHandler: GetBalanceHandler;
+  getDepthHandler: GetDepthHandler;
+  getPositionHandler: GetPositionHandler;
+  subscribeEventHandler: SubscribeEventHandler;
+  unsubscribeEventHandler: UnsubscribeEventHandler;
+};
 
-const market = new Market(eventBus);
-const riskEngine = new RiskEngine(account, market);
+export default class RequestHandler {
+  constructor(private readonly deps: RequestHandlerDeps) {}
 
-const orderFactory = new OrderFactory();
+  private responseHelper(
+    req: EngineRequest.ENGINE_REQUEST,
+    res: Result<EngineResponsePayload.ENGINE_RESPONSE_PAYLOAD>,
+    type: EngineResponse.RESPONSE_TYPE,
+  ): EngineResponse.ENGINE_RESPONSE {
+    if (!res.success) {
+      return {
+        type: "error",
+        payload: res.error.message,
+        requestId: (req as any).requestId,
+      };
+    }
 
-const tradeFactory = new TradeFactory();
-const orderbook = new Orderbook(riskEngine, tradeFactory, eventBus);
-
-const createOrderHandler = new CreateOrderHandler(
-  orderFactory,
-  riskEngine,
-  orderbook,
-  account,
-);
-const addBalanceHandler = new AddBalanceHandler(account);
-const getBalanceHandler = new GetBalanceHandler(account);
-const getDepthHandler = new GetDepthHandler(orderbook);
-const cancelOrderHandler = new CancelOrderHandler(orderbook);
-
-const positionManager = new PositionManager(eventBus, riskEngine);
-const getPositionHandler = new GetPositionHandler(positionManager);
-
-const responseHelper = (
-  req: EngineRequest.ENGINE_REQUEST,
-  res: Result<EngineResponsePayload.ENGINE_RESPONSE_PAYLOAD>,
-  type: EngineResponse.RESPONSE_TYPE,
-): EngineResponse.ENGINE_RESPONSE => {
-  if (!res.success)
     return {
-      type: "error",
-      payload: res.error.message,
+      type,
+      payload: res.value,
       requestId: (req as any).requestId,
-    };
-
-  return {
-    type,
-    payload: res.value,
-    requestId: (req as any).requestId,
-  } as any;
-};
-
-const requestHandler = (
-  request: EngineRequest.ENGINE_REQUEST,
-): EngineResponse.ENGINE_RESPONSE => {
-  switch (request.type) {
-    case "create_order": {
-      let req = request as EngineRequest.CREATE_ORDER_REQUEST;
-
-      let res = createOrderHandler.handle({
-        ...req.payload,
-        quantity: req.payload.qty,
-      });
-      return responseHelper(req, res, "order_created");
-    }
-    case "cancel_order": {
-      let req = request as EngineRequest.CANCEL_ORDER_REQUEST;
-
-      let res = cancelOrderHandler.handle({
-        ...req.payload,
-      });
-      return responseHelper(req, res, "order_cancelled");
-    }
-
-    case "add_balance": {
-      let req = request as EngineRequest.ADD_BALANCE_REQUEST;
-      let res = addBalanceHandler.handle({
-        ...req.payload,
-      });
-      return responseHelper(req, res, "balance_updated");
-    }
-
-    case "get_balance": {
-      let req = request as EngineRequest.GET_BALANCE_REQUEST;
-      let res = getBalanceHandler.handle({ ...req.payload });
-      return responseHelper(req, res, "balance");
-    }
-
-    case "get_depth": {
-      let req = request as EngineRequest.GET_DEPTH_REQUEST;
-      let res = getDepthHandler.handle({
-        ...req.payload,
-      });
-      return responseHelper(req, res, "depth");
-    }
-
-    case "get_position": {
-      let req = request as EngineRequest.GET_POSITION_REQUEST;
-      let res = getPositionHandler.handle({ ...req.payload });
-
-      return responseHelper(req, res, "position");
-    }
-
-    case "subscribe_event": {
-      //
-    }
-    case "unsubscribe_event": {
-      //
-    }
-
-    default:
-      return responseHelper(
-        request,
-        {
-          success: false,
-          error: new Error("INVALID_REQUEST_TYPE"),
-        },
-        "error",
-      );
+    } as any;
   }
-};
 
-export default requestHandler;
+  handleRequest(
+    request: EngineRequest.ENGINE_REQUEST,
+  ): EngineResponse.ENGINE_RESPONSE {
+    switch (request.type) {
+      case "create_order": {
+        const req = request as EngineRequest.CREATE_ORDER_REQUEST;
+
+        const res = this.deps.createOrderHandler.handle({
+          ...req.payload,
+          quantity: req.payload.qty,
+        });
+
+        return this.responseHelper(req, res, "order_created");
+      }
+
+      case "cancel_order": {
+        const req = request as EngineRequest.CANCEL_ORDER_REQUEST;
+
+        const res = this.deps.cancelOrderHandler.handle({
+          ...req.payload,
+        });
+
+        return this.responseHelper(req, res, "order_cancelled");
+      }
+
+      case "add_balance": {
+        const req = request as EngineRequest.ADD_BALANCE_REQUEST;
+
+        const res = this.deps.addBalanceHandler.handle({
+          ...req.payload,
+        });
+
+        return this.responseHelper(req, res, "balance_updated");
+      }
+
+      case "get_balance": {
+        const req = request as EngineRequest.GET_BALANCE_REQUEST;
+
+        const res = this.deps.getBalanceHandler.handle({
+          ...req.payload,
+        });
+
+        return this.responseHelper(req, res, "balance");
+      }
+
+      case "get_depth": {
+        const req = request as EngineRequest.GET_DEPTH_REQUEST;
+
+        const res = this.deps.getDepthHandler.handle({
+          ...req.payload,
+        });
+
+        return this.responseHelper(req, res, "depth");
+      }
+
+      case "get_position": {
+        const req = request as EngineRequest.GET_POSITION_REQUEST;
+
+        const res = this.deps.getPositionHandler.handle({
+          ...req.payload,
+        });
+
+        return this.responseHelper(req, res, "position");
+      }
+
+      case "subscribe_event": {
+        const req = request as EngineRequest.SUBSCRIBE_EVENT_REQUEST;
+
+        const res = this.deps.subscribeEventHandler.handle({
+          ...req.payload,
+          replyAddress: { redisStreamId: req.payload.replyToStreamId },
+        });
+
+        return this.responseHelper(req, res, "subscribed");
+      }
+
+      case "unsubscribe_event": {
+        const req = request as EngineRequest.UNSUBSCRIBE_EVENT_REQUEST;
+
+        const res = this.deps.unsubscribeEventHandler.handle({
+          ...req.payload,
+          replyAddress: { redisStreamId: req.payload.replyToStreamId },
+        });
+
+        return this.responseHelper(req, res, "subscribed");
+      }
+
+      default:
+        return this.responseHelper(
+          request,
+          {
+            success: false,
+            error: new Error("INVALID_REQUEST_TYPE"),
+          },
+          "error",
+        );
+    }
+  }
+}

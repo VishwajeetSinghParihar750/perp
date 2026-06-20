@@ -6,12 +6,18 @@ import {
 import { EngineRequest } from "@repo/shared-types";
 import requestHandler from "../interface/requestHandler.js";
 import type { ReplyAddress } from "./types.js";
+import RequestHandler from "../interface/requestHandler.js";
 
-export default class InputStream {
+export default class Communicator {
   //
   private redisClient: RedisClientType = globalRedisClient.duplicate();
 
+  private requestHandler: RequestHandler;
   private requestBuffer: EngineRequest.ENGINE_REQUEST[] = [];
+
+  constructor(requestHandler: RequestHandler) {
+    this.requestHandler = requestHandler;
+  }
 
   async processRequests(lastRedisMessageId: string = "0") {
     await this.redisClient.connect();
@@ -64,7 +70,7 @@ export default class InputStream {
                 console.log(
                   `[ENGINE_SERVER] Processing trade request: ${req.type} (requestId: ${req.requestId})`,
                 );
-                let result = requestHandler(req);
+                let result = this.requestHandler.handleRequest(req);
 
                 await this.redisClient.xAdd(req.stream, "*", {
                   data: JSON.stringify(result),
@@ -79,7 +85,6 @@ export default class InputStream {
     }
   }
 
-  async receive() {}
   async send(replyAddress: ReplyAddress, message: any) {
     if ("redisQueueId" in replyAddress) {
       //

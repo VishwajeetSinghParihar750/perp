@@ -1,3 +1,4 @@
+import { EngineEvent } from "../index.js";
 import * as BackendRequest from "../shared-backend-types/backendRequest.js";
 
 const BASE_REQUEST_SCHEMA = z.object({
@@ -5,6 +6,8 @@ const BASE_REQUEST_SCHEMA = z.object({
 });
 
 import z from "zod";
+import { ENGINE_EVENT_SCHEMA } from "./engineEvent.js";
+import { ENGINE_EVENT_TYPE_SCHEMA } from "./engineEventType.js";
 
 // normal backend calls
 const GET_POSITION_SCHEMA = BASE_REQUEST_SCHEMA.extend({
@@ -63,14 +66,22 @@ const GET_ORDERBOOK_SCHEMA = BASE_REQUEST_SCHEMA.extend(
 );
 type GET_ORDERBOOK_REQUEST = z.infer<typeof GET_ORDERBOOK_SCHEMA>;
 
-const SUBSCRIBE_EVENT_SCHEMA = BASE_REQUEST_SCHEMA.extend(
-  BackendRequest.SUBSCRIBE_EVENT_SCHEMA.shape,
-);
+const SUBSCRIBE_EVENT_SCHEMA = BASE_REQUEST_SCHEMA.extend({
+  ...BackendRequest.SUBSCRIBE_EVENT_SCHEMA.shape,
+  payload: z.object({
+    events: z.array(ENGINE_EVENT_TYPE_SCHEMA).min(1),
+    replyToStreamId: z.string(),
+  }),
+});
 type SUBSCRIBE_EVENT_REQUEST = z.infer<typeof SUBSCRIBE_EVENT_SCHEMA>;
 
-const UNSUBSCRIBE_EVENT_SCHEMA = BASE_REQUEST_SCHEMA.extend(
-  BackendRequest.UNSUBSCRIBE_EVENT_SCHEMA.shape,
-);
+const UNSUBSCRIBE_EVENT_SCHEMA = BASE_REQUEST_SCHEMA.extend({
+  ...BackendRequest.UNSUBSCRIBE_EVENT_SCHEMA.shape,
+  payload: z.object({
+    events: z.array(ENGINE_EVENT_TYPE_SCHEMA).min(1),
+    replyToStreamId: z.string(),
+  }),
+});
 type UNSUBSCRIBE_EVENT_REQUEST = z.infer<typeof UNSUBSCRIBE_EVENT_SCHEMA>;
 
 const ENGINE_REQUEST_FROM_BACKEND_SCHEMA = z.union([

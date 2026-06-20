@@ -19,6 +19,7 @@ import {
   CURRENCY_SYMBOL_SCHEMA,
   MARGIN_TYPE_SCHEMA,
 } from "./types.js";
+import { ENGINE_EVENT_TYPE_SCHEMA } from "./engineEventType.js";
 
 // =======================================================================================
 
@@ -78,10 +79,12 @@ const ORDER_CANCELLED_SCHEMA = baseResponseSchema.extend({
 
 const EVENT_SUBSCRIBED_SCHEMA = baseResponseSchema.extend({
   type: z.literal("event_subscribed"),
+  payload: z.array(ENGINE_EVENT_TYPE_SCHEMA),
 });
 
 const EVENT_UNSUBSCRIBED_SCHEMA = baseResponseSchema.extend({
   type: z.literal("event_unsubscribed"),
+  payload: z.array(ENGINE_EVENT_TYPE_SCHEMA),
 });
 
 const BALANCE_SCHEMA = baseResponseSchema.extend({

@@ -1,4 +1,5 @@
-import InputStream from "./classes/infrastructure/Communicator.js";
+import Communicator from "./classes/infrastructure/Communicator.js";
+import RequestHandler from "./classes/interface/requestHandler.js";
 
 process.on("uncaughtException", (err) => {
   console.error("Uncaught Exception:", err);
@@ -12,5 +13,7 @@ process.on("unhandledRejection", (reason) => {
 
 // thats it
 // on error that is not caught, the owner of this process should restart the process and it will work fine
-const inputStream = new InputStream();
-inputStream.processRequests();
+
+const requestHandler = new RequestHandler({});
+const communicator = new Communicator(requestHandler);
+communicator.processRequests();

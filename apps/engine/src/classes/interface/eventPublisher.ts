@@ -1,6 +1,6 @@
 import type { EngineEventPayload, EngineEventType } from "@repo/shared-types";
 import type { ReplyAddress } from "../infrastructure/types.js";
-import Communicator from "../infrastructure/Communicator.js";
+import Communicator from "../infrastructure/communicator.js";
 
 export default class EventPublisher {
   private subscriptions: Map<

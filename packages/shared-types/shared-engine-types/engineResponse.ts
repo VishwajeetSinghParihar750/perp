@@ -10,6 +10,8 @@ import {
   POSITION_RESPONSE_PAYLOAD_SCHEMA,
   ERROR_RESPONSE_PAYLOAD_SCHEMA,
   ENGINE_RESPONSE_PAYLOAD_SCHEMA,
+  EVENT_SUBSCRIBED_RESPONSE_PAYLOAD_SCHEMA,
+  EVENT_UNSUBSCRIBED_RESPONSE_PAYLOAD_SCHEMA,
 } from "./engineResponsePayload.js";
 
 import {
@@ -79,12 +81,12 @@ const ORDER_CANCELLED_SCHEMA = baseResponseSchema.extend({
 
 const EVENT_SUBSCRIBED_SCHEMA = baseResponseSchema.extend({
   type: z.literal("event_subscribed"),
-  payload: z.array(ENGINE_EVENT_TYPE_SCHEMA),
+  payload: EVENT_SUBSCRIBED_RESPONSE_PAYLOAD_SCHEMA,
 });
 
 const EVENT_UNSUBSCRIBED_SCHEMA = baseResponseSchema.extend({
   type: z.literal("event_unsubscribed"),
-  payload: z.array(ENGINE_EVENT_TYPE_SCHEMA),
+  payload: EVENT_UNSUBSCRIBED_RESPONSE_PAYLOAD_SCHEMA,
 });
 
 const BALANCE_SCHEMA = baseResponseSchema.extend({

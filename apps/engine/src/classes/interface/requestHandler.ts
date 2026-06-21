@@ -14,6 +14,7 @@ import CancelOrderHandler from "../application/cancelOrderHandler.js";
 import GetPositionHandler from "../application/getPositionHandler.js";
 import SubscribeEventHandler from "../application/subscribeEventHandler.js";
 import type UnsubscribeEventHandler from "../application/unsubscribeEventHandler.js";
+import { assert } from "node:console";
 
 export type RequestHandlerDeps = {
   createOrderHandler: CreateOrderHandler;
@@ -27,7 +28,11 @@ export type RequestHandlerDeps = {
 };
 
 export default class RequestHandler {
-  constructor(private readonly deps: RequestHandlerDeps) {}
+  private deps: RequestHandlerDeps | undefined;
+
+  setDeps(deps: RequestHandlerDeps) {
+    this.deps = deps;
+  }
 
   private responseHelper(
     req: EngineRequest.ENGINE_REQUEST,
@@ -52,11 +57,13 @@ export default class RequestHandler {
   handleRequest(
     request: EngineRequest.ENGINE_REQUEST,
   ): EngineResponse.ENGINE_RESPONSE {
+    assert(this.deps, "dependencies are still undefined");
+
     switch (request.type) {
       case "create_order": {
         const req = request as EngineRequest.CREATE_ORDER_REQUEST;
 
-        const res = this.deps.createOrderHandler.handle({
+        const res = this.deps!.createOrderHandler.handle({
           ...req.payload,
           quantity: req.payload.qty,
         });
@@ -67,7 +74,7 @@ export default class RequestHandler {
       case "cancel_order": {
         const req = request as EngineRequest.CANCEL_ORDER_REQUEST;
 
-        const res = this.deps.cancelOrderHandler.handle({
+        const res = this.deps!.cancelOrderHandler.handle({
           ...req.payload,
         });
 
@@ -77,7 +84,7 @@ export default class RequestHandler {
       case "add_balance": {
         const req = request as EngineRequest.ADD_BALANCE_REQUEST;
 
-        const res = this.deps.addBalanceHandler.handle({
+        const res = this.deps!.addBalanceHandler.handle({
           ...req.payload,
         });
 
@@ -87,7 +94,7 @@ export default class RequestHandler {
       case "get_balance": {
         const req = request as EngineRequest.GET_BALANCE_REQUEST;
 
-        const res = this.deps.getBalanceHandler.handle({
+        const res = this.deps!.getBalanceHandler.handle({
           ...req.payload,
         });
 
@@ -97,7 +104,7 @@ export default class RequestHandler {
       case "get_depth": {
         const req = request as EngineRequest.GET_DEPTH_REQUEST;
 
-        const res = this.deps.getDepthHandler.handle({
+        const res = this.deps!.getDepthHandler.handle({
           ...req.payload,
         });
 
@@ -107,7 +114,7 @@ export default class RequestHandler {
       case "get_position": {
         const req = request as EngineRequest.GET_POSITION_REQUEST;
 
-        const res = this.deps.getPositionHandler.handle({
+        const res = this.deps!.getPositionHandler.handle({
           ...req.payload,
         });
 
@@ -117,23 +124,23 @@ export default class RequestHandler {
       case "subscribe_event": {
         const req = request as EngineRequest.SUBSCRIBE_EVENT_REQUEST;
 
-        const res = this.deps.subscribeEventHandler.handle({
+        const res = this.deps!.subscribeEventHandler.handle({
           ...req.payload,
           replyAddress: { redisStreamId: req.payload.replyToStreamId },
         });
 
-        return this.responseHelper(req, res, "subscribed");
+        return this.responseHelper(req, res, "event_subscribed");
       }
 
       case "unsubscribe_event": {
         const req = request as EngineRequest.UNSUBSCRIBE_EVENT_REQUEST;
 
-        const res = this.deps.unsubscribeEventHandler.handle({
+        const res = this.deps!.unsubscribeEventHandler.handle({
           ...req.payload,
           replyAddress: { redisStreamId: req.payload.replyToStreamId },
         });
 
-        return this.responseHelper(req, res, "subscribed");
+        return this.responseHelper(req, res, "event_unsubscribed");
       }
 
       default:

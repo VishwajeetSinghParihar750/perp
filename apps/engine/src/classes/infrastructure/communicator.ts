@@ -18,6 +18,9 @@ export default class Communicator {
   constructor(requestHandler: RequestHandler) {
     this.requestHandler = requestHandler;
   }
+  async initialize() {
+    await this.redisClient.connect();
+  }
 
   async processRequests(lastRedisMessageId: string = "0") {
     await this.redisClient.connect();

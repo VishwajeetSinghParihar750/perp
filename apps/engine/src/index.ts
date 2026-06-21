@@ -1,3 +1,5 @@
+import "dotenv/config";
+
 import Communicator from "./classes/infrastructure/communicator.js";
 import RequestHandler from "./classes/interface/requestHandler.js";
 
@@ -18,6 +20,7 @@ import Orderbook from "./classes/domain/orderbook.js";
 import { TradeFactory } from "./classes/domain/trade.js";
 import PositionManager from "./classes/domain/positionManager.js";
 import EventPublisher from "./classes/interface/eventPublisher.js";
+import IndexPriceObserver from "./classes/interface/indexPriceObserver.js";
 
 process.on("uncaughtException", (err) => {
   console.error("Uncaught Exception:", err);
@@ -71,4 +74,14 @@ requestHandler.setDeps({
 // thats it
 // on error that is not caught, the owner of this process should restart the process and it will work fine
 
-communicator.processRequests();
+const indexPriceObserver = new IndexPriceObserver(communicator, {
+  redisStreamId: process.env.REDIS_ENGINE_STREAM!,
+});
+
+const init = async () => {
+  await communicator.initialize();
+  await indexPriceObserver.initialize();
+  // await communicator.processRequests();
+};
+
+init();

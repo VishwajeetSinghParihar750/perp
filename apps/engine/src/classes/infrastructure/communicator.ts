@@ -13,7 +13,6 @@ export default class Communicator {
   private redisClient: RedisClientType = globalRedisClient.duplicate();
 
   private requestHandler: RequestHandler;
-  private requestBuffer: EngineRequest.ENGINE_REQUEST[] = [];
 
   constructor(requestHandler: RequestHandler) {
     this.requestHandler = requestHandler;
@@ -22,7 +21,7 @@ export default class Communicator {
     await this.redisClient.connect();
   }
 
-  async processRequests(lastRedisMessageId: string = "0") {
+  async receiveRequests(lastRedisMessageId: string = "0") {
     await this.redisClient.connect();
 
     console.log(
@@ -75,9 +74,10 @@ export default class Communicator {
                 );
                 let result = this.requestHandler.handleRequest(req);
 
-                await this.redisClient.xAdd(req.stream, "*", {
-                  data: JSON.stringify(result),
-                });
+                if (result)
+                  await this.redisClient.xAdd(req.stream, "*", {
+                    data: JSON.stringify(result),
+                  });
               }
 
               lastRedisMessageId = id;

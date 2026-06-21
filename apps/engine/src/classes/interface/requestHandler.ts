@@ -13,8 +13,9 @@ import GetDepthHandler from "../application/getDepthHandler.js";
 import CancelOrderHandler from "../application/cancelOrderHandler.js";
 import GetPositionHandler from "../application/getPositionHandler.js";
 import SubscribeEventHandler from "../application/subscribeEventHandler.js";
-import type UnsubscribeEventHandler from "../application/unsubscribeEventHandler.js";
+import UnsubscribeEventHandler from "../application/unsubscribeEventHandler.js";
 import { assert } from "node:console";
+import IndexPriceUpdateHandler from "../application/indexPriceHandler.js";
 
 export type RequestHandlerDeps = {
   createOrderHandler: CreateOrderHandler;
@@ -25,6 +26,7 @@ export type RequestHandlerDeps = {
   getPositionHandler: GetPositionHandler;
   subscribeEventHandler: SubscribeEventHandler;
   unsubscribeEventHandler: UnsubscribeEventHandler;
+  indexPriceUpdateHandler: IndexPriceUpdateHandler;
 };
 
 export default class RequestHandler {
@@ -55,8 +57,8 @@ export default class RequestHandler {
   }
 
   handleRequest(
-    request: EngineRequest.ENGINE_REQUEST,
-  ): EngineResponse.ENGINE_RESPONSE {
+    request: EngineRequest.ENGINE_REQUEST | EngineRequest.ENGINE_INFO_REQUEST,
+  ): EngineResponse.ENGINE_RESPONSE | undefined {
     assert(!this.deps, "dependencies are still undefined");
 
     switch (request.type) {
@@ -146,6 +148,11 @@ export default class RequestHandler {
       case "funding_created": {
       }
       case "indexprice_updated": {
+        const req = request as EngineRequest.INDEX_PRICE_UDPATED_REQUEST;
+
+        this.deps!.indexPriceUpdateHandler.handle({
+          ...req.payload,
+        });
       }
 
       default:

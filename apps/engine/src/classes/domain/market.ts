@@ -1,4 +1,4 @@
-import type { EngineEventPayload } from "@repo/shared-types";
+import type { EngineEventPayload, EngineTypes } from "@repo/shared-types";
 import EventBus from "./eventBus.js";
 
 export default class Market {
@@ -20,15 +20,19 @@ export default class Market {
     }
   }
 
-  getIndexPrice(marketSymbol: string): number {
+  getIndexPrice(marketSymbol: EngineTypes.TRADABLE_SYMBOL): EngineTypes.PRICE {
     return this.indexPrices.get(marketSymbol) ?? 0;
   }
 
-  getMarkPrice(marketSymbol: string): number {
+  getMarkPrice(marketSymbol: EngineTypes.TRADABLE_SYMBOL): number {
     return this.markPrices.get(marketSymbol) ?? 0;
   }
 
-  setIndexPrice(marketSymbol: string, indexPrice: number) {
+  setIndexPrice(
+    marketSymbol: EngineTypes.TRADABLE_SYMBOL,
+    indexPrice: EngineTypes.PRICE,
+  ) {
     this.indexPrices.set(marketSymbol, indexPrice);
+    return indexPrice;
   }
 }

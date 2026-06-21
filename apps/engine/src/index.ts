@@ -81,7 +81,7 @@ const indexPriceObserver = new IndexPriceObserver(communicator, {
 const init = async () => {
   await communicator.initialize();
   await indexPriceObserver.initialize();
-  // await communicator.processRequests();
+  // await communicator.receiveRequests();
 };
 
 init();

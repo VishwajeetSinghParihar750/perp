@@ -8,6 +8,7 @@ const BASE_REQUEST_SCHEMA = z.object({
 import z from "zod";
 import { ENGINE_EVENT_SCHEMA } from "./engineEvent.js";
 import { ENGINE_EVENT_TYPE_SCHEMA } from "./engineEventType.js";
+import { PRICE_SCHEMA } from "./types.js";
 
 // normal backend calls
 const GET_POSITION_SCHEMA = BASE_REQUEST_SCHEMA.extend({
@@ -100,22 +101,22 @@ const MARK_PRICE_UPDATE_SYMBOL_SCHEMA = z.union([
   z.literal("SOLUSD"),
 ]);
 
-const MARK_PRICE_UDPATED_SCHEMA = z.object({
+const INDEX_PRICE_UDPATED_SCHEMA = z.object({
   type: z.literal("indexprice_updated"),
   payload: z.object({
-    price: z.string(),
+    price: PRICE_SCHEMA,
     marketSymbol: MARK_PRICE_UPDATE_SYMBOL_SCHEMA,
   }),
 });
 
-type MARK_PRICE_UDPATED_REQUEST = z.infer<typeof MARK_PRICE_UDPATED_SCHEMA>;
+type INDEX_PRICE_UDPATED_REQUEST = z.infer<typeof INDEX_PRICE_UDPATED_SCHEMA>;
 
 const FUNDING_CREATED_SCHEMA = z.object({
   type: z.literal("funding_created"),
 });
 
 const ENGINE_INFO_REQUEST_SCHEMA = z.union([
-  MARK_PRICE_UDPATED_SCHEMA,
+  INDEX_PRICE_UDPATED_SCHEMA,
   FUNDING_CREATED_SCHEMA,
 ]);
 type ENGINE_INFO_REQUEST = z.infer<typeof ENGINE_INFO_REQUEST_SCHEMA>;
@@ -155,5 +156,5 @@ export type {
   CANCEL_ORDER_REQUEST,
   SUBSCRIBE_EVENT_REQUEST,
   UNSUBSCRIBE_EVENT_REQUEST,
-  MARK_PRICE_UDPATED_REQUEST,
+  INDEX_PRICE_UDPATED_REQUEST,
 };

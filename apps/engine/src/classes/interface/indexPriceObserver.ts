@@ -1,6 +1,5 @@
 import "dotenv/config";
 import { assert } from "node:console";
-import type { RedisClientType } from "@repo/db";
 import type Communicator from "../infrastructure/communicator.js";
 import type { ReplyAddress } from "../infrastructure/types.js";
 
@@ -81,7 +80,7 @@ class IndexPriceObserver {
 
         await this.communicator.send(this.sendToAdrress, {
           type: "indexprice_updated",
-          payload: { price: data.p, symbol: data.i },
+          payload: { price: +data.p, symbol: data.i },
         });
 
         // here the init should resolve, after getting

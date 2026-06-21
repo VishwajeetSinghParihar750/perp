@@ -57,7 +57,7 @@ export default class RequestHandler {
   handleRequest(
     request: EngineRequest.ENGINE_REQUEST,
   ): EngineResponse.ENGINE_RESPONSE {
-    assert(this.deps, "dependencies are still undefined");
+    assert(!this.deps, "dependencies are still undefined");
 
     switch (request.type) {
       case "create_order": {
@@ -141,6 +141,11 @@ export default class RequestHandler {
         });
 
         return this.responseHelper(req, res, "event_unsubscribed");
+      }
+
+      case "funding_created": {
+      }
+      case "indexprice_updated": {
       }
 
       default:

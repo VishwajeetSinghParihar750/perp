@@ -143,5 +143,5 @@ export default class PositionManager {
     return { success: true, value: result };
   }
 
-  applyFunding() {}
+  applyFunding(marketSymbol: EngineTypes.TRADABLE_SYMBOL) {}
 }

@@ -16,6 +16,7 @@ import SubscribeEventHandler from "../application/subscribeEventHandler.js";
 import UnsubscribeEventHandler from "../application/unsubscribeEventHandler.js";
 import { assert } from "node:console";
 import IndexPriceUpdateHandler from "../application/indexPriceHandler.js";
+import type FundingHandler from "../application/fundingHandler.js";
 
 export type RequestHandlerDeps = {
   createOrderHandler: CreateOrderHandler;
@@ -27,6 +28,7 @@ export type RequestHandlerDeps = {
   subscribeEventHandler: SubscribeEventHandler;
   unsubscribeEventHandler: UnsubscribeEventHandler;
   indexPriceUpdateHandler: IndexPriceUpdateHandler;
+  fundingHandler: FundingHandler;
 };
 
 export default class RequestHandler {
@@ -146,13 +148,19 @@ export default class RequestHandler {
       }
 
       case "funding_created": {
+        const req = request as EngineRequest.FUNDING_CREATED_REQUEST;
+
+        this.deps!.fundingHandler.handle({ ...req.payload });
+        return undefined;
       }
+
       case "indexprice_updated": {
         const req = request as EngineRequest.INDEX_PRICE_UDPATED_REQUEST;
 
         this.deps!.indexPriceUpdateHandler.handle({
           ...req.payload,
         });
+        return undefined;
       }
 
       default:

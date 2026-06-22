@@ -8,12 +8,27 @@ import type {
   EngineEventPayload,
 } from "@repo/shared-types";
 import assert from "node:assert";
+import type { OrderedMap } from "js-sdsl";
 
 export default class PositionManager {
   private positions: Map<
     EngineTypes.TRADABLE_SYMBOL,
     Map<EngineTypes.USER_ID, Position>
   > = new Map();
+
+  private liquidationPrice: {
+    LONG: Map<
+      EngineTypes.TRADABLE_SYMBOL,
+      OrderedMap<EngineTypes.PRICE, Set<EngineTypes.USER_ID>>
+    >;
+    SHORT: Map<
+      EngineTypes.TRADABLE_SYMBOL,
+      OrderedMap<EngineTypes.PRICE, Set<EngineTypes.USER_ID>>
+    >;
+  } = {
+    LONG: new Map(),
+    SHORT: new Map(),
+  };
 
   private eventBus: EventBus;
   private riskEngine: RiskEngine;
@@ -113,6 +128,12 @@ export default class PositionManager {
       }
     }
 
+    // remove from prev liquidation price
+    this.liquidationPrice[position.type]
+      .get(position.marketSymbol)
+      ?.getElementByKey(position.liquidationPrice)
+      ?.delete(position.userId);
+
     // update liquidation price
     const symbolPositionsToUpdate = this.positions.get(marketSymbol);
     const positionToUpdate = symbolPositionsToUpdate?.get(userId);
@@ -120,8 +141,15 @@ export default class PositionManager {
       if (positionToUpdate.quantity === 0) {
         symbolPositionsToUpdate.delete(userId);
       } else {
-        positionToUpdate.liquidationPrice =
+        let { liquidationPrice } =
           this.riskEngine.getLiquidationPrice(positionToUpdate);
+        positionToUpdate.liquidationPrice = liquidationPrice;
+
+        // add in new liquidaiton prive lvl
+        this.liquidationPrice[position.type]
+          .get(position.marketSymbol)
+          ?.getElementByKey(liquidationPrice)
+          ?.add(position.userId);
       }
     }
 
@@ -143,11 +171,63 @@ export default class PositionManager {
     return { success: true, value: result };
   }
 
-  applyFunding(marketSymbol: EngineTypes.TRADABLE_SYMBOL) {
+  handleIndexPriceUpdate(
+    marketSymbol: EngineTypes.TRADABLE_SYMBOL,
+    newPrice: EngineTypes.PRICE,
+    prevPrice: EngineTypes.PRICE | undefined,
+  ) {
+    let toLiquidatePositions: Position[] = [];
+
+    if (prevPrice) {
+      // handle liquidation based on chagne
+
+      if (prevPrice != newPrice) {
+        let sideToLiquidate: "SHORT" | "LONG" =
+          prevPrice < newPrice ? "SHORT" : "LONG";
+
+        let positionsMap =
+          this.liquidationPrice[sideToLiquidate].get(marketSymbol);
+
+        while (positionsMap && !positionsMap.empty()) {
+          let [price, userIds] = positionsMap.front()!;
+          if (sideToLiquidate == "LONG" ? price < newPrice : price > newPrice)
+            break;
+
+          // liquidate all positions at this price
+          userIds.forEach((userId) => {
+            let userPosition = this.positions.get(marketSymbol)?.get(userId);
+            assert(userPosition, "user position must have existed ");
+            toLiquidatePositions.push(userPosition);
+          });
+        }
+      }
+    }
+
+    // emit event
+    this.eventBus.emit({
+      type: "indexprice.updated",
+      data: {
+        price: newPrice,
+        marketSymbol,
+      },
+    });
+
+    return toLiquidatePositions;
+  }
+
+  autoDeleverage(
+    userId: EngineTypes.USER_ID,
+    marketSymbol: EngineTypes.TRADABLE_SYMBOL,
+  ) {}
+
+  applyFunding(marketSymbol: EngineTypes.TRADABLE_SYMBOL): Position[] {
     const symbolPositions = this.positions.get(marketSymbol);
-    if (!symbolPositions) return;
+
+    if (!symbolPositions) return [];
 
     const fundingRate = this.riskEngine.getFundingRate(marketSymbol);
+
+    let toLiquidatePositions: Position[] = [];
 
     if (fundingRate != 0)
       symbolPositions.forEach((position, userId) => {
@@ -167,6 +247,23 @@ export default class PositionManager {
               releasedMargin: toUpdateMargin * -1,
             },
           });
+
+          this.liquidationPrice[position.type]
+            .get(position.marketSymbol)
+            ?.getElementByKey(position.liquidationPrice)
+            ?.delete(position.userId);
+
+          let { liquidationPrice, shouldBeLiquidated } =
+            this.riskEngine.getLiquidationPrice(position);
+          position.liquidationPrice = liquidationPrice;
+
+          if (shouldBeLiquidated) toLiquidatePositions.push(position);
+          else {
+            this.liquidationPrice[position.type]
+              .get(position.marketSymbol)
+              ?.getElementByKey(position.liquidationPrice)
+              ?.add(position.userId);
+          }
         } else {
           // you get
 
@@ -176,5 +273,7 @@ export default class PositionManager {
           });
         }
       });
+
+    return toLiquidatePositions;
   }
 }

@@ -5,7 +5,7 @@ export interface Position {
   price: EngineTypes.PRICE;
   quantity: EngineTypes.QUANTITY;
   type: "LONG" | "SHORT";
-  marketSymbol: EngineTypes.CURRENCY_SYMBOL;
+  marketSymbol: EngineTypes.TRADABLE_SYMBOL;
   createdAt: string;
   margin: EngineTypes.PRICE;
   marginType: EngineTypes.MARGIN_TYPE;

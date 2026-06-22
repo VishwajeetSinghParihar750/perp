@@ -14,10 +14,10 @@ export default class RiskEngine {
     this.market = market;
   }
 
-  getFundingRate(marketSymbol : EngineTypes.TRADABLE_SYMBOL) {
+  getFundingRate(marketSymbol: EngineTypes.TRADABLE_SYMBOL) {
     return 0;
   }
-  
+
   evaluateOrder(order: Order): Result<EngineTypes.PRICE> {
     return { success: true, value: 0 };
   }
@@ -29,7 +29,13 @@ export default class RiskEngine {
     return [0, 0];
   }
 
-  getLiquidationPrice(position: Position): EngineTypes.PRICE {
-    return 100;
+  getLiquidationPrice(position: Position): {
+    liquidationPrice: EngineTypes.PRICE;
+    shouldBeLiquidated: boolean;
+  } {
+    return { liquidationPrice: 100, shouldBeLiquidated: false };
+  }
+  getLiquidationOrderPrice(position: Position): EngineTypes.PRICE {
+    return 0;
   }
 }

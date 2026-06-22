@@ -1,6 +1,7 @@
 import type { EngineTypes } from "@repo/shared-types";
 import type { Result } from "../domain/account.js";
 import Market from "../domain/market.js";
+import PositionManager from "../domain/positionManager.js";
 
 export interface indexPriceUpdateCommand {
   marketSymbol: EngineTypes.TRADABLE_SYMBOL;
@@ -9,12 +10,20 @@ export interface indexPriceUpdateCommand {
 
 export default class IndexPriceUpdateHandler {
   private market: Market;
+  private positionManager: PositionManager;
 
-  constructor(market: Market) {
+  constructor(market: Market, positionManager: PositionManager) {
     this.market = market;
+    this.positionManager = positionManager;
   }
 
   handle(command: indexPriceUpdateCommand) {
+    const prevIndexPrice = this.market.getIndexPrice(command.marketSymbol);
     this.market.setIndexPrice(command.marketSymbol, command.price);
+    this.positionManager.handleIndexPriceUpdate(
+      command.marketSymbol,
+      command.price,
+      prevIndexPrice,
+    );
   }
 }

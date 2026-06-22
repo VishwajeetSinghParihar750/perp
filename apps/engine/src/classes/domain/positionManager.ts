@@ -48,6 +48,24 @@ export default class PositionManager {
     );
   }
 
+  private deletePosition(position: Position) {
+    this.positions.get(position.marketSymbol)?.delete(position.userId);
+
+    this.liquidationPrice[position.type]
+      ?.get(position.marketSymbol)
+      ?.getElementByKey(position.liquidationPrice)
+      ?.delete(position.userId);
+
+    if (
+      this.liquidationPrice[position.type]
+        .get(position.marketSymbol)
+        ?.getElementByKey(position.liquidationPrice)?.size == 0
+    )
+      this.liquidationPrice[position.type]
+        ?.get(position.marketSymbol)
+        ?.eraseElementByKey(position.liquidationPrice);
+  }
+
   private applyTrade(
     trade: EngineEventPayload.FILLS_CREATED_EVENT_PAYLOAD["data"]["fills"][number],
     side: EngineTypes.SIDE,
@@ -218,7 +236,70 @@ export default class PositionManager {
   autoDeleverage(
     userId: EngineTypes.USER_ID,
     marketSymbol: EngineTypes.TRADABLE_SYMBOL,
-  ) {}
+    indexPrice: EngineTypes.PRICE,
+  ) {
+    //
+    let userPosition = this.positions.get(marketSymbol)?.get(userId);
+    assert(
+      userPosition,
+      "called autoDeleverage for positoin that does not exist ",
+    );
+
+    let positions = this.positions.get(marketSymbol);
+
+    assert(positions, "positions must exist ");
+
+    let positionsToDelete: Position[] = [];
+    for (let [_, position] of positions) {
+      if (position.type != userPosition.type) {
+        //  is opposite
+
+        let pnlFactor =
+          (indexPrice - position.price) * (position.type == "LONG" ? 1 : -1);
+
+        if (pnlFactor > 0) {
+          // adl this guy
+
+          let qtyToAdl = Math.min(position.quantity, userPosition.quantity);
+
+          this.eventBus.emit<"userpnl.created">({
+            type: "userpnl.created",
+            data: {
+              pnl: pnlFactor * qtyToAdl,
+              releasedMargin: 0,
+              userId: position.userId,
+            },
+          });
+
+          let userPnlFactor =
+            (indexPrice - userPosition.price) *
+            (position.type == "LONG" ? 1 : -1);
+          this.eventBus.emit<"userpnl.created">({
+            type: "userpnl.created",
+            data: {
+              pnl: userPnlFactor * qtyToAdl,
+              releasedMargin: 0,
+              userId,
+            },
+          });
+
+          if (qtyToAdl == position.quantity) {
+            positionsToDelete.push(position);
+          }
+        }
+      }
+
+      if (userPosition.quantity == 0) {
+        break;
+      }
+    }
+    //
+    positionsToDelete.forEach((position) => {
+      this.deletePosition(position);
+    });
+
+    this.deletePosition(userPosition);
+  }
 
   applyFunding(marketSymbol: EngineTypes.TRADABLE_SYMBOL): Position[] {
     const symbolPositions = this.positions.get(marketSymbol);

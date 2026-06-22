@@ -4,6 +4,7 @@ import type { Position } from "../domain/position.js";
 import Orderbook from "../domain/orderbook.js";
 import type { Order, OrderFactory } from "../domain/order.js";
 import RiskEngine from "../domain/riskEngine.js";
+import Market from "../domain/market.js";
 
 interface FundingCommand {
   marketSymbol: EngineTypes.TRADABLE_SYMBOL;
@@ -14,17 +15,20 @@ export default class FundingHandler {
   private orderbook: Orderbook;
   private orderFactory: OrderFactory;
   private riskEngine: RiskEngine;
+  private market: Market;
 
   constructor(
     positionManager: PositionManager,
     orderbook: Orderbook,
     orderFactory: OrderFactory,
     riskEngine: RiskEngine,
+    market: Market,
   ) {
     this.positionManager = positionManager;
     this.orderbook = orderbook;
     this.orderFactory = orderFactory;
     this.riskEngine = riskEngine;
+    this.market = market;
   }
 
   private createLiquidationOrder(position: Position): Order {
@@ -54,6 +58,7 @@ export default class FundingHandler {
         this.positionManager.autoDeleverage(
           position.userId,
           position.marketSymbol,
+          this.market.getMarkPrice(position.marketSymbol),
         );
     });
   }

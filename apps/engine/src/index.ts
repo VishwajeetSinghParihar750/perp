@@ -21,6 +21,8 @@ import { TradeFactory } from "./classes/domain/trade.js";
 import PositionManager from "./classes/domain/positionManager.js";
 import EventPublisher from "./classes/interface/eventPublisher.js";
 import IndexPriceObserver from "./classes/interface/indexPriceObserver.js";
+import FundingHandler from "./classes/application/fundingHandler.js";
+import IndexPriceUpdateHandler from "./classes/application/indexPriceHandler.js";
 
 process.on("uncaughtException", (err) => {
   console.error("Uncaught Exception:", err);
@@ -59,6 +61,17 @@ const cancelOrderHandler = new CancelOrderHandler(orderbook);
 const getPositionHandler = new GetPositionHandler(positionManager);
 const subscribeEventHandler = new SubscribeEventHandler(eventPublisher);
 const unsubscribeEventHandler = new UnsubscribeEventHandler(eventPublisher);
+const fundingHandler = new FundingHandler(
+  positionManager,
+  orderbook,
+  orderFactory,
+  riskEngine,
+  market,
+);
+const indexPriceUpdateHandler = new IndexPriceUpdateHandler(
+  market,
+  positionManager,
+);
 
 requestHandler.setDeps({
   addBalanceHandler,
@@ -69,6 +82,8 @@ requestHandler.setDeps({
   getPositionHandler,
   subscribeEventHandler,
   unsubscribeEventHandler,
+  fundingHandler,
+  indexPriceUpdateHandler,
 });
 
 // thats it

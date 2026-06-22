@@ -11,9 +11,10 @@ import assert from "node:assert";
 
 export default class PositionManager {
   private positions: Map<
-    EngineTypes.USER_ID,
-    Map<EngineTypes.TRADABLE_SYMBOL, Position>
+    EngineTypes.TRADABLE_SYMBOL,
+    Map<EngineTypes.USER_ID, Position>
   > = new Map();
+
   private eventBus: EventBus;
   private riskEngine: RiskEngine;
 
@@ -46,13 +47,13 @@ export default class PositionManager {
         : trade.sellOrderInfo.sellerId;
 
     const marketSymbol = trade.marketSymbol;
-    let userPositions = this.positions.get(userId);
-    if (!userPositions) {
-      userPositions = new Map();
-      this.positions.set(userId, userPositions);
+    let symbolPositions = this.positions.get(marketSymbol);
+    if (!symbolPositions) {
+      symbolPositions = new Map();
+      this.positions.set(marketSymbol, symbolPositions);
     }
 
-    let position = userPositions.get(marketSymbol);
+    let position = symbolPositions.get(userId);
 
     if (!position) {
       position = {
@@ -66,7 +67,7 @@ export default class PositionManager {
         liquidationPrice: 0,
         createdAt: new Date().toISOString(),
       };
-      userPositions.set(marketSymbol, position);
+      symbolPositions.set(userId, position);
     } else {
       if (position.type === (side === "BUY" ? "LONG" : "SHORT")) {
         const priceQtyProductSum =
@@ -113,35 +114,66 @@ export default class PositionManager {
     }
 
     // update liquidation price
-    const userPositionsToUpdate = this.positions.get(userId);
-    const positionToUpdate = userPositionsToUpdate?.get(marketSymbol);
-    if (positionToUpdate && userPositionsToUpdate) {
+    const symbolPositionsToUpdate = this.positions.get(marketSymbol);
+    const positionToUpdate = symbolPositionsToUpdate?.get(userId);
+    if (positionToUpdate && symbolPositionsToUpdate) {
       if (positionToUpdate.quantity === 0) {
-        userPositionsToUpdate.delete(marketSymbol);
+        symbolPositionsToUpdate.delete(userId);
       } else {
         positionToUpdate.liquidationPrice =
           this.riskEngine.getLiquidationPrice(positionToUpdate);
       }
     }
 
-    if (userPositionsToUpdate && userPositionsToUpdate.size === 0) {
-      this.positions.delete(userId);
+    if (symbolPositionsToUpdate && symbolPositionsToUpdate.size === 0) {
+      this.positions.delete(marketSymbol);
     }
   }
 
   getPosition(
     userId: EngineTypes.USER_ID,
   ): Result<Partial<Record<EngineTypes.TRADABLE_SYMBOL, Position>>> {
-    const userPositions = this.positions.get(userId);
-    if (!userPositions || userPositions.size === 0) {
-      return { success: true, value: {} };
-    }
     const result: Partial<Record<EngineTypes.TRADABLE_SYMBOL, Position>> = {};
-    for (const [marketSymbol, pos] of userPositions) {
-      result[marketSymbol] = pos;
+    for (const [marketSymbol, symbolPositions] of this.positions) {
+      const pos = symbolPositions.get(userId);
+      if (pos) {
+        result[marketSymbol] = pos;
+      }
     }
     return { success: true, value: result };
   }
 
-  applyFunding(marketSymbol: EngineTypes.TRADABLE_SYMBOL) {}
+  applyFunding(marketSymbol: EngineTypes.TRADABLE_SYMBOL) {
+    const symbolPositions = this.positions.get(marketSymbol);
+    if (!symbolPositions) return;
+
+    const fundingRate = this.riskEngine.getFundingRate(marketSymbol);
+    if (fundingRate > 0)
+      symbolPositions.forEach((position, userId) => {
+        let toUpdateMargin = Math.abs(
+          position.price * position.quantity * fundingRate,
+        );
+
+        if (fundingRate > 0 == (position.type == "LONG")) {
+          // you pay
+          position.margin -= toUpdateMargin;
+
+          this.eventBus.emit<"userpnl.created">({
+            type: "userpnl.created",
+            data: {
+              userId,
+              pnl: 0,
+              releasedMargin: toUpdateMargin * -1,
+            },
+          });
+        } else {
+          // you get
+
+          this.eventBus.emit<"userpnl.created">({
+            type: "userpnl.created",
+            data: { userId, pnl: toUpdateMargin, releasedMargin: 0 },
+          });
+        }
+      });
+  }
 }

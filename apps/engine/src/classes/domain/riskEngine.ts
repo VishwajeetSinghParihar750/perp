@@ -14,6 +14,10 @@ export default class RiskEngine {
     this.market = market;
   }
 
+  getFundingRate(marketSymbol : EngineTypes.TRADABLE_SYMBOL) {
+    return 0;
+  }
+  
   evaluateOrder(order: Order): Result<EngineTypes.PRICE> {
     return { success: true, value: 0 };
   }

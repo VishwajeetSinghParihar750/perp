@@ -58,7 +58,7 @@ export default class FundingHandler {
         this.positionManager.autoDeleverage(
           position.userId,
           position.marketSymbol,
-          this.market.getMarkPrice(position.marketSymbol),
+          this.market.getMarkPrice(position.marketSymbol)!,
         );
     });
   }

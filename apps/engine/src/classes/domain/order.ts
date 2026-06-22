@@ -1,4 +1,4 @@
-import type { EngineEvent, EngineTypes } from "@repo/shared-types";
+import type { EngineTypes } from "@repo/shared-types";
 
 type SIDE = EngineTypes.SIDE;
 type ORDER_TYPE = EngineTypes.TYPE;

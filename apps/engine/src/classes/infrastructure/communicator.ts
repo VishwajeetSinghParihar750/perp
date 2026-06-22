@@ -4,7 +4,6 @@ import {
 } from "@repo/db";
 
 import { EngineRequest } from "@repo/shared-types";
-import requestHandler from "../interface/requestHandler.js";
 import type { ReplyAddress } from "./types.js";
 import RequestHandler from "../interface/requestHandler.js";
 

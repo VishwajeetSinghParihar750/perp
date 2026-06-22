@@ -148,7 +148,8 @@ export default class PositionManager {
     if (!symbolPositions) return;
 
     const fundingRate = this.riskEngine.getFundingRate(marketSymbol);
-    if (fundingRate > 0)
+
+    if (fundingRate != 0)
       symbolPositions.forEach((position, userId) => {
         let toUpdateMargin = Math.abs(
           position.price * position.quantity * fundingRate,

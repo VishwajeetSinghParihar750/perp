@@ -24,8 +24,8 @@ type ENGINE_REQUEST_TYPE = z.infer<typeof ENGINE_REQUEST_TYPE_SCHEMA>;
 
 const CREATE_ORDER_PAYLOAD_SCHEMA = z.object({
   side: SIDE_SCHEMA,
-  price: z.number(),
-  qty: z.number(),
+  price: z.number().positive(),
+  qty: z.number().positive(),
   marketSymbol: TRADBLE_SYMBOL_SCHEMA,
   margin: z.number(),
   marginType: MARGIN_TYPE_SCHEMA,

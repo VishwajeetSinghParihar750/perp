@@ -34,18 +34,23 @@ process.on("unhandledRejection", (reason) => {
   process.exit(1);
 });
 
+const requestHandler = new RequestHandler();
+const communicator = new Communicator(requestHandler);
+
 const eventBus = new EventBus();
-const market = new Market(eventBus);
+const market = new Market(
+  eventBus,
+  { redisStreamId: process.env.REDIS_ENGINE_STREAM! },
+  communicator,
+);
 const account = new Account(eventBus);
 
 const riskEngine = new RiskEngine(account, market);
 const tradeFactory = new TradeFactory();
 const orderFactory = new OrderFactory();
 const orderbook = new Orderbook(riskEngine, tradeFactory, eventBus);
-const positionManager = new PositionManager(eventBus, riskEngine);
+const positionManager = new PositionManager(eventBus, riskEngine, market);
 
-const requestHandler = new RequestHandler();
-const communicator = new Communicator(requestHandler);
 const eventPublisher = new EventPublisher(communicator);
 
 const createOrderHandler = new CreateOrderHandler(
@@ -53,6 +58,7 @@ const createOrderHandler = new CreateOrderHandler(
   riskEngine,
   orderbook,
   account,
+  positionManager,
 );
 const addBalanceHandler = new AddBalanceHandler(account);
 const getBalanceHandler = new GetBalanceHandler(account);

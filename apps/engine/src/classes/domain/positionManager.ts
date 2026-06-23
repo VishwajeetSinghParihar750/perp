@@ -9,6 +9,7 @@ import type {
 } from "@repo/shared-types";
 import assert from "node:assert";
 import type { OrderedMap } from "js-sdsl";
+import type Market from "./market.js";
 
 export default class PositionManager {
   private positions: Map<
@@ -32,10 +33,12 @@ export default class PositionManager {
 
   private eventBus: EventBus;
   private riskEngine: RiskEngine;
+  private market: Market;
 
-  constructor(eventBus: EventBus, riskEngine: RiskEngine) {
+  constructor(eventBus: EventBus, riskEngine: RiskEngine, market: Market) {
     this.eventBus = eventBus;
     this.riskEngine = riskEngine;
+    this.market = market;
 
     eventBus.on<"fills.created">(
       "fills.created",
@@ -178,8 +181,16 @@ export default class PositionManager {
 
   getPosition(
     userId: EngineTypes.USER_ID,
+    marketSymbol?: EngineTypes.TRADABLE_SYMBOL,
   ): Result<Partial<Record<EngineTypes.TRADABLE_SYMBOL, Position>>> {
     const result: Partial<Record<EngineTypes.TRADABLE_SYMBOL, Position>> = {};
+
+    if (marketSymbol) {
+      let res = this.positions.get(marketSymbol)?.get(userId);
+      if (res) result[marketSymbol] = res;
+      return { success: true, value: result };
+    }
+
     for (const [marketSymbol, symbolPositions] of this.positions) {
       const pos = symbolPositions.get(userId);
       if (pos) {
@@ -306,7 +317,7 @@ export default class PositionManager {
 
     if (!symbolPositions) return [];
 
-    const fundingRate = this.riskEngine.getFundingRate(marketSymbol);
+    const fundingRate = this.market.getFundingRate(marketSymbol);
 
     let toLiquidatePositions: Position[] = [];
 

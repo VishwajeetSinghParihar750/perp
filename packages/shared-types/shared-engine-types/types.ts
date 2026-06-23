@@ -48,6 +48,7 @@ const TRADBLE_SYMBOL_SCHEMA = z.union([
   z.literal("ETHUSD"),
 ]);
 type TRADABLE_SYMBOL = z.infer<typeof TRADBLE_SYMBOL_SCHEMA>;
+const TRADABLE_SYMBOL_ARRAY = ["BTCUSD", "SOLUSD", "ETHUSD"];
 
 export type {
   SIDE,
@@ -75,4 +76,5 @@ export {
   USER_ID_SCHEMA,
   FILL_ID_SCHEMA,
   ORDER_ID_SCHEMA,
+  TRADABLE_SYMBOL_ARRAY,
 };

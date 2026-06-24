@@ -134,7 +134,7 @@ export default class RiskEngine {
     const indexPrice = this.market.getIndexPrice(order1.marketSymbol)!;
 
     assert(
-      indexPrice,
+      indexPrice != undefined,
       "trade should not have happened if indexprice is not definet yet",
     );
     // order1

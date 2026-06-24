@@ -131,42 +131,45 @@ export default class RiskEngine {
     const margin2Required =
       remainingQty2 > 0 ? (order2.margin * tradeQuantity) / remainingQty2 : 0;
 
-    const indexPrice = this.market.getIndexPrice(order1.marketSymbol);
-    if (indexPrice !== undefined) {
-      // order1
-      const acceptablePriceDelta1 = this.getAcceptablePriceDelta(
-        tradeQuantity,
-        margin1Required,
-      );
-      const liquidationPrice1 =
-        order1.side === "BUY"
-          ? tradePrice - acceptablePriceDelta1
-          : tradePrice + acceptablePriceDelta1;
+    const indexPrice = this.market.getIndexPrice(order1.marketSymbol)!;
 
-      const crossed1 =
-        order1.side === "BUY"
-          ? indexPrice <= liquidationPrice1
-          : indexPrice >= liquidationPrice1;
+    assert(
+      indexPrice,
+      "trade should not have happened if indexprice is not definet yet",
+    );
+    // order1
+    const acceptablePriceDelta1 = this.getAcceptablePriceDelta(
+      tradeQuantity,
+      margin1Required,
+    );
+    const liquidationPrice1 =
+      order1.side === "BUY"
+        ? tradePrice - acceptablePriceDelta1
+        : tradePrice + acceptablePriceDelta1;
 
-      //  order2
-      const acceptablePriceDelta2 = this.getAcceptablePriceDelta(
-        tradeQuantity,
-        margin2Required,
-      );
-      const liquidationPrice2 =
-        order2.side === "BUY"
-          ? tradePrice - acceptablePriceDelta2
-          : tradePrice + acceptablePriceDelta2;
+    const crossed1 =
+      order1.side === "BUY"
+        ? indexPrice <= liquidationPrice1
+        : indexPrice >= liquidationPrice1;
 
-      const crossed2 =
-        order2.side === "BUY"
-          ? indexPrice <= liquidationPrice2
-          : indexPrice >= liquidationPrice2;
+    //  order2
+    const acceptablePriceDelta2 = this.getAcceptablePriceDelta(
+      tradeQuantity,
+      margin2Required,
+    );
+    const liquidationPrice2 =
+      order2.side === "BUY"
+        ? tradePrice - acceptablePriceDelta2
+        : tradePrice + acceptablePriceDelta2;
 
-      if (crossed1 || crossed2) {
-        // reject
-        return [order1.margin + 1, order2.margin + 1];
-      }
+    const crossed2 =
+      order2.side === "BUY"
+        ? indexPrice <= liquidationPrice2
+        : indexPrice >= liquidationPrice2;
+
+    if (crossed1 || crossed2) {
+      // reject
+      return [order1.margin + 1, order2.margin + 1];
     }
 
     return [

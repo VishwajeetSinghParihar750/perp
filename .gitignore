@@ -39,3 +39,5 @@ yarn-error.log*
 
 
 apps/engine/data
+
+*test.ts

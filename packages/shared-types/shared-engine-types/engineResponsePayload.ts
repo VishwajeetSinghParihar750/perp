@@ -13,7 +13,7 @@ import {
   TRADBLE_SYMBOL_SCHEMA,
   USER_ID_SCHEMA,
 } from "./types.js";
-import { EngineEventType } from "../index.js";
+import { ENGINE_EVENT_TYPE_SCHEMA } from "./engineEventType.js";
 
 // =======================================================================================
 
@@ -75,10 +75,10 @@ const POSITION_RESPONSE_PAYLOAD_SCHEMA = z.union([
 const ERROR_RESPONSE_PAYLOAD_SCHEMA = z.string();
 
 const EVENT_SUBSCRIBED_RESPONSE_PAYLOAD_SCHEMA = z.array(
-  EngineEventType.ENGINE_EVENT_TYPE_SCHEMA,
+  ENGINE_EVENT_TYPE_SCHEMA,
 );
 const EVENT_UNSUBSCRIBED_RESPONSE_PAYLOAD_SCHEMA = z.array(
-  EngineEventType.ENGINE_EVENT_TYPE_SCHEMA,
+  ENGINE_EVENT_TYPE_SCHEMA,
 );
 
 // =======================================================================================

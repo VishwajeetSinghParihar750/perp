@@ -97,6 +97,8 @@ export class SingleMarketOrderbook {
       filledQty: order1.filledQuantity,
       totalQty: order1.quantity,
       orderStatus: order1.status,
+      margin: margin1Required,
+      marginType: order1.marginType,
     };
 
     const order2Info = {
@@ -106,6 +108,8 @@ export class SingleMarketOrderbook {
       filledQty: order2.filledQuantity,
       totalQty: order2.quantity,
       orderStatus: order2.status,
+      margin: margin2Required,
+      marginType: order2.marginType,
     };
 
     const tradeEvent = this.tradeFactory.create(

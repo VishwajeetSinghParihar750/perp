@@ -7,4 +7,4 @@ redisClient.on("error", (err) => {
   console.log("redis error : ", err);
 });
 
-export { redisClient, RedisClientType };
+export { redisClient, type RedisClientType };

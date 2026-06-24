@@ -5,6 +5,7 @@ import type { Position } from "./position.js";
 import type { Result } from "./account.js";
 import { EngineTypes } from "@repo/shared-types";
 import PositionManager from "./positionManager.js";
+import { assert } from "node:console";
 
 export default class RiskEngine {
   private readonly maxLeverage = 100; // 1 percent of notional value
@@ -17,12 +18,12 @@ export default class RiskEngine {
     this.account = account;
     this.market = market;
   }
-  private getGenericLiquidationPrice(
-    price: EngineTypes.PRICE,
+  private getAcceptablePriceDelta(
     quantity: EngineTypes.QUANTITY,
     margin: EngineTypes.PRICE,
   ) {
-    //
+    const canTakeLoss = (margin * (100 - this.liquidationMargin)) / 100;
+    return canTakeLoss / quantity;
   }
 
   private evaluateOrderWithoutPosition(order: Order): Result<any> {
@@ -41,8 +42,10 @@ export default class RiskEngine {
       };
     }
 
-    const canTakeLoss = (order.margin * (100 - this.liquidationMargin)) / 100;
-    const acceptablePriceDelta = canTakeLoss / order.quantity;
+    const acceptablePriceDelta = this.getAcceptablePriceDelta(
+      order.quantity,
+      order.margin,
+    );
 
     const liquidationPrice =
       order.side == "BUY"
@@ -99,6 +102,10 @@ export default class RiskEngine {
       }
     }
 
+    if (newOrder.quantity === 0) {
+      return { success: true, value: "" };
+    }
+
     return this.evaluateOrderWithoutPosition(newOrder);
   }
 
@@ -106,16 +113,102 @@ export default class RiskEngine {
     order1: Order,
     order2: Order,
   ): [EngineTypes.PRICE, EngineTypes.PRICE] {
-    return [0, 0];
+    const tradePrice = Math.min(order1.price, order2.price);
+    const tradeQuantity = Math.min(
+      order1.quantity - order1.filledQuantity,
+      order2.quantity - order2.filledQuantity,
+    );
+
+    if (tradeQuantity <= 0) {
+      return [0, 0];
+    }
+
+    const remainingQty1 = order1.quantity - order1.filledQuantity;
+    const margin1Required =
+      remainingQty1 > 0 ? (order1.margin * tradeQuantity) / remainingQty1 : 0;
+
+    const remainingQty2 = order2.quantity - order2.filledQuantity;
+    const margin2Required =
+      remainingQty2 > 0 ? (order2.margin * tradeQuantity) / remainingQty2 : 0;
+
+    const indexPrice = this.market.getIndexPrice(order1.marketSymbol);
+    if (indexPrice !== undefined) {
+      // order1
+      const acceptablePriceDelta1 = this.getAcceptablePriceDelta(
+        tradeQuantity,
+        margin1Required,
+      );
+      const liquidationPrice1 =
+        order1.side === "BUY"
+          ? tradePrice - acceptablePriceDelta1
+          : tradePrice + acceptablePriceDelta1;
+
+      const crossed1 =
+        order1.side === "BUY"
+          ? indexPrice <= liquidationPrice1
+          : indexPrice >= liquidationPrice1;
+
+      //  order2
+      const acceptablePriceDelta2 = this.getAcceptablePriceDelta(
+        tradeQuantity,
+        margin2Required,
+      );
+      const liquidationPrice2 =
+        order2.side === "BUY"
+          ? tradePrice - acceptablePriceDelta2
+          : tradePrice + acceptablePriceDelta2;
+
+      const crossed2 =
+        order2.side === "BUY"
+          ? indexPrice <= liquidationPrice2
+          : indexPrice >= liquidationPrice2;
+
+      if (crossed1 || crossed2) {
+        // reject
+        return [order1.margin + 1, order2.margin + 1];
+      }
+    }
+
+    return [
+      Math.min(order1.margin, margin1Required),
+      Math.min(order2.margin, margin2Required),
+    ];
   }
 
   getLiquidationPrice(position: Position): {
     liquidationPrice: EngineTypes.PRICE;
     shouldBeLiquidated: boolean;
   } {
-    return { liquidationPrice: 100, shouldBeLiquidated: false };
+    const acceptablePriceDelta = this.getAcceptablePriceDelta(
+      position.quantity,
+      position.margin,
+    );
+
+    const liquidationPrice =
+      position.type === "LONG"
+        ? Math.max(0, position.price - acceptablePriceDelta)
+        : position.price + acceptablePriceDelta;
+
+    const indexPrice = this.market.getIndexPrice(position.marketSymbol)!;
+
+    assert(
+      indexPrice !== undefined,
+      "you should not have accepted orders until index price was defined ",
+    );
+
+    let shouldBeLiquidated =
+      position.type === "LONG"
+        ? indexPrice <= liquidationPrice
+        : indexPrice >= liquidationPrice;
+
+    return { liquidationPrice, shouldBeLiquidated };
   }
   getLiquidationOrderPrice(position: Position): EngineTypes.PRICE {
-    return 0;
+    const totalMarginLossDelta = position.margin / position.quantity;
+    const bankruptcyPrice =
+      position.type === "LONG"
+        ? Math.max(0, position.price - totalMarginLossDelta)
+        : position.price + totalMarginLossDelta;
+    return bankruptcyPrice;
   }
 }

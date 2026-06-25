@@ -16,7 +16,6 @@ const ENGINE_REQUEST_TYPE_SCHEMA = z.union([
   z.literal("get_balance"),
   z.literal("add_balance"),
   z.literal("get_depth"),
-  z.literal("get_orderbook"),
   z.literal("subscribe_event"),
   z.literal("unsubscribe_event"),
 ]);
@@ -66,12 +65,6 @@ const GET_DEPTH_SCHEMA = BASE_SCHEMA.extend({
     marketSymbol: TRADBLE_SYMBOL_SCHEMA,
   }),
 });
-const GET_ORDERBOOK_SCHEMA = BASE_SCHEMA.extend({
-  type: z.literal("get_orderbook"),
-  payload: z.object({
-    marketSymbol: TRADBLE_SYMBOL_SCHEMA,
-  }),
-});
 const GET_POSITION_SCHEMA = BASE_SCHEMA.extend({
   type: z.literal("get_position"),
   payload: z.object({
@@ -104,7 +97,6 @@ const ENGINE_REQUEST_SCHEMA = z.union([
   UNSUBSCRIBE_EVENT_SCHEMA,
   SUBSCRIBE_EVENT_SCHEMA,
   GET_POSITION_SCHEMA,
-  GET_ORDERBOOK_SCHEMA,
   GET_DEPTH_SCHEMA,
   ADD_BALANCE_SCHEMA,
   GET_BALANCE_SCHEMA,
@@ -125,7 +117,6 @@ type CANCEL_ORDER_REQUEST = z.infer<typeof CANCEL_ORDER_SCHEMA>;
 type GET_BALANCE_REQUEST = z.infer<typeof GET_BALANCE_SCHEMA>;
 type ADD_BALANCE_REQUEST = z.infer<typeof ADD_BALANCE_SCHEMA>;
 type GET_DEPTH_REQUEST = z.infer<typeof GET_DEPTH_SCHEMA>;
-type GET_ORDERBOOK_REQUEST = z.infer<typeof GET_ORDERBOOK_SCHEMA>;
 type GET_POSITION_REQUEST = z.infer<typeof GET_POSITION_SCHEMA>;
 type SUBSCRIBE_EVENT_REQUEST = z.infer<typeof SUBSCRIBE_EVENT_SCHEMA>;
 type UNSUBSCRIBE_EVENT_REQUEST = z.infer<typeof UNSUBSCRIBE_EVENT_SCHEMA>;
@@ -144,7 +135,6 @@ export type {
   GET_DEPTH_REQUEST,
   GET_ORDER_REQUEST,
   GET_ORDERS_REQUEST,
-  GET_ORDERBOOK_REQUEST,
   GET_POSITION_REQUEST,
   SUBSCRIBE_EVENT_REQUEST,
   UNSUBSCRIBE_EVENT_REQUEST,
@@ -168,7 +158,6 @@ export {
   GET_BALANCE_SCHEMA,
   ADD_BALANCE_SCHEMA,
   GET_DEPTH_SCHEMA,
-  GET_ORDERBOOK_SCHEMA,
   GET_POSITION_SCHEMA,
   SUBSCRIBE_EVENT_SCHEMA,
   TRADBLE_SYMBOL_SCHEMA,

@@ -62,7 +62,7 @@ export default class PositionManager implements Snapshotable<POSITION_MANAGER_SN
     };
     EngineTypes.TRADABLE_SYMBOL_ARRAY.forEach((symbol) => {
       const sym = symbol as EngineTypes.TRADABLE_SYMBOL;
-      this.liquidationPrice.LONG.set(sym, new OrderedMap());
+      this.liquidationPrice.LONG.set(sym, new OrderedMap([], (a, b) => b - a));
       this.liquidationPrice.SHORT.set(sym, new OrderedMap());
     });
 
@@ -75,7 +75,10 @@ export default class PositionManager implements Snapshotable<POSITION_MANAGER_SN
 
         let priceMap = this.liquidationPrice[pos.type].get(symbol);
         if (!priceMap) {
-          priceMap = new OrderedMap();
+          priceMap =
+            pos.type == "LONG"
+              ? new OrderedMap([], (a, b) => b - a)
+              : new OrderedMap();
           this.liquidationPrice[pos.type].set(symbol, priceMap);
         }
         let userSet = priceMap.getElementByKey(pos.liquidationPrice);
@@ -96,7 +99,7 @@ export default class PositionManager implements Snapshotable<POSITION_MANAGER_SN
     // Initialize liquidationPrice maps for all tradable symbols
     EngineTypes.TRADABLE_SYMBOL_ARRAY.forEach((symbol) => {
       const sym = symbol as EngineTypes.TRADABLE_SYMBOL;
-      this.liquidationPrice.LONG.set(sym, new OrderedMap());
+      this.liquidationPrice.LONG.set(sym, new OrderedMap([], (a, b) => b - a));
       this.liquidationPrice.SHORT.set(sym, new OrderedMap());
     });
 

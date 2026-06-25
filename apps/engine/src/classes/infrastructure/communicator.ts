@@ -8,6 +8,7 @@ import type { ReplyAddress } from "./types.js";
 import RequestHandler from "../interface/requestHandler.js";
 import type EventPublisher from "../interface/eventPublisher.js";
 import type SnapshotManager from "./snapshotManager.js";
+import { assert } from "node:console";
 
 export default class Communicator {
   //
@@ -21,7 +22,10 @@ export default class Communicator {
     this.requestHandler = requestHandler;
   }
 
-  setSnapshotDeps(eventPublisher: EventPublisher, snapshotManager: SnapshotManager) {
+  setSnapshotDeps(
+    eventPublisher: EventPublisher,
+    snapshotManager: SnapshotManager,
+  ) {
     this.eventPublisher = eventPublisher;
     this.snapshotManager = snapshotManager;
   }
@@ -77,22 +81,28 @@ export default class Communicator {
               }
 
               if (!zodError) {
-                const req = request as any;
+                const req = request;
                 console.log(
-                  `[ENGINE_SERVER] Processing trade request: ${req.type} (requestId: ${req.requestId})`,
+                  `[ENGINE_SERVER] Processing trade request: ${req.type} `,
+                  "requestId" in req
+                    ? ` (requestId: ${req.requestId})`
+                    : " no request id",
                 );
-                
+
                 this.eventPublisher?.startObservingEvents();
 
                 let result = this.requestHandler.handleRequest(req);
 
                 this.snapshotManager?.onMessageProcessed(id);
 
-                if (this.eventPublisher) {
-                  await this.eventPublisher.publishEvents();
-                }
+                assert(
+                  this.eventPublisher,
+                  "handling requests without setting the event publisher ",
+                );
 
-                if (result)
+                await this.eventPublisher!.publishEvents();
+
+                if (result && "stream" in req)
                   await this.redisClient.xAdd(req.stream, "*", {
                     data: JSON.stringify(result),
                   });

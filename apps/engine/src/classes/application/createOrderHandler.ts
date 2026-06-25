@@ -4,7 +4,7 @@ import type Orderbook from "../domain/orderbook.js";
 import type Account from "../domain/account.js";
 import type { Order } from "../domain/order.js";
 import { OrderFactory } from "../domain/order.js";
-import type { Result } from "../domain/account.js";
+import type { Result } from "../types.js";
 import type PositionManager from "../domain/positionManager.js";
 import type { Position } from "../domain/position.js";
 

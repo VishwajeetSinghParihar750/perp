@@ -1,6 +1,7 @@
 import type { EngineTypes } from "@repo/shared-types";
 import type Account from "../domain/account.js";
-import type { BALANCE, Result } from "../domain/account.js";
+import type { BALANCE } from "../domain/account.js";
+import type { Result } from "../types.js";
 
 export interface AddBalanceCommand {
   userId: EngineTypes.USER_ID;

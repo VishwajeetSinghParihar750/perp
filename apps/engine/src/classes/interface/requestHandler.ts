@@ -130,7 +130,7 @@ export default class RequestHandler {
 
         const res = this.deps!.subscribeEventHandler.handle({
           ...req.payload,
-          replyAddress: { redisStreamId: req.payload.replyToStreamId },
+          replyAddress: { redisStreamId: req.stream },
         });
 
         return this.responseHelper(req, res, "event_subscribed");
@@ -141,7 +141,7 @@ export default class RequestHandler {
 
         const res = this.deps!.unsubscribeEventHandler.handle({
           ...req.payload,
-          replyAddress: { redisStreamId: req.payload.replyToStreamId },
+          replyAddress: { redisStreamId: req.stream },
         });
 
         return this.responseHelper(req, res, "event_unsubscribed");

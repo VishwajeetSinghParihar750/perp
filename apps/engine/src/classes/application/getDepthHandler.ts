@@ -1,6 +1,6 @@
 import type { EngineTypes } from "@repo/shared-types";
-import type { Result } from "../domain/account.js";
 import type Orderbook from "../domain/orderbook.js";
+import type { Result } from "../types.js";
 
 export interface GetDepthCommand {
   marketSymbol: EngineTypes.TRADABLE_SYMBOL;

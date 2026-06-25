@@ -1,7 +1,7 @@
 import type { EngineTypes } from "@repo/shared-types";
-import type { Result } from "../domain/account.js";
 import Market from "../domain/market.js";
 import PositionManager from "../domain/positionManager.js";
+import type { Result } from "../types.js";
 
 export interface indexPriceUpdateCommand {
   marketSymbol: EngineTypes.TRADABLE_SYMBOL;

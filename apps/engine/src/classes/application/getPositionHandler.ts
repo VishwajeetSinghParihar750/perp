@@ -1,7 +1,7 @@
 import type { EngineTypes } from "@repo/shared-types";
-import type { Result } from "../domain/account.js";
 import PositionManager from "../domain/positionManager.js";
 import type { Position } from "../domain/position.js";
+import type { Result } from "../types.js";
 
 export interface GetPositionCommand {
   userId: EngineTypes.USER_ID;

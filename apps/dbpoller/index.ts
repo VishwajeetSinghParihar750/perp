@@ -12,6 +12,15 @@ import {
   type ORDER_CREATED_EVENT,
 } from "./validations.js";
 
+process.on("uncaughtException", (err, origin) => {
+  console.error("uncaughtException", err.message, err.name, origin);
+  process.exit();
+});
+process.on("unhandledRejection", (err, origin) => {
+  console.error("unhandledRejection", origin);
+  process.exit();
+});
+
 const redisClient = globalRedisClient.duplicate();
 
 const setupRedis = async () => {
@@ -85,11 +94,11 @@ const handleFillsCreated = async (event: FILLS_CREATED_EVENT) => {
         price,
         qty,
         sellOrderInfo,
-        symbol,
+        marketSymbol,
       } = fill;
 
       console.log(
-        `[DB_POLLER] Creating fill: ${fillId} for symbol: ${symbol}, price: ${price}, qty: ${qty}`,
+        `[DB_POLLER] Creating fill: ${fillId} for marketSymbol: ${marketSymbol}, price: ${price}, qty: ${qty}`,
       );
       await tx.fill.create({
         data: {
@@ -97,7 +106,7 @@ const handleFillsCreated = async (event: FILLS_CREATED_EVENT) => {
           bidPrice,
           price,
           quantity: qty,
-          symbol: symbol,
+          symbol: marketSymbol,
           longOrderId: buyOrderInfo.orderId,
           longUserId: buyOrderInfo.buyerId,
           shortOrderId: sellOrderInfo.orderId,
@@ -141,7 +150,7 @@ const handleOrderCreated = async (event: ORDER_CREATED_EVENT) => {
     qty,
     side,
     status,
-    symbol,
+    marketSymbol,
     type,
     userId,
   } = event.payload.data;
@@ -171,7 +180,7 @@ const handleOrderCreated = async (event: ORDER_CREATED_EVENT) => {
         id: orderId,
         userId,
         side,
-        symbol,
+        symbol: marketSymbol,
         margin,
         price,
         filledQuantity: filledQty,
@@ -218,8 +227,7 @@ const handleOrderCancelled = async (event: ORDER_CANCELLED_EVENT) => {
 };
 
 const handleEvent = async (passedEvent: any) => {
-  // TODO : WHAT IF ERROR HAPPENS HERE
-
+  // there should not be an error in parsing
   const event = DB_POLLER_SCHEMA.parse(passedEvent);
 
   switch (event.payload.type) {

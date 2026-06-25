@@ -10,6 +10,8 @@ function authMiddleware(req: Request, res: Response, next: NextFunction) {
     );
     res.status(401).json({ error: true, payload: "unauthorized" });
     return;
+    
+
   }
   try {
     const decoded = jwt.verify(

@@ -20,7 +20,7 @@ httpServer.on("upgrade", (req, socket, head) => {
       console.log(
         `[WS] Token verification failed for upgrade request from ${req.socket.remoteAddress}`,
       );
-      ws.close(401, "Unauthorized");
+      ws.close(4001, "Unauthorized");
       return;
     }
     console.log(

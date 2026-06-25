@@ -6,6 +6,7 @@ import RiskEngine from "./riskEngine.js";
 import { LinkList, OrderedMap } from "js-sdsl";
 import assert from "node:assert";
 import type { Result } from "../types.js";
+import type { Snapshotable } from "../infrastructure/snapshotManager.js";
 
 type USER_ID = EngineTypes.USER_ID;
 type ORDER_ID = EngineTypes.ORDER_ID;
@@ -23,7 +24,12 @@ export interface PriceLevel {
 
 type OrderIterator = ReturnType<LinkList<Order>["begin"]>;
 
-export class SingleMarketOrderbook {
+export type SINGLE_MARKET_ORDERBOOK_SNAPSHOT = {
+  bids: [PRICE, Order[]][];
+  asks: [PRICE, Order[]][];
+};
+
+export class SingleMarketOrderbook implements Snapshotable<SINGLE_MARKET_ORDERBOOK_SNAPSHOT> {
   private riskEngine: RiskEngine;
   private tradeFactory: TradeFactory;
   private eventBus: EventBus;
@@ -33,6 +39,59 @@ export class SingleMarketOrderbook {
   asks: OrderedMap<PRICE, PriceLevel>;
 
   private orders: Map<ORDER_ID, OrderIterator> = new Map();
+
+  getActiveOrderIds(): ORDER_ID[] {
+    return Array.from(this.orders.keys());
+  }
+
+  getSnapshot(): SINGLE_MARKET_ORDERBOOK_SNAPSHOT {
+    const bidsSnapshot: [PRICE, Order[]][] = [];
+    for (const [price, level] of this.bids) {
+      bidsSnapshot.push([price, Array.from(level.orders)]);
+    }
+
+    const asksSnapshot: [PRICE, Order[]][] = [];
+    for (const [price, level] of this.asks) {
+      asksSnapshot.push([price, Array.from(level.orders)]);
+    }
+
+    return {
+      bids: bidsSnapshot,
+      asks: asksSnapshot,
+    };
+  }
+
+  loadSnapshot(data: SINGLE_MARKET_ORDERBOOK_SNAPSHOT) {
+    this.bids = new OrderedMap([], (a, b) => b - a);
+    this.asks = new OrderedMap();
+    this.orders = new Map();
+
+    data.bids.forEach(([price, orders]) => {
+      const levelOrders = new LinkList<Order>();
+      orders.forEach((o) => {
+        levelOrders.pushBack(o);
+        const it = levelOrders.end().pre();
+        this.orders.set(o.orderId, it);
+      });
+      this.bids.setElement(price, {
+        totalQty: orders.reduce((sum, o) => sum + (o.quantity - o.filledQuantity), 0),
+        orders: levelOrders,
+      });
+    });
+
+    data.asks.forEach(([price, orders]) => {
+      const levelOrders = new LinkList<Order>();
+      orders.forEach((o) => {
+        levelOrders.pushBack(o);
+        const it = levelOrders.end().pre();
+        this.orders.set(o.orderId, it);
+      });
+      this.asks.setElement(price, {
+        totalQty: orders.reduce((sum, o) => sum + (o.quantity - o.filledQuantity), 0),
+        orders: levelOrders,
+      });
+    });
+  }
 
   constructor(
     riskEngine: RiskEngine,
@@ -301,7 +360,11 @@ export class SingleMarketOrderbook {
   }
 }
 
-export default class Orderbook {
+export type ORDERBOOK_SNAPSHOT = {
+  marketOrderbooks: [MARKET_SYMBOL, SINGLE_MARKET_ORDERBOOK_SNAPSHOT][];
+};
+
+export default class Orderbook implements Snapshotable<ORDERBOOK_SNAPSHOT> {
   private riskEngine: RiskEngine;
   private tradeFactory: TradeFactory;
   private eventBus: EventBus;
@@ -309,6 +372,37 @@ export default class Orderbook {
   private marketOrderbooks: Map<MARKET_SYMBOL, SingleMarketOrderbook> =
     new Map();
   private orders: Map<ORDER_ID, SingleMarketOrderbook> = new Map();
+
+  getSnapshot(): ORDERBOOK_SNAPSHOT {
+    const marketSnapshots: [MARKET_SYMBOL, SINGLE_MARKET_ORDERBOOK_SNAPSHOT][] = [];
+    for (const [symbol, ob] of this.marketOrderbooks.entries()) {
+      marketSnapshots.push([symbol, ob.getSnapshot()]);
+    }
+    return {
+      marketOrderbooks: marketSnapshots,
+    };
+  }
+
+  loadSnapshot(data: ORDERBOOK_SNAPSHOT) {
+    this.marketOrderbooks = new Map();
+    this.orders = new Map();
+
+    data.marketOrderbooks.forEach(([symbol, obSnapshot]) => {
+      const ob = new SingleMarketOrderbook(
+        this.riskEngine,
+        this.tradeFactory,
+        this.eventBus,
+        symbol,
+      );
+      ob.loadSnapshot(obSnapshot);
+      this.marketOrderbooks.set(symbol, ob);
+
+      // reconstruct orderId mapping
+      for (const orderId of ob.getActiveOrderIds()) {
+        this.orders.set(orderId, ob);
+      }
+    });
+  }
 
   constructor(
     riskEngine: RiskEngine,

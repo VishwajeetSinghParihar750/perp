@@ -1,4 +1,5 @@
 import type { EngineTypes } from "@repo/shared-types";
+import type { Snapshotable } from "../infrastructure/snapshotManager.js";
 
 type SIDE = EngineTypes.SIDE;
 type ORDER_TYPE = EngineTypes.TYPE;
@@ -24,8 +25,22 @@ export interface Order {
   marginType: MARGIN_TYPE;
 }
 
-export class OrderFactory {
+export type ORDER_FACTORY_SNAPSHOT = {
+  counters: [string, number][];
+};
+
+export class OrderFactory implements Snapshotable<ORDER_FACTORY_SNAPSHOT> {
   private counters: Map<string, number> = new Map();
+
+  getSnapshot(): ORDER_FACTORY_SNAPSHOT {
+    return {
+      counters: Array.from(this.counters.entries()),
+    };
+  }
+
+  loadSnapshot(snapshot: ORDER_FACTORY_SNAPSHOT) {
+    this.counters = new Map(snapshot.counters);
+  }
 
   private getNextOrderId(marketSymbol: string): string {
     const count = this.counters.get(marketSymbol) ?? 0;

@@ -12,17 +12,18 @@ import GetPositionHandler from "./classes/application/getPositionHandler.js";
 import SubscribeEventHandler from "./classes/application/subscribeEventHandler.js";
 import UnsubscribeEventHandler from "./classes/application/unsubscribeEventHandler.js";
 import RiskEngine from "./classes/domain/riskEngine.js";
-import Account from "./classes/domain/account.js";
+import Account, { type ACCOUNT_SNAPSHOT } from "./classes/domain/account.js";
 import EventBus from "./classes/domain/eventBus.js";
-import Market from "./classes/domain/market.js";
-import { OrderFactory } from "./classes/domain/order.js";
-import Orderbook from "./classes/domain/orderbook.js";
+import Market, { type MARKET_SNAPSHOT } from "./classes/domain/market.js";
+import { OrderFactory, type ORDER_FACTORY_SNAPSHOT } from "./classes/domain/order.js";
+import Orderbook, { type ORDERBOOK_SNAPSHOT } from "./classes/domain/orderbook.js";
 import { TradeFactory } from "./classes/domain/trade.js";
-import PositionManager from "./classes/domain/positionManager.js";
-import EventPublisher from "./classes/interface/eventPublisher.js";
+import PositionManager, { type POSITION_MANAGER_SNAPSHOT } from "./classes/domain/positionManager.js";
+import EventPublisher, { type EVENT_PUBLISHER_SNAPSHOT } from "./classes/interface/eventPublisher.js";
 import IndexPriceObserver from "./classes/interface/indexPriceObserver.js";
 import FundingHandler from "./classes/application/fundingHandler.js";
 import IndexPriceUpdateHandler from "./classes/application/indexPriceHandler.js";
+import SnapshotManager, { type Snapshotable } from "./classes/infrastructure/snapshotManager.js";
 
 process.on("uncaughtException", (err) => {
   console.error("Uncaught Exception:", err);
@@ -34,75 +35,125 @@ process.on("unhandledRejection", (reason) => {
   process.exit(1);
 });
 
-const requestHandler = new RequestHandler();
-const communicator = new Communicator(requestHandler);
-
-const eventBus = new EventBus();
-const market = new Market(
-  eventBus,
-  { redisStreamId: process.env.REDIS_ENGINE_STREAM! },
-  communicator,
-);
-const account = new Account(eventBus);
-
-const riskEngine = new RiskEngine(account, market);
-const tradeFactory = new TradeFactory();
-const orderFactory = new OrderFactory();
-const orderbook = new Orderbook(riskEngine, tradeFactory, eventBus);
-const positionManager = new PositionManager(eventBus, riskEngine, market);
-
-const eventPublisher = new EventPublisher(communicator);
-
-const createOrderHandler = new CreateOrderHandler(
-  orderFactory,
-  riskEngine,
-  orderbook,
-  account,
-  positionManager,
-);
-const addBalanceHandler = new AddBalanceHandler(account);
-const getBalanceHandler = new GetBalanceHandler(account);
-const getDepthHandler = new GetDepthHandler(orderbook);
-const cancelOrderHandler = new CancelOrderHandler(orderbook);
-const getPositionHandler = new GetPositionHandler(positionManager);
-const subscribeEventHandler = new SubscribeEventHandler(eventPublisher);
-const unsubscribeEventHandler = new UnsubscribeEventHandler(eventPublisher);
-const fundingHandler = new FundingHandler(
-  positionManager,
-  orderbook,
-  orderFactory,
-  riskEngine,
-  market,
-);
-const indexPriceUpdateHandler = new IndexPriceUpdateHandler(
-  market,
-  positionManager,
-);
-
-requestHandler.setDeps({
-  addBalanceHandler,
-  cancelOrderHandler,
-  createOrderHandler,
-  getBalanceHandler,
-  getDepthHandler,
-  getPositionHandler,
-  subscribeEventHandler,
-  unsubscribeEventHandler,
-  fundingHandler,
-  indexPriceUpdateHandler,
-});
-
-// thats it
-// on error that is not caught, the owner of this process should restart the process and it will work fine
-
-const indexPriceObserver = new IndexPriceObserver(communicator, {
-  redisStreamId: process.env.REDIS_ENGINE_STREAM!,
-});
-
-const init = async () => {
-  await communicator.initialize();
-  await indexPriceObserver.initialize();
-  // await communicator.receiveRequests();
+type ENGINE_SERVER_SNAPSHOT = {
+  account: ACCOUNT_SNAPSHOT;
+  market: MARKET_SNAPSHOT;
+  orderFactory: ORDER_FACTORY_SNAPSHOT;
+  orderbook: ORDERBOOK_SNAPSHOT;
+  positionManager: POSITION_MANAGER_SNAPSHOT;
+  eventPublisher: EVENT_PUBLISHER_SNAPSHOT;
 };
 
-init();
+class EngineServer implements Snapshotable<ENGINE_SERVER_SNAPSHOT> {
+  private requestHandler: RequestHandler;
+  private communicator: Communicator;
+  private eventBus: EventBus;
+  private market: Market;
+  private account: Account;
+  private riskEngine: RiskEngine;
+  private tradeFactory: TradeFactory;
+  private orderFactory: OrderFactory;
+  private orderbook: Orderbook;
+  private positionManager: PositionManager;
+  private eventPublisher: EventPublisher;
+  private indexPriceObserver: IndexPriceObserver;
+  private snapshotManager: SnapshotManager;
+
+  constructor() {
+    this.requestHandler = new RequestHandler();
+    this.communicator = new Communicator(this.requestHandler);
+
+    this.eventBus = new EventBus();
+    this.market = new Market(
+      this.eventBus,
+      { redisStreamId: process.env.REDIS_ENGINE_STREAM! },
+      this.communicator,
+    );
+    this.account = new Account(this.eventBus);
+
+    this.riskEngine = new RiskEngine(this.account, this.market);
+    this.tradeFactory = new TradeFactory();
+    this.orderFactory = new OrderFactory();
+    this.orderbook = new Orderbook(this.riskEngine, this.tradeFactory, this.eventBus);
+    this.positionManager = new PositionManager(this.eventBus, this.riskEngine, this.market);
+
+    this.eventPublisher = new EventPublisher(this.eventBus, this.communicator);
+    this.snapshotManager = new SnapshotManager(this);
+
+    this.communicator.setSnapshotDeps(this.eventPublisher, this.snapshotManager);
+
+    const createOrderHandler = new CreateOrderHandler(
+      this.orderFactory,
+      this.riskEngine,
+      this.orderbook,
+      this.account,
+      this.positionManager,
+    );
+    const addBalanceHandler = new AddBalanceHandler(this.account);
+    const getBalanceHandler = new GetBalanceHandler(this.account);
+    const getDepthHandler = new GetDepthHandler(this.orderbook);
+    const cancelOrderHandler = new CancelOrderHandler(this.orderbook);
+    const getPositionHandler = new GetPositionHandler(this.positionManager);
+    const subscribeEventHandler = new SubscribeEventHandler(this.eventPublisher);
+    const unsubscribeEventHandler = new UnsubscribeEventHandler(this.eventPublisher);
+    const fundingHandler = new FundingHandler(
+      this.positionManager,
+      this.orderbook,
+      this.orderFactory,
+      this.riskEngine,
+      this.market,
+    );
+    const indexPriceUpdateHandler = new IndexPriceUpdateHandler(
+      this.market,
+      this.positionManager,
+    );
+
+    this.requestHandler.setDeps({
+      addBalanceHandler,
+      cancelOrderHandler,
+      createOrderHandler,
+      getBalanceHandler,
+      getDepthHandler,
+      getPositionHandler,
+      subscribeEventHandler,
+      unsubscribeEventHandler,
+      fundingHandler,
+      indexPriceUpdateHandler,
+    });
+
+    this.indexPriceObserver = new IndexPriceObserver(this.communicator, {
+      redisStreamId: process.env.REDIS_ENGINE_STREAM!,
+    });
+  }
+
+  getSnapshot(): ENGINE_SERVER_SNAPSHOT {
+    return {
+      account: this.account.getSnapshot(),
+      market: this.market.getSnapshot(),
+      orderFactory: this.orderFactory.getSnapshot(),
+      orderbook: this.orderbook.getSnapshot(),
+      positionManager: this.positionManager.getSnapshot(),
+      eventPublisher: this.eventPublisher.getSnapshot(),
+    };
+  }
+
+  loadSnapshot(snapshot: ENGINE_SERVER_SNAPSHOT) {
+    this.account.loadSnapshot(snapshot.account);
+    this.market.loadSnapshot(snapshot.market);
+    this.orderFactory.loadSnapshot(snapshot.orderFactory);
+    this.orderbook.loadSnapshot(snapshot.orderbook);
+    this.positionManager.loadSnapshot(snapshot.positionManager);
+    this.eventPublisher.loadSnapshot(snapshot.eventPublisher);
+  }
+
+  async initialize() {
+    const lastRedisMessageId = this.snapshotManager.initialize();
+
+    await this.communicator.initialize();
+    await this.indexPriceObserver.initialize();
+    await this.communicator.receiveRequests(lastRedisMessageId);
+  }
+}
+
+const engineServer = new EngineServer();
+engineServer.initialize();

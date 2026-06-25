@@ -2,7 +2,8 @@ import Account from "./account.js";
 import Market from "./market.js";
 import type { Order } from "./order.js";
 import type { Position } from "./position.js";
-import type { Result } from "./account.js";
+import { type Result } from "../types.js";
+
 import { EngineTypes } from "@repo/shared-types";
 import PositionManager from "./positionManager.js";
 import { assert } from "node:console";

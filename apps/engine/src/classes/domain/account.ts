@@ -1,17 +1,29 @@
 import type { EngineTypes, EngineEventPayload } from "@repo/shared-types";
 import EventBus from "./eventBus.js";
 import { assert } from "node:console";
+import type { Snapshotable } from "../infrastructure/snapshotManager.js";
+import { type Result } from "../types.js";
 
 type USER_ID = EngineTypes.USER_ID;
 
 export type BALANCE = { balance: number; lockedBalance: number };
 
-export type Result<T> =
-  | { success: true; value: T }
-  | { success: false; error: Error };
+export type ACCOUNT_SNAPSHOT = {
+  balances: [USER_ID, BALANCE][];
+};
 
-export default class Account {
+export default class Account implements Snapshotable<ACCOUNT_SNAPSHOT> {
   private balances: Map<USER_ID, BALANCE> = new Map();
+
+  getSnapshot(): ACCOUNT_SNAPSHOT {
+    return {
+      balances: Array.from(this.balances.entries()),
+    };
+  }
+
+  loadSnapshot(snapshot: ACCOUNT_SNAPSHOT) {
+    this.balances = new Map(snapshot.balances);
+  }
 
   constructor(eventBus: EventBus) {
     eventBus.on<"userpnl.created">("userpnl.created", (userPnl) => {

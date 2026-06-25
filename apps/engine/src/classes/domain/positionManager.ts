@@ -1,17 +1,23 @@
 import type { Position } from "./position.js";
 import EventBus from "./eventBus.js";
 import RiskEngine from "./riskEngine.js";
-import type { Result } from "./account.js";
-import type {
-  EngineResponse,
+import { type Result } from "../types.js";
+
+import {
+  type EngineResponse,
   EngineTypes,
-  EngineEventPayload,
+  type EngineEventPayload,
 } from "@repo/shared-types";
 import assert from "node:assert";
-import type { OrderedMap } from "js-sdsl";
+import { OrderedMap } from "js-sdsl";
 import type Market from "./market.js";
+import type { Snapshotable } from "../infrastructure/snapshotManager.js";
 
-export default class PositionManager {
+export type POSITION_MANAGER_SNAPSHOT = {
+  positions: [EngineTypes.TRADABLE_SYMBOL, [EngineTypes.USER_ID, Position][]][];
+};
+
+export default class PositionManager implements Snapshotable<POSITION_MANAGER_SNAPSHOT> {
   private positions: Map<
     EngineTypes.TRADABLE_SYMBOL,
     Map<EngineTypes.USER_ID, Position>
@@ -35,10 +41,64 @@ export default class PositionManager {
   private riskEngine: RiskEngine;
   private market: Market;
 
+  getSnapshot(): POSITION_MANAGER_SNAPSHOT {
+    const serializedPositions: [
+      EngineTypes.TRADABLE_SYMBOL,
+      [EngineTypes.USER_ID, Position][],
+    ][] = [];
+    for (const [symbol, userMap] of this.positions.entries()) {
+      serializedPositions.push([symbol, Array.from(userMap.entries())]);
+    }
+    return {
+      positions: serializedPositions,
+    };
+  }
+
+  loadSnapshot(snapshot: POSITION_MANAGER_SNAPSHOT) {
+    this.positions = new Map();
+    this.liquidationPrice = {
+      LONG: new Map(),
+      SHORT: new Map(),
+    };
+    EngineTypes.TRADABLE_SYMBOL_ARRAY.forEach((symbol) => {
+      const sym = symbol as EngineTypes.TRADABLE_SYMBOL;
+      this.liquidationPrice.LONG.set(sym, new OrderedMap());
+      this.liquidationPrice.SHORT.set(sym, new OrderedMap());
+    });
+
+    snapshot.positions.forEach(([symbol, userPositions]) => {
+      const userMap = new Map<EngineTypes.USER_ID, Position>();
+      this.positions.set(symbol, userMap);
+
+      userPositions.forEach(([userId, pos]) => {
+        userMap.set(userId, pos);
+
+        let priceMap = this.liquidationPrice[pos.type].get(symbol);
+        if (!priceMap) {
+          priceMap = new OrderedMap();
+          this.liquidationPrice[pos.type].set(symbol, priceMap);
+        }
+        let userSet = priceMap.getElementByKey(pos.liquidationPrice);
+        if (!userSet) {
+          userSet = new Set();
+          priceMap.setElement(pos.liquidationPrice, userSet);
+        }
+        userSet.add(userId);
+      });
+    });
+  }
+
   constructor(eventBus: EventBus, riskEngine: RiskEngine, market: Market) {
     this.eventBus = eventBus;
     this.riskEngine = riskEngine;
     this.market = market;
+
+    // Initialize liquidationPrice maps for all tradable symbols
+    EngineTypes.TRADABLE_SYMBOL_ARRAY.forEach((symbol) => {
+      const sym = symbol as EngineTypes.TRADABLE_SYMBOL;
+      this.liquidationPrice.LONG.set(sym, new OrderedMap());
+      this.liquidationPrice.SHORT.set(sym, new OrderedMap());
+    });
 
     eventBus.on<"fills.created">(
       "fills.created",

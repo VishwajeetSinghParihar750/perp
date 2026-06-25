@@ -6,15 +6,24 @@ import {
 import { EngineRequest } from "@repo/shared-types";
 import type { ReplyAddress } from "./types.js";
 import RequestHandler from "../interface/requestHandler.js";
+import type EventPublisher from "../interface/eventPublisher.js";
+import type SnapshotManager from "./snapshotManager.js";
 
 export default class Communicator {
   //
   private redisClient: RedisClientType = globalRedisClient.duplicate();
 
   private requestHandler: RequestHandler;
+  private eventPublisher: EventPublisher | undefined;
+  private snapshotManager: SnapshotManager | undefined;
 
   constructor(requestHandler: RequestHandler) {
     this.requestHandler = requestHandler;
+  }
+
+  setSnapshotDeps(eventPublisher: EventPublisher, snapshotManager: SnapshotManager) {
+    this.eventPublisher = eventPublisher;
+    this.snapshotManager = snapshotManager;
   }
   async initialize() {
     await this.redisClient.connect();
@@ -63,7 +72,8 @@ export default class Communicator {
                   error,
                 );
                 zodError = true;
-                // this message processed
+                this.snapshotManager?.onMessageProcessed(id);
+                this.snapshotManager?.onFullMessageProcessed(id);
               }
 
               if (!zodError) {
@@ -71,12 +81,23 @@ export default class Communicator {
                 console.log(
                   `[ENGINE_SERVER] Processing trade request: ${req.type} (requestId: ${req.requestId})`,
                 );
+                
+                this.eventPublisher?.startObservingEvents();
+
                 let result = this.requestHandler.handleRequest(req);
+
+                this.snapshotManager?.onMessageProcessed(id);
+
+                if (this.eventPublisher) {
+                  await this.eventPublisher.publishEvents();
+                }
 
                 if (result)
                   await this.redisClient.xAdd(req.stream, "*", {
                     data: JSON.stringify(result),
                   });
+
+                this.snapshotManager?.onFullMessageProcessed(id);
               }
 
               lastRedisMessageId = id;

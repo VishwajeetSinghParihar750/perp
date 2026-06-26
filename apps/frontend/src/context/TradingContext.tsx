@@ -120,8 +120,8 @@ export const TradingProvider: React.FC<{ children: React.ReactNode }> = ({
   // Keep a ref to currentSymbol so message handlers can read it without stale closure
   const currentSymbolRef = useRef<SymbolType>(currentSymbol);
 
-  const API_URL = "http://localhost:3001";
-  const WS_URL = "ws://localhost:3000";
+  const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3001";
+  const WS_URL = import.meta.env.VITE_WS_URL ?? "ws://localhost:3000";
 
   const getNextRequestId = useCallback(() => {
     const id = `req_${nextReqIdRef.current}`;

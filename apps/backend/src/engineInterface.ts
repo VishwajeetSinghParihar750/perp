@@ -11,6 +11,11 @@ import {
 
 import { sendMessageOnWebSocket } from "./ws/utils/messaging.js";
 
+type EngineRequestResponse = Exclude<
+  EngineResponse.ENGINE_RESPONSE,
+  { type: "event" }
+>;
+
 class EngineInterface {
   redisClient: RedisClientType;
 
@@ -147,18 +152,11 @@ class EngineInterface {
                 console.log(
                   `[ENGINE_INTERFACE] Engine response matches pending requestId: ${requestId}, type: ${type}`,
                 );
-                if (type == "error")
-                  this.pendingRequests[requestId]?.[1]?.({
-                    type,
-                    payload,
-                    requestId,
-                  });
-                else
-                  this.pendingRequests[requestId]?.[0]?.({
-                    type,
-                    payload,
-                    requestId,
-                  });
+                this.pendingRequests[requestId]?.[0]?.({
+                  type,
+                  payload,
+                  requestId,
+                } as EngineRequestResponse);
 
                 delete this.pendingRequests?.[requestId];
               } else if (type == "event") {
@@ -206,13 +204,13 @@ class EngineInterface {
   getEngineResponseForRequest = async (
     engineRequest: EngineRequest.ENGINE_REQUEST_FROM_BACKEND,
     ws?: WebSocket,
-  ): Promise<EngineResponse.ENGINE_RESPONSE> => {
+  ): Promise<EngineRequestResponse> => {
     const reqId =
       "requestId" in engineRequest ? (engineRequest as any).requestId : "N/A";
     console.log(
       `[ENGINE_INTERFACE] Queueing promise for request: ${reqId} (type: ${engineRequest.type})`,
     );
-    let promiseToReturn = new Promise<EngineResponse.ENGINE_RESPONSE>(
+    let promiseToReturn = new Promise<EngineRequestResponse>(
       (res, rej) => {
         let newResolver;
         if (engineRequest.type == "subscribe_event") {

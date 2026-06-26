@@ -56,6 +56,17 @@ export default class CreateOrderHandler {
   handle(command: CreateOrderCommand): Result<Order> {
     const order = this.commandToOrder(command);
 
+    console.log("[CREATE_ORDER] Placing order", {
+      orderId: order.orderId,
+      userId: order.userId,
+      marketSymbol: order.marketSymbol,
+      side: order.side,
+      type: order.type,
+      price: order.price,
+      quantity: order.quantity,
+      margin: order.margin,
+    });
+
     // check preconditions
     const positionRes = this.positionManager.getPosition(
       order.userId,
@@ -66,15 +77,29 @@ export default class CreateOrderHandler {
 
     const evaluateRes = this.riskEngine.evaluateOrder(order, position);
     if (!evaluateRes.success) {
+      console.warn("[CREATE_ORDER] Risk check failed", {
+        orderId: order.orderId,
+        error: evaluateRes.error.message,
+      });
       return { success: false, error: evaluateRes.error };
     }
 
     const lockRes = this.account.lockBalance(order.userId, order.margin);
     if (!lockRes.success) {
+      console.warn("[CREATE_ORDER] Balance lock failed", {
+        orderId: order.orderId,
+        userId: order.userId,
+        margin: order.margin,
+        error: lockRes.error.message,
+      });
       return { success: false, error: lockRes.error };
     }
 
     const placedOrder = this.orderbook.placeOrder(order);
+    console.log("[CREATE_ORDER] Order placed", {
+      orderId: placedOrder.orderId,
+      status: placedOrder.status,
+    });
     return { success: true, value: placedOrder };
   }
 }

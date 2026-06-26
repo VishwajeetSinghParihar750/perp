@@ -9,6 +9,13 @@ import { sendMessageOnWebSocket } from "../utils/messaging.js";
 
 const engine = new EngineInterface();
 
+function withClientRequestId<T extends { requestId: string }>(
+  response: T,
+  clientRequestId: string,
+): T {
+  return { ...response, requestId: clientRequestId };
+}
+
 async function handleAddBalanceRequest(
   req: BackendRequest.ADD_BALANCE_REQUEST,
   ws: WebSocket,
@@ -35,9 +42,7 @@ async function handleAddBalanceRequest(
       console.log(
         `[WS_HANDLER] Add balance response for user: ${ws.user?.username}: ${JSON.stringify(res)}`,
       );
-      if (res.type == "error") {
-        sendMessageOnWebSocket(ws, res);
-      } else sendMessageOnWebSocket(ws, res);
+      sendMessageOnWebSocket(ws, withClientRequestId(res, req.requestId));
     } catch (error) {
       console.error(
         `[WS_HANDLER] Add balance failed for user: ${ws.user?.username}`,
@@ -86,19 +91,10 @@ async function handleCreateOrderRequest(
         `[WS_HANDLER] Create order response for user: ${ws.user?.username}: ${JSON.stringify(res)}`,
       );
       if (res.type == "error") {
-        sendMessageOnWebSocket(ws, {
-          payload: res.payload,
-          requestId: req.requestId,
-          type: "error",
-        });
-      } else if (res.type == "order_created")
-        sendMessageOnWebSocket(ws, {
-          payload: res.payload,
-          requestId: req.requestId,
-          type: "order_created",
-        });
-
-      console.log(res);
+        sendMessageOnWebSocket(ws, withClientRequestId(res, req.requestId));
+      } else if (res.type == "order_created") {
+        sendMessageOnWebSocket(ws, withClientRequestId(res, req.requestId));
+      }
     } catch (error) {
       console.error(
         `[WS_HANDLER] Create order failed for user: ${ws.user?.username}`,
@@ -127,7 +123,7 @@ async function handleGetBalanceRequest(
     try {
       const res = await engine.getEngineResponseForRequest({
         type: "get_balance",
-        requestId: req.requestId,
+        requestId: crypto.randomUUID(),
         payload: { ...req.payload, userId: ws.user.id },
         stream: process.env.REDIS_ENGINE_RECEIVE_STREAM_NAME!,
       });
@@ -135,7 +131,7 @@ async function handleGetBalanceRequest(
       console.log(
         `[WS_HANDLER] Get balance response for user: ${ws.user?.username}: ${JSON.stringify(res)}`,
       );
-      sendMessageOnWebSocket(ws, res);
+      sendMessageOnWebSocket(ws, withClientRequestId(res, req.requestId));
     } catch (error) {
       console.error(
         `[WS_HANDLER] Get balance failed for user: ${ws.user?.username}`,
@@ -163,7 +159,7 @@ async function handleGetPositionsRequest(
     try {
       const res = await engine.getEngineResponseForRequest({
         type: "get_position",
-        requestId: req.requestId,
+        requestId: crypto.randomUUID(),
         payload: { ...req.payload, userId: ws.user.id },
         stream: process.env.REDIS_ENGINE_RECEIVE_STREAM_NAME!,
       });
@@ -171,7 +167,7 @@ async function handleGetPositionsRequest(
       console.log(
         `[WS_HANDLER] Get position response for user: ${ws.user?.username}: ${JSON.stringify(res)}`,
       );
-      sendMessageOnWebSocket(ws, res);
+      sendMessageOnWebSocket(ws, withClientRequestId(res, req.requestId));
     } catch (error) {
       console.error(
         `[WS_HANDLER] Get position failed for user: ${ws.user?.username}`,
@@ -207,6 +203,7 @@ async function handleEngineRequest(
         let res = await engine.getEngineResponseForRequest(
           {
             ...req,
+            requestId: crypto.randomUUID(),
             stream: process.env.REDIS_ENGINE_RECEIVE_STREAM_NAME!,
           },
           ws,
@@ -215,7 +212,7 @@ async function handleEngineRequest(
         console.log(
           `[WS_HANDLER] Fallback engine request response for type: ${req.type}, user: ${ws.user?.username}: ${JSON.stringify(res)}`,
         );
-        sendMessageOnWebSocket(ws, res);
+        sendMessageOnWebSocket(ws, withClientRequestId(res, req.requestId));
       }
     } catch (error) {
       console.error(

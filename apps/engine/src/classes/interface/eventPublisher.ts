@@ -1,5 +1,8 @@
 import type { EngineEventPayload, EngineEventType } from "@repo/shared-types";
-import type { ReplyAddress } from "../infrastructure/types.js";
+import {
+  getReplyAddressKey,
+  type ReplyAddress,
+} from "../infrastructure/types.js";
 import type Communicator from "../infrastructure/communicator.js";
 import type EventBus from "../domain/eventBus.js";
 import type { Snapshotable } from "../infrastructure/snapshotManager.js";
@@ -13,7 +16,7 @@ export type EVENT_PUBLISHER_SNAPSHOT = {
 export default class EventPublisher implements Snapshotable<EVENT_PUBLISHER_SNAPSHOT> {
   private subscriptions: Map<
     EngineEventType.ENGINE_EVENT_TYPE,
-    Set<ReplyAddress>
+    Map<string, ReplyAddress>
   > = new Map();
 
   private communicator: Communicator;
@@ -29,7 +32,7 @@ export default class EventPublisher implements Snapshotable<EVENT_PUBLISHER_SNAP
   getSnapshot(): EVENT_PUBLISHER_SNAPSHOT {
     const subscriptionsSnapshot: Record<string, ReplyAddress[]> = {};
     for (const [key, value] of this.subscriptions.entries()) {
-      subscriptionsSnapshot[key] = Array.from(value);
+      subscriptionsSnapshot[key] = Array.from(value.values());
     }
 
     return {
@@ -44,10 +47,11 @@ export default class EventPublisher implements Snapshotable<EVENT_PUBLISHER_SNAP
     this.globalidempotencyKey = data.globalidempotencyKey;
     this.subscriptions = new Map();
     Object.entries(data.subscriptions).forEach(([key, sub]) => {
-      this.subscriptions.set(
-        key as EngineEventType.ENGINE_EVENT_TYPE,
-        new Set(sub),
-      );
+      const byKey = new Map<string, ReplyAddress>();
+      for (const address of sub) {
+        byKey.set(getReplyAddressKey(address), address);
+      }
+      this.subscriptions.set(key as EngineEventType.ENGINE_EVENT_TYPE, byKey);
     });
   }
 
@@ -67,7 +71,7 @@ export default class EventPublisher implements Snapshotable<EVENT_PUBLISHER_SNAP
       const subs = this.subscriptions.get(event.type);
       if (subs) {
         await Promise.allSettled(
-          Array.from(subs).map((replyAddress) =>
+          Array.from(subs.values()).map((replyAddress) =>
             this.communicator.send(replyAddress, {
               idempotencyKey: String(perEventIdemNumber),
               type: "event",
@@ -107,10 +111,10 @@ export default class EventPublisher implements Snapshotable<EVENT_PUBLISHER_SNAP
     events.forEach((e) => {
       let cur = this.subscriptions.get(e);
       if (!cur) {
-        cur = new Set();
+        cur = new Map();
         this.subscriptions.set(e, cur);
       }
-      cur.add(replyAddress);
+      cur.set(getReplyAddressKey(replyAddress), replyAddress);
     });
     return events;
   }
@@ -121,7 +125,7 @@ export default class EventPublisher implements Snapshotable<EVENT_PUBLISHER_SNAP
   ) {
     events.forEach((e) => {
       const cur = this.subscriptions.get(e);
-      cur?.delete(replyAddress);
+      cur?.delete(getReplyAddressKey(replyAddress));
     });
     return events;
   }

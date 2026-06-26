@@ -10,7 +10,7 @@ import {
   type FILLS_CREATED_EVENT,
   type ORDER_CANCELLED_EVENT,
   type ORDER_CREATED_EVENT,
-} from "./validations.js";
+} from "./validations.ts";
 
 process.on("uncaughtException", (err, origin) => {
   console.error("uncaughtException", err.message, err.name, origin);
@@ -39,7 +39,7 @@ const tryCreatingMarkets = async () => {
         await prismaClient.market.create({ data: { symbol: cur as any } });
       } catch (e) {
         if (e instanceof Prisma.PrismaClientKnownRequestError) {
-          if (e.code == "P2002") {
+          if ((e as any).code == "P2002") {
             console.log("market already exist in schema");
           } else throw e;
         }

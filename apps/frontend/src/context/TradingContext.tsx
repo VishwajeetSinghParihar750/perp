@@ -179,6 +179,7 @@ export const TradingProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const intentionalCloseRef = useRef(false);
   const nextReqIdRef = useRef(1);
   const depthSyncRef = useRef<Record<string, DepthSyncInfo>>({});
   const pendingDepthRequestsRef = useRef<Map<string, SymbolType>>(new Map());
@@ -213,6 +214,7 @@ export const TradingProvider: React.FC<{ children: React.ReactNode }> = ({
       reconnectTimerRef.current = null;
     }
     if (wsRef.current) {
+      intentionalCloseRef.current = true;
       wsRef.current.close();
       wsRef.current = null;
     }
@@ -453,261 +455,286 @@ export const TradingProvider: React.FC<{ children: React.ReactNode }> = ({
     [],
   );
 
-  const connectWebSocket = useCallback(() => {
-    const activeToken = tokenRef.current;
-    if (!activeToken) return;
-
-    if (wsRef.current) {
-      wsRef.current.close();
-      wsRef.current = null;
-    }
-
-    const ws = new WebSocket(`${WS_URL}?jwt_token=${activeToken}`);
-    wsRef.current = ws;
-
-    ws.onopen = () => {
-      setWsConnected(true);
-      setError(null);
-      eventsSubscribedRef.current = false;
-
-      const subReqId = getNextRequestId();
-      startInitialDepthSync(currentSymbolRef.current, subReqId);
-
-      ws.send(
-        JSON.stringify({
-          requestId: subReqId,
-          type: "subscribe_event",
-          payload: { events: [...ALL_MARKET_EVENTS] },
-        }),
-      );
-
-      ws.send(
-        JSON.stringify({
-          requestId: getNextRequestId(),
-          type: "get_balance",
-          payload: {},
-        }),
-      );
-      ws.send(
-        JSON.stringify({
-          requestId: getNextRequestId(),
-          type: "get_position",
-          payload: {},
-        }),
-      );
-
-      void refreshOpenOrders();
-      void loadHistoricalTrades(currentSymbolRef.current);
-    };
-
-    ws.onclose = (event) => {
-      setWsConnected(false);
-      eventsSubscribedRef.current = false;
-
-      if (event.code === 4001) {
-        logout();
-        setError("Your session has expired. Please sign in again.");
-        return;
-      }
-
-      if (tokenRef.current) {
-        reconnectTimerRef.current = setTimeout(() => connectWebSocket(), 3000);
-      }
-    };
-
-    ws.onerror = () => {
-      setError("WebSocket connection error");
-    };
-
-    ws.onmessage = (event) => {
-      try {
-        const msg = JSON.parse(event.data);
-        const { type, payload, requestId } = msg;
-
-        if (type === "depth" && payload) {
-          const symbol =
-            pendingDepthRequestsRef.current.get(requestId) ??
-            currentSymbolRef.current;
-          pendingDepthRequestsRef.current.delete(requestId);
-          handleDepthSnapshot(symbol, payload);
-          return;
-        }
-
-        if (type === "event_subscribed") {
-          eventsSubscribedRef.current = true;
-          const symbol = currentSymbolRef.current;
-          const syncInfo = depthSyncRef.current[symbol];
-          if (
-            syncInfo?.state === "subscribing" &&
-            syncInfo.subReqId === requestId
-          ) {
-            requestDepthSnapshot(symbol);
-          }
-          return;
-        }
-
-        if (type === "balance") {
-          applyBalancePayload(payload);
-          return;
-        }
-
-        if (type === "balance_updated") {
-          applyBalancePayload(payload);
-          return;
-        }
-
-        if (type === "position" && payload) {
-          const mapped: Record<string, Position> = {};
-          for (const [symbol, pos] of Object.entries(
-            payload as Record<string, Record<string, unknown>>,
-          )) {
-            mapped[symbol] = {
-              positionId: `${pos.userId}_${symbol}`,
-              userId: String(pos.userId),
-              price: Number(pos.price),
-              qty: Number(pos.quantity ?? pos.qty ?? 0),
-              type: pos.type as "LONG" | "SHORT",
-              marketSymbol: symbol as SymbolType,
-              margin: Number(pos.margin),
-              marginType: pos.marginType as MarginType,
-            };
-          }
-          setPositions(mapped);
-          return;
-        }
-
-        if (type === "order_created") {
-          setNotice("Order placed successfully");
-          setTimeout(() => {
-            fetchBalanceAndPositions();
-            void refreshOpenOrders();
-          }, 150);
-          return;
-        }
-
-        if (type === "order_cancelled") {
-          setNotice("Order cancelled");
-          setTimeout(() => {
-            fetchBalanceAndPositions();
-            void refreshOpenOrders();
-          }, 150);
-          return;
-        }
-
-        if (type === "error" && payload) {
-          setError(String(payload));
-          return;
-        }
-
-        if (type === "event" && payload?.type) {
-          const { type: eventType, data } = payload;
-          const activeSymbol = currentSymbolRef.current;
-
-          if (eventType === "depth.updated" && data) {
-            const symbol = data.marketSymbol as SymbolType;
-            const syncInfo = depthSyncRef.current[symbol];
-            const updateId = data.lastUpdatedDepthId as number | undefined;
-            if (!syncInfo || updateId === undefined) return;
-
-            const update = {
-              lastUpdatedDepthId: updateId,
-              asks: data.depthUpdates?.asks ?? {},
-              bids: data.depthUpdates?.bids ?? {},
-            };
-
-            if (
-              syncInfo.state === "subscribing" ||
-              syncInfo.state === "fetching"
-            ) {
-              syncInfo.buffer.push(update);
-            } else if (
-              syncInfo.state === "live" &&
-              symbol === activeSymbol &&
-              shouldApplyLiveDepthUpdate(updateId, syncInfo.lastAppliedDepthId)
-            ) {
-              setOrderbook((prev) => applyDepthUpdate(prev, update));
-              syncInfo.lastAppliedDepthId = updateId;
-            }
-            return;
-          }
-
-          if (eventType === "lastTradedPrice.updated" && data) {
-            const symbol = data.marketSymbol as SymbolType;
-            setLastTradedPrices((prev) => ({
-              ...prev,
-              [symbol]: data.price,
-            }));
-            if (symbol === activeSymbol) {
-              setLastTradedPrice(data.price);
-            }
-            return;
-          }
-
-          if (eventType === "indexprice.updated" && data) {
-            const symbol = data.marketSymbol as SymbolType;
-            setIndexPrices((prev) => ({ ...prev, [symbol]: data.price }));
-            if (symbol === activeSymbol) {
-              setIndexPrice(data.price);
-            }
-            return;
-          }
-
-          if (eventType === "trades.created" && data) {
-            const symbol = data.marketSymbol as SymbolType;
-            if (symbol !== activeSymbol) return;
-            const newTrades = (data.trades || []).map(
-              ([price, qty]: [number, number]) => ({
-                price,
-                qty,
-                time: new Date().toLocaleTimeString(),
-              }),
-            );
-            setTrades((prev) => [...newTrades, ...prev].slice(0, 50));
-            setTimeout(fetchBalanceAndPositions, 100);
-            return;
-          }
-
-          if (eventType === "fills.created") {
-            setTimeout(() => {
-              fetchBalanceAndPositions();
-              void refreshOpenOrders();
-            }, 100);
-          }
-        }
-      } catch (err) {
-        console.error("[WS] Error handling message:", err);
-      }
-    };
-  }, [
-    WS_URL,
+  // Keep latest callbacks in refs so the WebSocket effect stays stable
+  const handlersRef = useRef({
+    getNextRequestId,
+    sendWsMessage,
+    startInitialDepthSync,
+    requestDepthSnapshot,
+    handleDepthSnapshot,
     applyBalancePayload,
     fetchBalanceAndPositions,
-    getNextRequestId,
-    handleDepthSnapshot,
+    refreshOpenOrders,
     loadHistoricalTrades,
     logout,
-    refreshOpenOrders,
-    requestDepthSnapshot,
+  });
+  handlersRef.current = {
+    getNextRequestId,
+    sendWsMessage,
     startInitialDepthSync,
-  ]);
+    requestDepthSnapshot,
+    handleDepthSnapshot,
+    applyBalancePayload,
+    fetchBalanceAndPositions,
+    refreshOpenOrders,
+    loadHistoricalTrades,
+    logout,
+  };
 
   useEffect(() => {
     tokenRef.current = token;
     if (!token) return;
 
-    connectWebSocket();
+    const connect = () => {
+      if (!tokenRef.current) return;
+
+      if (reconnectTimerRef.current) {
+        clearTimeout(reconnectTimerRef.current);
+        reconnectTimerRef.current = null;
+      }
+
+      if (wsRef.current) {
+        intentionalCloseRef.current = true;
+        wsRef.current.close();
+        wsRef.current = null;
+      }
+
+      const ws = new WebSocket(`${WS_URL}?jwt_token=${tokenRef.current}`);
+      wsRef.current = ws;
+      intentionalCloseRef.current = false;
+
+      ws.onopen = () => {
+        setWsConnected(true);
+        setError(null);
+        eventsSubscribedRef.current = false;
+
+        const h = handlersRef.current;
+        const subReqId = h.getNextRequestId();
+        h.startInitialDepthSync(currentSymbolRef.current, subReqId);
+
+        ws.send(
+          JSON.stringify({
+            requestId: subReqId,
+            type: "subscribe_event",
+            payload: { events: [...ALL_MARKET_EVENTS] },
+          }),
+        );
+        ws.send(
+          JSON.stringify({
+            requestId: h.getNextRequestId(),
+            type: "get_balance",
+            payload: {},
+          }),
+        );
+        ws.send(
+          JSON.stringify({
+            requestId: h.getNextRequestId(),
+            type: "get_position",
+            payload: {},
+          }),
+        );
+
+        void h.refreshOpenOrders();
+        void h.loadHistoricalTrades(currentSymbolRef.current);
+      };
+
+      ws.onclose = (event) => {
+        setWsConnected(false);
+        eventsSubscribedRef.current = false;
+        wsRef.current = null;
+
+        if (intentionalCloseRef.current) return;
+
+        if (event.code === 4001) {
+          handlersRef.current.logout();
+          setError("Your session has expired. Please sign in again.");
+          return;
+        }
+
+        if (tokenRef.current) {
+          reconnectTimerRef.current = setTimeout(connect, 3000);
+        }
+      };
+
+      ws.onerror = () => {
+        setError("WebSocket connection error");
+      };
+
+      ws.onmessage = (event) => {
+        try {
+          const msg = JSON.parse(event.data);
+          const { type, payload, requestId } = msg;
+          const h = handlersRef.current;
+
+          if (type === "depth" && payload) {
+            const symbol =
+              pendingDepthRequestsRef.current.get(requestId) ??
+              currentSymbolRef.current;
+            pendingDepthRequestsRef.current.delete(requestId);
+            h.handleDepthSnapshot(symbol, payload);
+            return;
+          }
+
+          if (type === "event_subscribed") {
+            eventsSubscribedRef.current = true;
+            const symbol = currentSymbolRef.current;
+            const syncInfo = depthSyncRef.current[symbol];
+            if (
+              syncInfo?.state === "subscribing" &&
+              syncInfo.subReqId === requestId
+            ) {
+              h.requestDepthSnapshot(symbol);
+            }
+            return;
+          }
+
+          if (type === "balance" || type === "balance_updated") {
+            h.applyBalancePayload(payload);
+            return;
+          }
+
+          if (type === "position" && payload) {
+            const mapped: Record<string, Position> = {};
+            for (const [symbol, pos] of Object.entries(
+              payload as Record<string, Record<string, unknown>>,
+            )) {
+              mapped[symbol] = {
+                positionId: `${pos.userId}_${symbol}`,
+                userId: String(pos.userId),
+                price: Number(pos.price),
+                qty: Number(pos.quantity ?? pos.qty ?? 0),
+                type: pos.type as "LONG" | "SHORT",
+                marketSymbol: symbol as SymbolType,
+                margin: Number(pos.margin),
+                marginType: pos.marginType as MarginType,
+              };
+            }
+            setPositions(mapped);
+            return;
+          }
+
+          if (type === "order_created") {
+            setNotice("Order placed successfully");
+            setTimeout(() => {
+              h.fetchBalanceAndPositions();
+              void h.refreshOpenOrders();
+            }, 150);
+            return;
+          }
+
+          if (type === "order_cancelled") {
+            setNotice("Order cancelled");
+            setTimeout(() => {
+              h.fetchBalanceAndPositions();
+              void h.refreshOpenOrders();
+            }, 150);
+            return;
+          }
+
+          if (type === "error" && payload) {
+            setError(String(payload));
+            return;
+          }
+
+          if (type === "event" && payload?.type) {
+            const { type: eventType, data } = payload;
+            const activeSymbol = currentSymbolRef.current;
+
+            if (eventType === "depth.updated" && data) {
+              const symbol = data.marketSymbol as SymbolType;
+              const syncInfo = depthSyncRef.current[symbol];
+              const updateId = data.lastUpdatedDepthId as number | undefined;
+              if (!syncInfo || updateId === undefined) return;
+
+              const update = {
+                lastUpdatedDepthId: updateId,
+                asks: data.depthUpdates?.asks ?? {},
+                bids: data.depthUpdates?.bids ?? {},
+              };
+
+              if (
+                syncInfo.state === "subscribing" ||
+                syncInfo.state === "fetching"
+              ) {
+                syncInfo.buffer.push(update);
+              } else if (
+                syncInfo.state === "live" &&
+                symbol === activeSymbol &&
+                shouldApplyLiveDepthUpdate(
+                  updateId,
+                  syncInfo.lastAppliedDepthId,
+                )
+              ) {
+                setOrderbook((prev) => applyDepthUpdate(prev, update));
+                syncInfo.lastAppliedDepthId = updateId;
+              }
+              return;
+            }
+
+            if (eventType === "lastTradedPrice.updated" && data) {
+              const symbol = data.marketSymbol as SymbolType;
+              setLastTradedPrices((prev) => ({
+                ...prev,
+                [symbol]: data.price,
+              }));
+              if (symbol === activeSymbol) {
+                setLastTradedPrice(data.price);
+              }
+              return;
+            }
+
+            if (eventType === "indexprice.updated" && data) {
+              const symbol = data.marketSymbol as SymbolType;
+              setIndexPrices((prev) => ({ ...prev, [symbol]: data.price }));
+              if (symbol === activeSymbol) {
+                setIndexPrice(data.price);
+              }
+              return;
+            }
+
+            if (eventType === "trades.created" && data) {
+              const symbol = data.marketSymbol as SymbolType;
+              if (symbol !== activeSymbol) return;
+              const newTrades = (data.trades || []).map(
+                ([price, qty]: [number, number]) => ({
+                  price,
+                  qty,
+                  time: new Date().toLocaleTimeString(),
+                }),
+              );
+              setTrades((prev) => [...newTrades, ...prev].slice(0, 50));
+              setTimeout(h.fetchBalanceAndPositions, 100);
+              return;
+            }
+
+            if (eventType === "fills.created") {
+              setTimeout(() => {
+                h.fetchBalanceAndPositions();
+                void h.refreshOpenOrders();
+              }, 100);
+            }
+          }
+        } catch (err) {
+          console.error("[WS] Error handling message:", err);
+        }
+      };
+    };
+
+    connect();
 
     return () => {
       if (reconnectTimerRef.current) {
         clearTimeout(reconnectTimerRef.current);
+        reconnectTimerRef.current = null;
       }
+      intentionalCloseRef.current = true;
       wsRef.current?.close();
       wsRef.current = null;
       depthSyncRef.current = {};
       pendingDepthRequestsRef.current.clear();
       eventsSubscribedRef.current = false;
     };
-  }, [token, connectWebSocket]);
+  }, [token, WS_URL]);
 
   const setCurrentSymbol = useCallback(
     (symbol: SymbolType) => {

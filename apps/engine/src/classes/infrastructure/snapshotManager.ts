@@ -44,11 +44,15 @@ class SnapshotManager {
   }
 
   private loadSnapshot(): string {
-    // get max number redis messgae id snapshot
-
     let lastRedisMessageId = "0-0";
 
-    let files = readdirSync(path.join(process.cwd(), "/data/snapshots"));
+    const snapshotsDir = path.join(process.cwd(), "data/snapshots");
+    let files: string[] = [];
+    try {
+      files = readdirSync(snapshotsDir);
+    } catch {
+      return lastRedisMessageId;
+    }
 
     files.sort((a, b) => {
       let ca = a.replace(".json", "");

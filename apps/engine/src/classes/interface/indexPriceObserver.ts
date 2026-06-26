@@ -1,114 +1,162 @@
 import "dotenv/config";
-import { assert } from "node:console";
 import type Communicator from "../infrastructure/communicator.js";
 import type { ReplyAddress } from "../infrastructure/types.js";
+
+const STREAM_TO_MARKET: Record<string, string> = {
+  BTCUSD: "BTCUSD",
+  ETHUSD: "ETHUSD",
+  SOLUSD: "SOLUSD",
+  BTCUSDT: "BTCUSD",
+  ETHUSDT: "ETHUSD",
+  SOLUSDT: "SOLUSD",
+};
+
+const REQUIRED_MARKETS = ["BTCUSD", "ETHUSD", "SOLUSD"] as const;
 
 class IndexPriceObserver {
   private communicator: Communicator;
   private sendToAdrress: ReplyAddress;
+  private receivedMarkets = new Set<string>();
+  private initResolver: ((val: unknown) => void) | undefined;
+
+  private readonly streamPairs = [
+    "btcusd@indexPrice",
+    "solusd@indexPrice",
+    "ethusd@indexPrice",
+  ];
 
   constructor(communicator: Communicator, sendToAddress: ReplyAddress) {
     this.communicator = communicator;
     this.sendToAdrress = sendToAddress;
   }
 
-  private BINANCE_SUBSCIRPTION_REQUEST: {
-    method: "SUBSCRIBE";
-    params: string[];
-    id: number;
-  } = {
-    method: "SUBSCRIBE",
-    params: [],
-    id: 1,
-  };
-
-  private readonly streamPairs: string[] = [
-    "btcusd@indexPrice",
-    "solusd@indexPrice",
-    "ethusd@indexPrice",
-  ];
-
-  private readonly streamToMarketSymbol: Record<string, string> = {
-    BTCUSD: "BTCUSD",
-    ETHUSD: "ETHUSD",
-    SOLUSD: "SOLUSD",
-    BTCUSDT: "BTCUSD",
-    ETHUSDT: "ETHUSD",
-    SOLUSDT: "SOLUSD",
-  };
-  private receivedIndexPrices = new Set();
-
-  private initResolver: ((val: unknown) => void) | undefined = undefined;
-
   async initialize() {
-    let promise = new Promise((res, rej) => {
-      this.initResolver = res;
+    return new Promise<void>((resolve) => {
+      this.initResolver = () => resolve();
+      const timeout = setTimeout(() => {
+        if (this.initResolver) {
+         throw new Error(
+            "[INDEX_PRICE] Timed out waiting for all index prices — continuing",
+          );
+        }
+      }, 600_000);
+
+      const finish = () => {
+        clearTimeout(timeout);
+        resolve();
+      };
+
+      this.initResolver = () => finish();
+      this.setupPriceSubscriptions();
     });
-    this.setupPriceSubscriptions();
-    return promise;
+  }
+
+  private maybeFinishInit() {
+    if (
+      !this.initResolver ||
+      this.receivedMarkets.size < REQUIRED_MARKETS.length
+    ) {
+      return;
+    }
+    console.log(
+      "[INDEX_PRICE] Got index prices for all markets — feed is live",
+    );
+    this.initResolver(undefined);
+    this.initResolver = undefined;
+  }
+
+  private parseIndexUpdate(raw: unknown): {
+    marketSymbol: string;
+    price: number;
+  } | null {
+    if (!raw || typeof raw !== "object") return null;
+
+    const envelope = raw as Record<string, unknown>;
+    const payload =
+      envelope.data && typeof envelope.data === "object"
+        ? (envelope.data as Record<string, unknown>)
+        : envelope;
+
+    const indexSymbol = String(
+      payload.i ?? payload.s ?? payload.symbol ?? "",
+    ).toUpperCase();
+    const marketSymbol = STREAM_TO_MARKET[indexSymbol];
+    if (!marketSymbol) return null;
+
+    const price = Number(payload.p ?? payload.price);
+    if (!Number.isFinite(price) || price <= 0) return null;
+
+    return { marketSymbol, price };
   }
 
   private setupPriceSubscriptions() {
-    console.log(process.env.PRICE_UPDATES_WEBSOCKET_BACKEND_URL);
+    const url = process.env.PRICE_UPDATES_WEBSOCKET_BACKEND_URL;
+    console.log("[INDEX_PRICE] Connecting to", url);
 
-    let ws = new WebSocket(process.env.PRICE_UPDATES_WEBSOCKET_BACKEND_URL!);
+    const ws = new WebSocket(url!);
+    let subscribed = false;
 
-    // maybe we will ahve to wait for ws.open using  promises
-
-    // subscribe to streams
-    this.streamPairs.forEach((streamPair) => {
-      this.BINANCE_SUBSCIRPTION_REQUEST.params.push(streamPair);
-    });
-
-    ws.onopen = (ev) => {
-      // send sub request
-      console.log("binance ws server connection oopned ", ev);
-      let subRequest = JSON.stringify(this.BINANCE_SUBSCIRPTION_REQUEST);
-      // console.log(subRequest);
-      ws.send(subRequest);
+    ws.onopen = () => {
+      console.log("[INDEX_PRICE] WebSocket connected, subscribing");
+      ws.send(
+        JSON.stringify({
+          method: "SUBSCRIBE",
+          params: this.streamPairs,
+          id: 1,
+        }),
+      );
     };
 
     ws.onerror = (ev) => {
-      throw new Error("mark price udpates ws server error");
+      console.error("[INDEX_PRICE] WebSocket error", ev);
+      throw new Error(
+        "[INDEX_PRICE] WebSocket error",
+      );
     };
 
-    ws.onmessage = ({ data }) => {
-      // console.log("binance ws server connection sent message  ", data);
+    ws.onclose = () => {
+      console.warn("[INDEX_PRICE] WebSocket closed — engine continues without live feed");
+      throw new Error(
+        "[INDEX_PRICE] WebSocket closed — engine continues without live feed",
+      );
+    };
 
-      data = JSON.parse(data);
+    ws.onmessage = async ({ data }) => {
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(String(data));
+      } catch {
+        return;
+      }
 
-      assert(!data.error && data.id == 1);
+      const message = parsed as Record<string, unknown>;
 
-      ws.onmessage = async ({ data }) => {
-        // console.log("binance ws server connection sent message  ", data);
+      // Subscription acknowledgement
+      if (message.id === 1 && !subscribed) {
+        if (message.error) {
+          console.error("[INDEX_PRICE] Subscribe failed:", message.error);
+          return;
+        }
+        subscribed = true;
+        console.log("[INDEX_PRICE] Subscription confirmed");
+        return;
+      }
 
-        data = JSON.parse(data);
-        // this needs to be pushed on redis input stream
-        // to keep input to engien determinstic
-        // console.log(data);
+      const update = this.parseIndexUpdate(parsed);
+      if (!update) return;
 
-        const indexSymbol = String(data.i ?? data.s ?? "").toUpperCase();
-        const marketSymbol = this.streamToMarketSymbol[indexSymbol];
-        if (!marketSymbol) return;
+      await this.communicator.send(this.sendToAdrress, {
+        type: "indexprice_updated",
+        payload: {
+          price: update.price,
+          marketSymbol: update.marketSymbol,
+        },
+      });
 
-        await this.communicator.send(this.sendToAdrress, {
-          type: "indexprice_updated",
-          payload: { price: +data.p, marketSymbol },
-        });
-
-        // here the init should resolve, after getting
-        if (
-          this.initResolver &&
-          this.receivedIndexPrices.size == this.streamPairs.length
-        ) {
-          console.log(
-            "got index price udpates for all markets, resolving initialize in indexPriceObserver ",
-          );
-          this.initResolver(1);
-          this.initResolver = undefined;
-        } else this.receivedIndexPrices.add(data.i);
-      };
+      this.receivedMarkets.add(update.marketSymbol);
+      this.maybeFinishInit();
     };
   }
 }
+
 export default IndexPriceObserver;

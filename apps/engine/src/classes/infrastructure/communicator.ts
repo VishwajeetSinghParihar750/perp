@@ -34,7 +34,9 @@ export default class Communicator {
   }
 
   async receiveRequests(lastRedisMessageId: string = "0") {
-    await this.redisClient.connect();
+    if (!this.redisClient.isOpen) {
+      await this.redisClient.connect();
+    }
 
     console.log(
       "handling messgaes from stream  ",

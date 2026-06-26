@@ -16,6 +16,14 @@ import {
   type DepthSyncInfo,
   type OrderbookState,
 } from "../lib/depthSync";
+import {
+  fetchOpenOrders,
+  fetchUserFills,
+  parseDecimal,
+  signIn as apiSignIn,
+  signUp as apiSignUp,
+  type HttpOpenOrder,
+} from "../lib/api";
 
 export type SymbolType = "BTCUSD" | "SOLUSD" | "ETHUSD";
 export type OrderSide = "BUY" | "SELL";
@@ -33,21 +41,50 @@ export interface Position {
   marginType: MarginType;
 }
 
+export interface OpenOrder {
+  id: string;
+  side: OrderSide;
+  price: number;
+  quantity: number;
+  filledQuantity: number;
+  status: string;
+  type: OrderType;
+  marginType: MarginType;
+  marketSymbol: SymbolType;
+}
+
+export interface Trade {
+  price: number;
+  qty: number;
+  side?: "BUY" | "SELL";
+  time: string;
+}
+
+export interface BalanceInfo {
+  available: number;
+  locked: number;
+}
+
 export interface TradingContextProps {
   isAuthenticated: boolean;
   user: { username: string; id: string } | null;
   token: string | null;
   currentSymbol: SymbolType;
   setCurrentSymbol: (marketSymbol: SymbolType) => void;
-  orderbook: { asks: [number, number][]; bids: [number, number][] };
+  orderbook: OrderbookState;
   lastTradedPrice: number | null;
   indexPrice: number | null;
-  trades: { price: number; qty: number; side?: "BUY" | "SELL"; time: string }[];
-  balances: Record<string, number>;
+  lastTradedPrices: Partial<Record<SymbolType, number>>;
+  indexPrices: Partial<Record<SymbolType, number>>;
+  trades: Trade[];
+  balance: BalanceInfo;
   positions: Record<string, Position>;
+  openOrders: OpenOrder[];
   wsConnected: boolean;
   error: string | null;
+  notice: string | null;
   setError: (err: string | null) => void;
+  clearNotice: () => void;
   login: (username: string, password: string) => Promise<boolean>;
   signUp: (
     username: string,
@@ -61,9 +98,11 @@ export interface TradingContextProps {
     qty: number;
     margin: number;
     marginType: MarginType;
-  }) => void;
+  }) => Promise<boolean>;
+  cancelOrder: (orderId: string) => Promise<boolean>;
   addBalance: (marketSymbol: string, amount: number) => void;
   fetchBalanceAndPositions: () => void;
+  refreshOpenOrders: () => Promise<void>;
 }
 
 const TradingContext = createContext<TradingContextProps | undefined>(
@@ -77,12 +116,33 @@ export const useTrading = () => {
   return context;
 };
 
+const ALL_MARKET_EVENTS = [
+  "depth.updated",
+  "lastTradedPrice.updated",
+  "trades.created",
+  "indexprice.updated",
+] as const;
+
+function mapOpenOrder(order: HttpOpenOrder): OpenOrder {
+  return {
+    id: order.id,
+    side: order.side,
+    price: parseDecimal(order.price),
+    quantity: parseDecimal(order.quantity),
+    filledQuantity: parseDecimal(order.filledQuantity),
+    status: order.status,
+    type: order.type,
+    marginType: order.marginType,
+    marketSymbol: order.symbol,
+  };
+}
+
 export const TradingProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const [token, setToken] = useState<string | null>(() => {
-    return localStorage.getItem("perp_token");
-  });
+  const [token, setToken] = useState<string | null>(() =>
+    localStorage.getItem("perp_token"),
+  );
   const [user, setUser] = useState<{ username: string; id: string } | null>(
     () => {
       try {
@@ -100,44 +160,58 @@ export const TradingProvider: React.FC<{ children: React.ReactNode }> = ({
   });
   const [lastTradedPrice, setLastTradedPrice] = useState<number | null>(null);
   const [indexPrice, setIndexPrice] = useState<number | null>(null);
-  const [trades, setTrades] = useState<
-    { price: number; qty: number; side?: "BUY" | "SELL"; time: string }[]
-  >([]);
-  const [balances, setBalances] = useState<Record<string, number>>({
-    USD: 0,
-    BTCUSD: 0,
-    SOLUSD: 0,
-    ETHUSD: 0,
+  const [lastTradedPrices, setLastTradedPrices] = useState<
+    Partial<Record<SymbolType, number>>
+  >({});
+  const [indexPrices, setIndexPrices] = useState<
+    Partial<Record<SymbolType, number>>
+  >({});
+  const [trades, setTrades] = useState<Trade[]>([]);
+  const [balance, setBalance] = useState<BalanceInfo>({
+    available: 0,
+    locked: 0,
   });
   const [positions, setPositions] = useState<Record<string, Position>>({});
-  const [wsConnected, setWsConnected] = useState<boolean>(false);
+  const [openOrders, setOpenOrders] = useState<OpenOrder[]>([]);
+  const [wsConnected, setWsConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
   const wsRef = useRef<WebSocket | null>(null);
-  const nextReqIdRef = useRef<number>(1);
-  // Track depth sync state per symbol
+  const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const nextReqIdRef = useRef(1);
   const depthSyncRef = useRef<Record<string, DepthSyncInfo>>({});
-  // Keep a ref to currentSymbol so message handlers can read it without stale closure
+  const pendingDepthRequestsRef = useRef<Map<string, SymbolType>>(new Map());
+  const eventsSubscribedRef = useRef(false);
   const currentSymbolRef = useRef<SymbolType>(currentSymbol);
+  const tokenRef = useRef<string | null>(token);
 
-  const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3001";
   const WS_URL = import.meta.env.VITE_WS_URL ?? "ws://localhost:3000";
 
   const getNextRequestId = useCallback(() => {
-    const id = `req_${nextReqIdRef.current}`;
-    nextReqIdRef.current += 1;
+    const id = `req_${nextReqIdRef.current++}`;
     return id;
   }, []);
+
+  const clearNotice = useCallback(() => setNotice(null), []);
 
   const logout = useCallback(() => {
     localStorage.removeItem("perp_token");
     localStorage.removeItem("perp_user");
     setToken(null);
+    tokenRef.current = null;
     setUser(null);
-    setBalances({ USD: 0, BTCUSD: 0, SOLUSD: 0, ETHUSD: 0 });
+    setBalance({ available: 0, locked: 0 });
     setPositions({});
+    setOpenOrders([]);
     setWsConnected(false);
+    eventsSubscribedRef.current = false;
     depthSyncRef.current = {};
+    pendingDepthRequestsRef.current.clear();
+    if (reconnectTimerRef.current) {
+      clearTimeout(reconnectTimerRef.current);
+      reconnectTimerRef.current = null;
+    }
     if (wsRef.current) {
       wsRef.current.close();
       wsRef.current = null;
@@ -150,33 +224,18 @@ export const TradingProvider: React.FC<{ children: React.ReactNode }> = ({
   ): Promise<boolean> => {
     try {
       setError(null);
-      const res = await fetch(`${API_URL}/signin`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password }),
-      });
-      const data = await res.json();
-      if (res.ok && !data.error && data.payload?.jwt_token) {
-        const jwt_token = data.payload.jwt_token;
-        try {
-          const payloadBase64 = jwt_token.split(".")[1];
-          const decoded = JSON.parse(atob(payloadBase64));
-          const userInfo = { username: decoded.username, id: decoded.id };
-          localStorage.setItem("perp_token", jwt_token);
-          localStorage.setItem("perp_user", JSON.stringify(userInfo));
-          setToken(jwt_token);
-          setUser(userInfo);
-          return true;
-        } catch (err) {
-          setError("Failed to decode token");
-          return false;
-        }
-      } else {
-        setError(data.payload || "Incorrect credentials");
-        return false;
-      }
+      const jwt_token = await apiSignIn(username, password);
+      const payloadBase64 = jwt_token.split(".")[1];
+      const decoded = JSON.parse(atob(payloadBase64));
+      const userInfo = { username: decoded.username, id: decoded.id };
+      localStorage.setItem("perp_token", jwt_token);
+      localStorage.setItem("perp_user", JSON.stringify(userInfo));
+      tokenRef.current = jwt_token;
+      setToken(jwt_token);
+      setUser(userInfo);
+      return true;
     } catch (err) {
-      setError("Network error connecting to auth server");
+      setError(err instanceof Error ? err.message : "Login failed");
       return false;
     }
   };
@@ -187,93 +246,142 @@ export const TradingProvider: React.FC<{ children: React.ReactNode }> = ({
   ): Promise<{ success: boolean; message: string }> => {
     try {
       setError(null);
-      const res = await fetch(`${API_URL}/signup`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password }),
-      });
-      const data = await res.json();
-      if (res.ok && !data.error) {
-        return {
-          success: true,
-          message: "Account created successfully! Please sign in.",
-        };
-      } else {
-        return {
-          success: false,
-          message: data.payload || "Username already exists",
-        };
-      }
+      await apiSignUp(username, password);
+      return {
+        success: true,
+        message: "Account created successfully! Please sign in.",
+      };
     } catch (err) {
-      return { success: false, message: "Network error during signup" };
+      return {
+        success: false,
+        message: err instanceof Error ? err.message : "Signup failed",
+      };
     }
   };
 
-  const sendWsMessage = useCallback((msg: any) => {
-    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+  const sendWsMessage = useCallback((msg: Record<string, unknown>) => {
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
       wsRef.current.send(JSON.stringify(msg));
     }
   }, []);
 
-  const fetchBalanceAndPositions = useCallback(() => {
-    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-      sendWsMessage({
-        requestId: getNextRequestId(),
-        type: "get_balance",
-        payload: {},
-      });
-      sendWsMessage({
-        requestId: getNextRequestId(),
-        type: "get_position",
-        payload: {},
-      });
-    }
-  }, [sendWsMessage, getNextRequestId]);
-
-  /**
-   * Depth sync protocol:
-   *   1. Subscribe to depth.updated
-   *   2. Buffer incoming updates (with lastUpdatedDepthId)
-   *   3. After subscription confirms, request full depth and include the latest
-   *      buffered depth id so the backend knows what the client has already seen
-   *   4. Apply snapshot, discard buffered updates at or before snapshot id,
-   *      replay newer buffered updates, then go live
-   */
-  const startDepthSync = useCallback(
-    (symbol: SymbolType) => {
-      console.log(`[DEPTH] Starting sync for ${symbol}`);
-
-      const subReqId = `sub_depth_${symbol}_${Date.now()}`;
-      depthSyncRef.current[symbol] = createDepthSyncInfo(subReqId);
-
-      sendWsMessage({
-        requestId: subReqId,
-        type: "subscribe_event",
-        payload: {
-          events: ["depth.updated"],
-        },
-      });
-
-      console.log(`[DEPTH] Subscribe sent for ${symbol}, reqId: ${subReqId}`);
+  const applyBalancePayload = useCallback(
+    (payload: unknown) => {
+      if (
+        typeof payload === "object" &&
+        payload !== null &&
+        "balance" in payload
+      ) {
+        const { balance: available, lockedBalance } = payload as {
+          balance: number;
+          lockedBalance: number;
+        };
+        setBalance({ available, locked: lockedBalance });
+      }
     },
-    [sendWsMessage],
+    [],
   );
 
+  const requestDepthSnapshot = useCallback(
+    (symbol: SymbolType) => {
+      const existing = depthSyncRef.current[symbol];
+      depthSyncRef.current[symbol] = {
+        state: "fetching",
+        buffer: existing?.buffer ?? [],
+        lastAppliedDepthId: existing?.lastAppliedDepthId ?? 0,
+      };
+
+      const reqId = getNextRequestId();
+      pendingDepthRequestsRef.current.set(reqId, symbol);
+
+      const syncInfo = depthSyncRef.current[symbol];
+      const lastUpdatedDepthId = getLatestBufferedDepthId(syncInfo.buffer);
+      const payload: {
+        marketSymbol: SymbolType;
+        lastUpdatedDepthId?: number;
+      } = { marketSymbol: symbol };
+      if (lastUpdatedDepthId !== undefined) {
+        payload.lastUpdatedDepthId = lastUpdatedDepthId;
+      }
+
+      sendWsMessage({
+        requestId: reqId,
+        type: "get_depth",
+        payload,
+      });
+    },
+    [getNextRequestId, sendWsMessage],
+  );
+
+  const startInitialDepthSync = useCallback(
+    (symbol: SymbolType, subReqId: string) => {
+      depthSyncRef.current[symbol] = createDepthSyncInfo(subReqId);
+    },
+    [],
+  );
+
+  const fetchBalanceAndPositions = useCallback(() => {
+    sendWsMessage({
+      requestId: getNextRequestId(),
+      type: "get_balance",
+      payload: {},
+    });
+    sendWsMessage({
+      requestId: getNextRequestId(),
+      type: "get_position",
+      payload: {},
+    });
+  }, [sendWsMessage, getNextRequestId]);
+
+  const refreshOpenOrders = useCallback(async () => {
+    const activeToken = tokenRef.current;
+    if (!activeToken) return;
+    try {
+      const orders = await fetchOpenOrders(
+        activeToken,
+        currentSymbolRef.current,
+      );
+      setOpenOrders(orders.map(mapOpenOrder));
+    } catch (err) {
+      console.error("[HTTP] Failed to fetch open orders:", err);
+    }
+  }, []);
+
+  const loadHistoricalTrades = useCallback(async (symbol: SymbolType) => {
+    const activeToken = tokenRef.current;
+    if (!activeToken) return;
+    try {
+      const fills = await fetchUserFills(activeToken);
+      const symbolFills = fills
+        .filter((fill) => fill.symbol === symbol)
+        .slice(0, 50)
+        .map((fill) => ({
+          price: parseDecimal(fill.price),
+          qty: parseDecimal(fill.quantity),
+          time: new Date().toLocaleTimeString(),
+        }));
+      setTrades(symbolFills);
+    } catch (err) {
+      console.error("[HTTP] Failed to fetch trades:", err);
+    }
+  }, []);
+
   const placeOrder = useCallback(
-    (params: {
+    async (params: {
       side: OrderSide;
       type: OrderType;
       price: number;
       qty: number;
       margin: number;
       marginType: MarginType;
-    }) => {
-      if (!token) {
+    }): Promise<boolean> => {
+      if (!tokenRef.current) {
         setError("Please sign in to trade");
-        return;
+        return false;
       }
+      const reqId = getNextRequestId();
       sendWsMessage({
-        requestId: getNextRequestId(),
+        requestId: reqId,
         type: "create_order",
         payload: {
           side: params.side,
@@ -285,55 +393,94 @@ export const TradingProvider: React.FC<{ children: React.ReactNode }> = ({
           marketSymbol: currentSymbolRef.current,
         },
       });
+      setNotice("Order submitted");
+      return true;
     },
-    [token, sendWsMessage, getNextRequestId],
+    [getNextRequestId, sendWsMessage],
+  );
+
+  const cancelOrder = useCallback(
+    async (orderId: string): Promise<boolean> => {
+      if (!tokenRef.current) return false;
+      sendWsMessage({
+        requestId: getNextRequestId(),
+        type: "cancel_order",
+        payload: { orderId },
+      });
+      setNotice("Cancel request sent");
+      return true;
+    },
+    [getNextRequestId, sendWsMessage],
   );
 
   const addBalance = useCallback(
     (marketSymbol: string, amount: number) => {
-      if (!token) return;
+      if (!tokenRef.current) return;
       sendWsMessage({
         requestId: getNextRequestId(),
         type: "add_balance",
-        payload: {
-          marketSymbol,
-          amount,
-        },
+        payload: { marketSymbol, amount },
       });
     },
-    [token, sendWsMessage, getNextRequestId],
+    [getNextRequestId, sendWsMessage],
   );
 
-  // ─── WebSocket Connection Lifecycle ────────────────────────────────────────
-  useEffect(() => {
-    if (!token) return;
+  const handleDepthSnapshot = useCallback(
+    (symbol: SymbolType, payload: Record<string, unknown>) => {
+      const syncInfo = depthSyncRef.current[symbol];
+      const snapshotDepthId = (payload.lastUpdatedDepthId as number) ?? 0;
+      const snapshotBook = applyDepthSnapshot(
+        (payload.asks as { price: number; quantity: number }[]) || [],
+        (payload.bids as { price: number; quantity: number }[]) || [],
+      );
+      const buffered = syncInfo?.buffer ?? [];
+      const { book, lastAppliedDepthId } = reconcileBufferedDepthUpdates(
+        snapshotBook,
+        snapshotDepthId,
+        buffered,
+      );
 
-    console.log("[WS] Connecting to WebSocket");
+      if (symbol === currentSymbolRef.current) {
+        setOrderbook(book);
+      }
 
-    const ws = new WebSocket(`${WS_URL}?jwt_token=${token}`);
+      depthSyncRef.current[symbol] = {
+        state: "live",
+        buffer: [],
+        lastAppliedDepthId,
+      };
+    },
+    [],
+  );
+
+  const connectWebSocket = useCallback(() => {
+    const activeToken = tokenRef.current;
+    if (!activeToken) return;
+
+    if (wsRef.current) {
+      wsRef.current.close();
+      wsRef.current = null;
+    }
+
+    const ws = new WebSocket(`${WS_URL}?jwt_token=${activeToken}`);
     wsRef.current = ws;
 
     ws.onopen = () => {
       setWsConnected(true);
       setError(null);
-      console.log("[WS] Connected");
+      eventsSubscribedRef.current = false;
 
-      // Subscribe to non-depth events immediately
+      const subReqId = getNextRequestId();
+      startInitialDepthSync(currentSymbolRef.current, subReqId);
+
       ws.send(
         JSON.stringify({
-          requestId: getNextRequestId(),
+          requestId: subReqId,
           type: "subscribe_event",
-          payload: {
-            events: [
-              "lastTradedPrice.updated",
-              "trades.created",
-              "indexprice.updated",
-            ],
-          },
+          payload: { events: [...ALL_MARKET_EVENTS] },
         }),
       );
 
-      // Fetch balance and positions
       ws.send(
         JSON.stringify({
           requestId: getNextRequestId(),
@@ -349,20 +496,22 @@ export const TradingProvider: React.FC<{ children: React.ReactNode }> = ({
         }),
       );
 
-      // Start depth sync for current symbol
-      // (startDepthSync is defined below, but onopen runs after mount so ref is stable)
-      startDepthSync(currentSymbolRef.current);
+      void refreshOpenOrders();
+      void loadHistoricalTrades(currentSymbolRef.current);
     };
 
     ws.onclose = (event) => {
       setWsConnected(false);
-      depthSyncRef.current = {};
+      eventsSubscribedRef.current = false;
+
       if (event.code === 4001) {
-        console.warn("[WS] Closed: unauthorized/expired token");
         logout();
         setError("Your session has expired. Please sign in again.");
-      } else {
-        console.log(`[WS] Closed with code: ${event.code}`);
+        return;
+      }
+
+      if (tokenRef.current) {
+        reconnectTimerRef.current = setTimeout(() => connectWebSocket(), 3000);
       }
     };
 
@@ -375,143 +524,82 @@ export const TradingProvider: React.FC<{ children: React.ReactNode }> = ({
         const msg = JSON.parse(event.data);
         const { type, payload, requestId } = msg;
 
-        // ── Direct responses (type-dispatched) ──────────────────────────────
-
-        // Depth snapshot response
         if (type === "depth" && payload) {
-          const symbol = currentSymbolRef.current;
-          const syncInfo = depthSyncRef.current[symbol];
-          const snapshotDepthId = payload.lastUpdatedDepthId ?? 0;
-          console.log(
-            `[DEPTH] Snapshot received for ${symbol}, id: ${snapshotDepthId}, state: ${syncInfo?.state}`,
-          );
-
-          if (!syncInfo || syncInfo.state !== "fetching") {
-            console.warn(
-              `[DEPTH] Received snapshot in unexpected state for ${symbol}`,
-            );
-          }
-
-          const snapshotBook = applyDepthSnapshot(
-            payload.asks || [],
-            payload.bids || [],
-          );
-          const buffered = syncInfo?.buffer ?? [];
-          const { book, lastAppliedDepthId } = reconcileBufferedDepthUpdates(
-            snapshotBook,
-            snapshotDepthId,
-            buffered,
-          );
-
-          console.log(
-            `[DEPTH] Replayed ${buffered.filter((update) => update.lastUpdatedDepthId > snapshotDepthId).length}/${buffered.length} buffered updates for ${symbol}`,
-          );
-
-          setOrderbook(book);
-
-          if (depthSyncRef.current[symbol]) {
-            depthSyncRef.current[symbol].state = "live";
-            depthSyncRef.current[symbol].buffer = [];
-            depthSyncRef.current[symbol].lastAppliedDepthId = lastAppliedDepthId;
-          }
+          const symbol =
+            pendingDepthRequestsRef.current.get(requestId) ??
+            currentSymbolRef.current;
+          pendingDepthRequestsRef.current.delete(requestId);
+          handleDepthSnapshot(symbol, payload);
           return;
         }
 
-        // event_subscribed — check if this is a depth subscription confirmation
-        if (type === "event_subscribed" && payload) {
+        if (type === "event_subscribed") {
+          eventsSubscribedRef.current = true;
           const symbol = currentSymbolRef.current;
           const syncInfo = depthSyncRef.current[symbol];
-
           if (
-            syncInfo &&
-            syncInfo.state === "subscribing" &&
-            requestId === syncInfo.subReqId
+            syncInfo?.state === "subscribing" &&
+            syncInfo.subReqId === requestId
           ) {
-            console.log(
-              `[DEPTH] Subscription confirmed for ${symbol}, sending get_depth`,
-            );
-            syncInfo.state = "fetching";
-
-            const lastUpdatedDepthId = getLatestBufferedDepthId(syncInfo.buffer);
-            const depthPayload: {
-              marketSymbol: SymbolType;
-              lastUpdatedDepthId?: number;
-            } = { marketSymbol: symbol };
-            if (lastUpdatedDepthId !== undefined) {
-              depthPayload.lastUpdatedDepthId = lastUpdatedDepthId;
-            }
-
-            if (ws.readyState === WebSocket.OPEN) {
-              ws.send(
-                JSON.stringify({
-                  requestId: getNextRequestId(),
-                  type: "get_depth",
-                  payload: depthPayload,
-                }),
-              );
-            }
+            requestDepthSnapshot(symbol);
           }
           return;
         }
 
-        // Balance response
-        if (type === "balance" && payload !== undefined) {
-          const usdBalance =
-            typeof payload === "object" && payload !== null && "balance" in payload
-              ? (payload as { balance: number; lockedBalance: number }).balance
-              : typeof payload === "number"
-                ? payload
-                : 0;
-          setBalances((prev) => ({ ...prev, USD: usdBalance }));
+        if (type === "balance") {
+          applyBalancePayload(payload);
           return;
         }
 
-        // Positions response
+        if (type === "balance_updated") {
+          applyBalancePayload(payload);
+          return;
+        }
+
         if (type === "position" && payload) {
           const mapped: Record<string, Position> = {};
           for (const [symbol, pos] of Object.entries(
-            payload as Record<string, any>,
+            payload as Record<string, Record<string, unknown>>,
           )) {
             mapped[symbol] = {
               positionId: `${pos.userId}_${symbol}`,
-              userId: pos.userId,
-              price: pos.price,
-              qty: pos.quantity ?? pos.qty ?? 0,
-              type: pos.type,
-              marketSymbol: symbol as any,
-              margin: pos.margin,
-              marginType: pos.marginType,
+              userId: String(pos.userId),
+              price: Number(pos.price),
+              qty: Number(pos.quantity ?? pos.qty ?? 0),
+              type: pos.type as "LONG" | "SHORT",
+              marketSymbol: symbol as SymbolType,
+              margin: Number(pos.margin),
+              marginType: pos.marginType as MarginType,
             };
           }
           setPositions(mapped);
           return;
         }
 
-        // Order created
         if (type === "order_created") {
-          setTimeout(fetchBalanceAndPositions, 100);
+          setNotice("Order placed successfully");
+          setTimeout(() => {
+            fetchBalanceAndPositions();
+            void refreshOpenOrders();
+          }, 150);
           return;
         }
 
-        // Balance updated
-        if (type === "balance_updated" && payload !== undefined) {
-          const usdBalance =
-            typeof payload === "object" && payload !== null && "balance" in payload
-              ? (payload as { balance: number; lockedBalance: number }).balance
-              : 0;
-          setBalances((prev) => ({ ...prev, USD: usdBalance }));
+        if (type === "order_cancelled") {
+          setNotice("Order cancelled");
+          setTimeout(() => {
+            fetchBalanceAndPositions();
+            void refreshOpenOrders();
+          }, 150);
           return;
         }
 
-        // Error
         if (type === "error" && payload) {
-          setError(payload);
+          setError(String(payload));
           return;
         }
 
-        // ── Broadcasted engine events ────────────────────────────────────────
-        // Engine events have shape: { type: "event", idempotencyKey: ..., payload: { type: "...", data: {...} } }
-        if (type === "event" && payload && payload.type) {
+        if (type === "event" && payload?.type) {
           const { type: eventType, data } = payload;
           const activeSymbol = currentSymbolRef.current;
 
@@ -519,13 +607,7 @@ export const TradingProvider: React.FC<{ children: React.ReactNode }> = ({
             const symbol = data.marketSymbol as SymbolType;
             const syncInfo = depthSyncRef.current[symbol];
             const updateId = data.lastUpdatedDepthId as number | undefined;
-
-            if (!syncInfo || updateId === undefined) {
-              console.log(
-                `[DEPTH] Received update for ${symbol} without sync state or id, ignoring`,
-              );
-              return;
-            }
+            if (!syncInfo || updateId === undefined) return;
 
             const update = {
               lastUpdatedDepthId: updateId,
@@ -538,111 +620,136 @@ export const TradingProvider: React.FC<{ children: React.ReactNode }> = ({
               syncInfo.state === "fetching"
             ) {
               syncInfo.buffer.push(update);
-              console.log(
-                `[DEPTH] Buffered update ${updateId} for ${symbol} (state: ${syncInfo.state})`,
-              );
-            } else if (syncInfo.state === "live") {
-              if (
-                symbol === activeSymbol &&
-                shouldApplyLiveDepthUpdate(
-                  updateId,
-                  syncInfo.lastAppliedDepthId,
-                )
-              ) {
-                setOrderbook((prev) => applyDepthUpdate(prev, update));
-                syncInfo.lastAppliedDepthId = updateId;
-              }
+            } else if (
+              syncInfo.state === "live" &&
+              symbol === activeSymbol &&
+              shouldApplyLiveDepthUpdate(updateId, syncInfo.lastAppliedDepthId)
+            ) {
+              setOrderbook((prev) => applyDepthUpdate(prev, update));
+              syncInfo.lastAppliedDepthId = updateId;
             }
             return;
           }
 
-          if (
-            eventType === "lastTradedPrice.updated" &&
-            data &&
-            data.marketSymbol === currentSymbolRef.current
-          ) {
-            setLastTradedPrice(data.price);
-            return;
-          }
-
-          if (
-            eventType === "indexprice.updated" &&
-            data &&
-            data.marketSymbol === currentSymbolRef.current
-          ) {
-            setIndexPrice(data.price);
-            return;
-          }
-
-          if (
-            eventType === "trades.created" &&
-            data &&
-            data.marketSymbol === currentSymbolRef.current
-          ) {
-            const newTrades = (data.trades || []).map(([price, qty]: any) => ({
-              price,
-              qty,
-              time: new Date().toLocaleTimeString(),
+          if (eventType === "lastTradedPrice.updated" && data) {
+            const symbol = data.marketSymbol as SymbolType;
+            setLastTradedPrices((prev) => ({
+              ...prev,
+              [symbol]: data.price,
             }));
+            if (symbol === activeSymbol) {
+              setLastTradedPrice(data.price);
+            }
+            return;
+          }
+
+          if (eventType === "indexprice.updated" && data) {
+            const symbol = data.marketSymbol as SymbolType;
+            setIndexPrices((prev) => ({ ...prev, [symbol]: data.price }));
+            if (symbol === activeSymbol) {
+              setIndexPrice(data.price);
+            }
+            return;
+          }
+
+          if (eventType === "trades.created" && data) {
+            const symbol = data.marketSymbol as SymbolType;
+            if (symbol !== activeSymbol) return;
+            const newTrades = (data.trades || []).map(
+              ([price, qty]: [number, number]) => ({
+                price,
+                qty,
+                time: new Date().toLocaleTimeString(),
+              }),
+            );
             setTrades((prev) => [...newTrades, ...prev].slice(0, 50));
             setTimeout(fetchBalanceAndPositions, 100);
             return;
+          }
+
+          if (eventType === "fills.created") {
+            setTimeout(() => {
+              fetchBalanceAndPositions();
+              void refreshOpenOrders();
+            }, 100);
           }
         }
       } catch (err) {
         console.error("[WS] Error handling message:", err);
       }
     };
+  }, [
+    WS_URL,
+    applyBalancePayload,
+    fetchBalanceAndPositions,
+    getNextRequestId,
+    handleDepthSnapshot,
+    loadHistoricalTrades,
+    logout,
+    refreshOpenOrders,
+    requestDepthSnapshot,
+    startInitialDepthSync,
+  ]);
+
+  useEffect(() => {
+    tokenRef.current = token;
+    if (!token) return;
+
+    connectWebSocket();
 
     return () => {
-      console.log("[WS] Cleaning up WebSocket connection");
-      ws.close();
+      if (reconnectTimerRef.current) {
+        clearTimeout(reconnectTimerRef.current);
+      }
+      wsRef.current?.close();
       wsRef.current = null;
       depthSyncRef.current = {};
+      pendingDepthRequestsRef.current.clear();
+      eventsSubscribedRef.current = false;
     };
-  }, [token]); // Only reconnect when token changes
+  }, [token, connectWebSocket]);
 
-  // ─── Symbol Change Handler ─────────────────────────────────────────────────
   const setCurrentSymbol = useCallback(
     (symbol: SymbolType) => {
       if (symbol === currentSymbolRef.current) return;
       currentSymbolRef.current = symbol;
       setCurrentSymbolState(symbol);
 
-      // Reset market data for new symbol
       setOrderbook({ asks: [], bids: [] });
       setTrades([]);
-      setLastTradedPrice(null);
-      setIndexPrice(null);
+      setLastTradedPrice(lastTradedPrices[symbol] ?? null);
+      setIndexPrice(indexPrices[symbol] ?? null);
 
-      // Start fresh depth sync for the new symbol
-      if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-        startDepthSync(symbol);
+      if (wsRef.current?.readyState === WebSocket.OPEN) {
+        if (eventsSubscribedRef.current) {
+          requestDepthSnapshot(symbol);
+        }
+        void refreshOpenOrders();
+        void loadHistoricalTrades(symbol);
       }
     },
-    [startDepthSync],
+    [
+      indexPrices,
+      lastTradedPrices,
+      loadHistoricalTrades,
+      refreshOpenOrders,
+      requestDepthSnapshot,
+    ],
   );
 
-  // ─── Sync currentSymbolRef when state changes ──────────────────────────────
-  // (currentSymbolRef is already updated in setCurrentSymbol directly)
-
-  // ─── Polling for balance/positions ─────────────────────────────────────────
   useEffect(() => {
     if (!wsConnected || !token) return;
-
     const interval = setInterval(() => {
       fetchBalanceAndPositions();
-    }, 3000);
-
+      void refreshOpenOrders();
+    }, 5000);
     return () => clearInterval(interval);
-  }, [wsConnected, token, fetchBalanceAndPositions]);
-
-  const isAuthenticated = !!token;
+  }, [wsConnected, token, fetchBalanceAndPositions, refreshOpenOrders]);
 
   return (
     <TradingContext.Provider
       value={{
-        isAuthenticated,
+        isAuthenticated: !!token,
         user,
         token,
         currentSymbol,
@@ -650,18 +757,25 @@ export const TradingProvider: React.FC<{ children: React.ReactNode }> = ({
         orderbook,
         lastTradedPrice,
         indexPrice,
+        lastTradedPrices,
+        indexPrices,
         trades,
-        balances,
+        balance,
         positions,
+        openOrders,
         wsConnected,
         error,
+        notice,
         setError,
+        clearNotice,
         login,
         signUp,
         logout,
         placeOrder,
+        cancelOrder,
         addBalance,
         fetchBalanceAndPositions,
+        refreshOpenOrders,
       }}
     >
       {children}

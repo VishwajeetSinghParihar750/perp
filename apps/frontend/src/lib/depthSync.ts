@@ -17,16 +17,17 @@ export type DepthSyncState = "subscribing" | "fetching" | "live";
 export interface DepthSyncInfo {
   state: DepthSyncState;
   buffer: BufferedDepthUpdate[];
-  subReqId: string;
   lastAppliedDepthId: number;
+  /** Set only during initial subscribe-then-fetch flow */
+  subReqId?: string;
 }
 
-export function createDepthSyncInfo(subReqId: string): DepthSyncInfo {
+export function createDepthSyncInfo(subReqId?: string): DepthSyncInfo {
   return {
-    state: "subscribing",
+    state: subReqId ? "subscribing" : "fetching",
     buffer: [],
-    subReqId,
     lastAppliedDepthId: 0,
+    ...(subReqId ? { subReqId } : {}),
   };
 }
 

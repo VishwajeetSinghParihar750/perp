@@ -8,7 +8,7 @@ import * as controller from "../controllers/orderController.js";
 const router: Router = Router();
 
 router.get(
-  "/order:orderId",
+  "/order/:orderId",
   authMiddleware,
   zodBodyVerification(BackendRequest.GET_ORDER_SCHEMA, true),
   asyncHandler(controller.getOrder),

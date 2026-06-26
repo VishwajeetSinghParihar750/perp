@@ -61,7 +61,7 @@ export default class RequestHandler {
   handleRequest(
     request: EngineRequest.ENGINE_REQUEST | EngineRequest.ENGINE_INFO_REQUEST,
   ): EngineResponse.ENGINE_RESPONSE | undefined {
-    assert(!this.deps, "dependencies are still undefined");
+    assert(this.deps, "dependencies are still undefined");
 
     switch (request.type) {
       case "create_order": {

@@ -27,6 +27,15 @@ class IndexPriceObserver {
     "solusd@indexPrice",
     "ethusd@indexPrice",
   ];
+
+  private readonly streamToMarketSymbol: Record<string, string> = {
+    BTCUSD: "BTCUSD",
+    ETHUSD: "ETHUSD",
+    SOLUSD: "SOLUSD",
+    BTCUSDT: "BTCUSD",
+    ETHUSDT: "ETHUSD",
+    SOLUSDT: "SOLUSD",
+  };
   private receivedIndexPrices = new Set();
 
   private initResolver: ((val: unknown) => void) | undefined = undefined;
@@ -78,9 +87,13 @@ class IndexPriceObserver {
         // to keep input to engien determinstic
         // console.log(data);
 
+        const indexSymbol = String(data.i ?? data.s ?? "").toUpperCase();
+        const marketSymbol = this.streamToMarketSymbol[indexSymbol];
+        if (!marketSymbol) return;
+
         await this.communicator.send(this.sendToAdrress, {
           type: "indexprice_updated",
-          payload: { price: +data.p, symbol: data.i },
+          payload: { price: +data.p, marketSymbol },
         });
 
         // here the init should resolve, after getting

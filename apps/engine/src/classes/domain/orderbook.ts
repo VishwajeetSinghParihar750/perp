@@ -229,6 +229,22 @@ export class SingleMarketOrderbook implements Snapshotable<SINGLE_MARKET_ORDERBO
       type: "fills.created",
       data: { fills: [tradeEvent] },
     });
+
+    this.eventBus.emit({
+      type: "trades.created",
+      data: {
+        marketSymbol: this.marketSymbol,
+        trades: [[tradePrice, tradeQuantity]],
+      },
+    });
+
+    this.eventBus.emit({
+      type: "lastTradedPrice.updated",
+      data: {
+        marketSymbol: this.marketSymbol,
+        price: tradePrice,
+      },
+    });
   }
 
   private matchAgainstBook(

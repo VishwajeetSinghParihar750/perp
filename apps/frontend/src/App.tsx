@@ -1,19 +1,25 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { TradingProvider, useTrading } from "./context/TradingContext";
 import type { SymbolType } from "./context/TradingContext";
 import { OrderBook } from "./components/OrderBook";
 import { OrderPlacement } from "./components/OrderPlacement";
 import { AuthModal } from "./components/AuthModal";
 import {
-  TrendingUp,
   LogOut,
-  TrendingDown,
   Layers,
   CheckCircle2,
   AlertCircle,
   Briefcase,
   ShieldAlert,
+  X,
+  ListOrdered,
 } from "lucide-react";
+
+const DEFAULT_PRICES: Record<SymbolType, number> = {
+  BTCUSD: 94500,
+  ETHUSD: 1700,
+  SOLUSD: 135,
+};
 
 const MainLayout: React.FC = () => {
   const {
@@ -23,55 +29,75 @@ const MainLayout: React.FC = () => {
     setCurrentSymbol,
     lastTradedPrice,
     indexPrice,
+    lastTradedPrices,
+    indexPrices,
     positions,
-    balances,
+    balance,
+    openOrders,
     logout,
+    wsConnected,
+    error,
+    notice,
+    setError,
+    clearNotice,
+    cancelOrder,
   } = useTrading();
 
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState<"signin" | "signup">("signin");
   const [activeBottomTab, setActiveBottomTab] = useState<
-    "positions" | "balances"
+    "positions" | "orders" | "balances"
   >("positions");
+
+  useEffect(() => {
+    if (!notice) return;
+    const timer = setTimeout(clearNotice, 4000);
+    return () => clearTimeout(timer);
+  }, [notice, clearNotice]);
 
   const openAuth = (mode: "signin" | "signup") => {
     setAuthMode(mode);
     setAuthModalOpen(true);
   };
 
-  // Quick 24h change mock values
-  const mockChange =
-    currentSymbol === "BTCUSD"
-      ? "+1.42%"
-      : currentSymbol === "ETHUSD"
-        ? "+0.06%"
-        : "-2.15%";
-  const mockHigh =
-    currentSymbol === "BTCUSD"
-      ? 96450.0
-      : currentSymbol === "ETHUSD"
-        ? 1716.0
-        : 138.45;
-  const mockLow =
-    currentSymbol === "BTCUSD"
-      ? 93200.0
-      : currentSymbol === "ETHUSD"
-        ? 1680.0
-        : 131.2;
+  const getMarkPrice = (symbol: SymbolType) =>
+    lastTradedPrices[symbol] ?? indexPrices[symbol] ?? DEFAULT_PRICES[symbol];
 
-  // Total balance sum
-  const totalBalanceVal =
-    (balances["USD"] || 0) +
-    (balances["BTCUSD"] || 0) * (lastTradedPrice || 94500) +
-    (balances["ETHUSD"] || 0) * (lastTradedPrice || 1700) +
-    (balances["SOLUSD"] || 0) * (lastTradedPrice || 135);
+  const totalEquity =
+    balance.available +
+    balance.locked +
+    Object.values(positions).reduce((sum, pos) => {
+      const mark = getMarkPrice(pos.marketSymbol);
+      const priceDiff =
+        pos.type === "LONG" ? mark - pos.price : pos.price - mark;
+      return sum + priceDiff * pos.qty;
+    }, 0);
 
   return (
     <div className="min-h-screen bg-[#07080A] text-gray-200 flex flex-col font-sans selection:bg-emerald-500/30 selection:text-emerald-400">
-      {/* HEADER / NAVIGATION */}
+      {error && (
+        <div className="bg-red-950/80 border-b border-red-900 px-6 py-2 flex items-center justify-between text-sm text-red-300">
+          <span className="flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 shrink-0" />
+            {error}
+          </span>
+          <button
+            onClick={() => setError(null)}
+            className="p-1 hover:text-white cursor-pointer"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
+      {notice && (
+        <div className="bg-emerald-950/60 border-b border-emerald-900/60 px-6 py-2 text-sm text-emerald-300">
+          {notice}
+        </div>
+      )}
+
       <header className="bg-[#0B0D10] border-b border-gray-900/80 px-6 py-3.5 flex justify-between items-center shrink-0">
         <div className="flex items-center gap-8">
-          {/* Logo */}
           <div className="flex items-center gap-2">
             <div className="bg-red-500 text-black p-1.5 rounded-lg font-black flex items-center justify-center text-xs w-7 h-7">
               BP
@@ -83,37 +109,15 @@ const MainLayout: React.FC = () => {
               Futures
             </span>
           </div>
-
-          {/* Navigation links */}
-          <nav className="hidden md:flex items-center gap-6 text-sm font-semibold text-gray-400">
-            <span className="cursor-pointer hover:text-white transition-colors">
-              Spot
-            </span>
-            <span className="cursor-pointer text-white border-b-2 border-red-500 pb-1 px-1 transition-colors">
-              Futures
-            </span>
-            <span className="cursor-pointer hover:text-white transition-colors">
-              Lend
-            </span>
-            <span className="cursor-pointer hover:text-white transition-colors">
-              Vault
-            </span>
-            <span className="cursor-pointer hover:text-white transition-colors">
-              Stocks
-            </span>
-            <span className="cursor-not-allowed text-gray-600">BP</span>
-            <span className="cursor-pointer hover:text-white transition-colors text-xs bg-gray-800/40 px-2 py-1 rounded">
-              More ▾
-            </span>
-          </nav>
         </div>
 
-        {/* User Auth block */}
         <div className="flex items-center gap-4 text-sm">
           {isAuthenticated ? (
             <div className="flex items-center gap-3">
               <div className="bg-[#14171E] border border-gray-800 rounded-xl px-3.5 py-1.5 flex items-center gap-2">
-                <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></div>
+                <div
+                  className={`w-2.5 h-2.5 rounded-full ${wsConnected ? "bg-emerald-500 animate-pulse" : "bg-red-500"}`}
+                />
                 <span className="text-gray-300 font-bold font-mono text-xs">
                   {user?.username}
                 </span>
@@ -144,23 +148,18 @@ const MainLayout: React.FC = () => {
         </div>
       </header>
 
-      {/* METRIC RIBBON */}
       <section className="bg-[#0B0D10] border-b border-gray-900 px-6 py-2.5 flex flex-wrap items-center justify-between gap-4 shrink-0">
         <div className="flex items-center gap-6">
-          {/* Symbol Select */}
-          <div className="relative">
-            <select
-              value={currentSymbol}
-              onChange={(e) => setCurrentSymbol(e.target.value as SymbolType)}
-              className="bg-[#14171E] hover:bg-[#1C202B] border border-gray-900 text-white font-black text-sm px-4 py-1.5 rounded-xl focus:outline-none cursor-pointer transition-colors"
-            >
-              <option value="BTCUSD">BTC-PERP</option>
-              <option value="ETHUSD">ETH-PERP</option>
-              <option value="SOLUSD">SOL-PERP</option>
-            </select>
-          </div>
+          <select
+            value={currentSymbol}
+            onChange={(e) => setCurrentSymbol(e.target.value as SymbolType)}
+            className="bg-[#14171E] hover:bg-[#1C202B] border border-gray-900 text-white font-black text-sm px-4 py-1.5 rounded-xl focus:outline-none cursor-pointer transition-colors"
+          >
+            <option value="BTCUSD">BTC-PERP</option>
+            <option value="ETHUSD">ETH-PERP</option>
+            <option value="SOLUSD">SOL-PERP</option>
+          </select>
 
-          {/* Quick price info */}
           <div className="flex items-center gap-4 text-xs">
             <div className="space-y-0.5">
               <div className="text-gray-500">Last Price</div>
@@ -178,49 +177,30 @@ const MainLayout: React.FC = () => {
                   : "—"}
               </div>
             </div>
-            <div className="space-y-0.5 hidden sm:block">
-              <div className="text-gray-500">24h Change</div>
-              <div
-                className={`font-mono flex items-center gap-0.5 font-bold ${mockChange.startsWith("+") ? "text-emerald-400" : "text-red-500"}`}
-              >
-                {mockChange.startsWith("+") ? (
-                  <TrendingUp className="w-3 h-3" />
-                ) : (
-                  <TrendingDown className="w-3 h-3" />
-                )}
-                {mockChange}
-              </div>
-            </div>
-            <div className="space-y-0.5 hidden md:block">
-              <div className="text-gray-500">24h High</div>
-              <div className="font-mono text-gray-400">
-                ${mockHigh.toLocaleString()}
-              </div>
-            </div>
-            <div className="space-y-0.5 hidden md:block">
-              <div className="text-gray-500">24h Low</div>
-              <div className="font-mono text-gray-400">
-                ${mockLow.toLocaleString()}
-              </div>
-            </div>
           </div>
         </div>
 
         <div className="flex items-center gap-3 text-xs">
-          <span className="text-gray-500">Exchange status:</span>
-          <span className="flex items-center gap-1 font-bold text-emerald-400">
-            <CheckCircle2 className="w-3.5 h-3.5" /> Fully Operational
+          <span className="text-gray-500">Engine:</span>
+          <span
+            className={`flex items-center gap-1 font-bold ${wsConnected ? "text-emerald-400" : "text-red-500"}`}
+          >
+            {wsConnected ? (
+              <>
+                <CheckCircle2 className="w-3.5 h-3.5" /> Connected
+              </>
+            ) : (
+              <>
+                <AlertCircle className="w-3.5 h-3.5" /> Disconnected
+              </>
+            )}
           </span>
         </div>
       </section>
 
-      {/* MAIN CONTAINER */}
       <main className="flex-1 overflow-hidden flex flex-col lg:flex-row p-4 gap-4 h-full">
-        {/* LEFT COLUMN: Open Positions & Balances */}
         <div className="flex-1 flex flex-col gap-4 overflow-hidden h-full">
-          {/* POSITIONS & BALANCES BOX */}
           <div className="flex-1 bg-[#0B0D10] border border-gray-900 rounded-2xl flex flex-col overflow-hidden h-full">
-            {/* Tabs */}
             <div className="flex bg-[#11131A] px-4 py-2 border-b border-gray-900 justify-between items-center">
               <div className="flex gap-4">
                 <button
@@ -232,7 +212,18 @@ const MainLayout: React.FC = () => {
                   }`}
                 >
                   <Briefcase className="w-3.5 h-3.5" />
-                  Active Positions ({Object.keys(positions).length})
+                  Positions ({Object.keys(positions).length})
+                </button>
+                <button
+                  onClick={() => setActiveBottomTab("orders")}
+                  className={`font-semibold text-xs flex items-center gap-1.5 transition-colors cursor-pointer py-1 ${
+                    activeBottomTab === "orders"
+                      ? "text-emerald-400 border-b border-emerald-400"
+                      : "text-gray-400 hover:text-white"
+                  }`}
+                >
+                  <ListOrdered className="w-3.5 h-3.5" />
+                  Open Orders ({openOrders.length})
                 </button>
                 <button
                   onClick={() => setActiveBottomTab("balances")}
@@ -243,25 +234,22 @@ const MainLayout: React.FC = () => {
                   }`}
                 >
                   <Layers className="w-3.5 h-3.5" />
-                  Asset Balances
+                  Balances
                 </button>
               </div>
 
-              {/* Quick display of Total Balance */}
               <div className="text-[10px] text-gray-500 font-mono">
                 Total Equity:{" "}
                 <span className="text-emerald-400 font-bold">
                   $
-                  {totalBalanceVal.toLocaleString("en-US", {
+                  {totalEquity.toLocaleString("en-US", {
                     minimumFractionDigits: 2,
                     maximumFractionDigits: 2,
-                  })}{" "}
-                  USD
+                  })}
                 </span>
               </div>
             </div>
 
-            {/* Tab content */}
             <div className="flex-1 overflow-y-auto p-3 text-xs">
               {!isAuthenticated ? (
                 <div className="flex flex-col items-center justify-center h-full text-center py-16 text-gray-600 gap-2">
@@ -270,20 +258,14 @@ const MainLayout: React.FC = () => {
                     Authentication Required
                   </span>
                   <span className="text-[10px] text-gray-500 max-w-xs">
-                    Please log in or sign up to access your active leverage
-                    positions, asset balances, and real-time market data.
+                    Sign in to view positions, open orders, and balances.
                   </span>
                 </div>
               ) : activeBottomTab === "positions" ? (
-                /* POSITIONS LIST */
                 Object.keys(positions).length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-full text-center py-6 text-gray-600 gap-1">
                     <AlertCircle className="w-5 h-5 text-gray-700" />
                     <span>No active positions</span>
-                    <span className="text-[10px] text-gray-700 max-w-xs">
-                      Use the Order Placement box on the right to open leverage
-                      positions on {currentSymbol}.
-                    </span>
                   </div>
                 ) : (
                   <div className="space-y-2">
@@ -291,18 +273,16 @@ const MainLayout: React.FC = () => {
                       <span>Market</span>
                       <span>Type</span>
                       <span className="text-right">Size</span>
-                      <span className="text-right">Entry Price</span>
+                      <span className="text-right">Entry</span>
                       <span className="text-right">Margin</span>
                       <span className="text-right">Est. PnL</span>
                     </div>
                     {Object.entries(positions).map(([marketSymbol, pos]) => {
-                      const isLong = pos.type === "LONG";
-                      // Quick mock unrealized PnL based on current trade price
-                      const priceDiff = lastTradedPrice
-                        ? isLong
-                          ? lastTradedPrice - pos.price
-                          : pos.price - lastTradedPrice
-                        : 0;
+                      const mark = getMarkPrice(marketSymbol as SymbolType);
+                      const priceDiff =
+                        pos.type === "LONG"
+                          ? mark - pos.price
+                          : pos.price - mark;
                       const unrealizedPnL = priceDiff * pos.qty;
 
                       return (
@@ -314,7 +294,7 @@ const MainLayout: React.FC = () => {
                             {marketSymbol}
                           </span>
                           <span
-                            className={`font-semibold text-[10px] ${isLong ? "text-emerald-500 bg-emerald-500/10" : "text-red-500 bg-red-500/10"} px-1.5 py-0.5 rounded w-fit`}
+                            className={`font-semibold text-[10px] ${pos.type === "LONG" ? "text-emerald-500 bg-emerald-500/10" : "text-red-500 bg-red-500/10"} px-1.5 py-0.5 rounded w-fit`}
                           >
                             {pos.type} {pos.marginType}
                           </span>
@@ -322,10 +302,7 @@ const MainLayout: React.FC = () => {
                             {pos.qty.toFixed(4)}
                           </span>
                           <span className="text-right text-gray-400">
-                            $
-                            {pos.price.toLocaleString("en-US", {
-                              minimumFractionDigits: 2,
-                            })}
+                            ${pos.price.toLocaleString("en-US", { minimumFractionDigits: 2 })}
                           </span>
                           <span className="text-right text-gray-400">
                             ${pos.margin.toFixed(2)}
@@ -334,95 +311,87 @@ const MainLayout: React.FC = () => {
                             className={`text-right font-bold ${unrealizedPnL >= 0 ? "text-emerald-400" : "text-red-500"}`}
                           >
                             {unrealizedPnL >= 0 ? "+" : ""}$
-                            {unrealizedPnL.toLocaleString("en-US", {
-                              minimumFractionDigits: 2,
-                              maximumFractionDigits: 2,
-                            })}
+                            {unrealizedPnL.toFixed(2)}
                           </span>
                         </div>
                       );
                     })}
                   </div>
                 )
+              ) : activeBottomTab === "orders" ? (
+                openOrders.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center h-full text-center py-6 text-gray-600 gap-1">
+                    <AlertCircle className="w-5 h-5 text-gray-700" />
+                    <span>No open orders for {currentSymbol}</span>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <div className="grid grid-cols-7 text-[10px] uppercase tracking-wider font-bold text-gray-500 px-3 pb-1 border-b border-gray-950">
+                      <span>Side</span>
+                      <span>Type</span>
+                      <span className="text-right">Price</span>
+                      <span className="text-right">Qty</span>
+                      <span className="text-right">Filled</span>
+                      <span className="text-right">Status</span>
+                      <span className="text-right">Action</span>
+                    </div>
+                    {openOrders.map((order) => (
+                      <div
+                        key={order.id}
+                        className="grid grid-cols-7 items-center px-3 py-2 bg-[#14171E] rounded-xl font-mono"
+                      >
+                        <span
+                          className={
+                            order.side === "BUY"
+                              ? "text-emerald-400 font-bold"
+                              : "text-red-400 font-bold"
+                          }
+                        >
+                          {order.side}
+                        </span>
+                        <span className="text-gray-400">{order.type}</span>
+                        <span className="text-right text-gray-300">
+                          ${order.price.toFixed(2)}
+                        </span>
+                        <span className="text-right text-gray-300">
+                          {order.quantity.toFixed(4)}
+                        </span>
+                        <span className="text-right text-gray-400">
+                          {order.filledQuantity.toFixed(4)}
+                        </span>
+                        <span className="text-right text-gray-500 text-[10px]">
+                          {order.status}
+                        </span>
+                        <span className="text-right">
+                          <button
+                            onClick={() => void cancelOrder(order.id)}
+                            className="text-red-400 hover:text-red-300 text-[10px] font-bold cursor-pointer"
+                          >
+                            Cancel
+                          </button>
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )
               ) : (
-                /* BALANCES LIST */
                 <div className="space-y-2">
                   <div className="grid grid-cols-3 text-[10px] uppercase tracking-wider font-bold text-gray-500 px-3 pb-1 border-b border-gray-950">
                     <span>Asset</span>
-                    <span className="text-right">Available Balance</span>
-                    <span className="text-right">Estimated USD Value</span>
+                    <span className="text-right">Available</span>
+                    <span className="text-right">Locked (Margin)</span>
                   </div>
-
-                  {/* USD */}
                   <div className="grid grid-cols-3 items-center px-3 py-2 bg-[#14171E] rounded-xl font-mono">
                     <span className="font-bold text-white">USD</span>
-                    <span className="text-right text-gray-200">
-                      {(balances["USD"] || 0).toLocaleString("en-US", {
+                    <span className="text-right text-emerald-400">
+                      {balance.available.toLocaleString("en-US", {
                         minimumFractionDigits: 2,
                       })}
                     </span>
-                    <span className="text-right text-gray-400">
-                      $
-                      {(balances["USD"] || 0).toLocaleString("en-US", {
+                    <span className="text-right text-amber-400">
+                      {balance.locked.toLocaleString("en-US", {
                         minimumFractionDigits: 2,
                       })}
-                    </span>
-                  </div>
-
-                  {/* BTC */}
-                  <div className="grid grid-cols-3 items-center px-3 py-2 bg-[#14171E] rounded-xl font-mono">
-                    <span className="font-bold text-white">
-                      BTCUSD (Margin Lock)
-                    </span>
-                    <span className="text-right text-gray-200">
-                      {(balances["BTCUSD"] || 0).toFixed(6)}
-                    </span>
-                    <span className="text-right text-gray-400">
-                      $
-                      {(
-                        (balances["BTCUSD"] || 0) *
-                        (currentSymbol === "BTCUSD"
-                          ? lastTradedPrice || 94500
-                          : 94500)
-                      ).toLocaleString("en-US", { minimumFractionDigits: 2 })}
-                    </span>
-                  </div>
-
-                  {/* ETH */}
-                  <div className="grid grid-cols-3 items-center px-3 py-2 bg-[#14171E] rounded-xl font-mono">
-                    <span className="font-bold text-white">
-                      ETHUSD (Margin Lock)
-                    </span>
-                    <span className="text-right text-gray-200">
-                      {(balances["ETHUSD"] || 0).toFixed(6)}
-                    </span>
-                    <span className="text-right text-gray-400">
-                      $
-                      {(
-                        (balances["ETHUSD"] || 0) *
-                        (currentSymbol === "ETHUSD"
-                          ? lastTradedPrice || 1700
-                          : 1700)
-                      ).toLocaleString("en-US", { minimumFractionDigits: 2 })}
-                    </span>
-                  </div>
-
-                  {/* SOL */}
-                  <div className="grid grid-cols-3 items-center px-3 py-2 bg-[#14171E] rounded-xl font-mono">
-                    <span className="font-bold text-white">
-                      SOLUSD (Margin Lock)
-                    </span>
-                    <span className="text-right text-gray-200">
-                      {(balances["SOLUSD"] || 0).toFixed(6)}
-                    </span>
-                    <span className="text-right text-gray-400">
-                      $
-                      {(
-                        (balances["SOLUSD"] || 0) *
-                        (currentSymbol === "SOLUSD"
-                          ? lastTradedPrice || 135
-                          : 135)
-                      ).toLocaleString("en-US", { minimumFractionDigits: 2 })}
                     </span>
                   </div>
                 </div>
@@ -431,35 +400,24 @@ const MainLayout: React.FC = () => {
           </div>
         </div>
 
-        {/* MIDDLE COLUMN: Order Book & Recent Trades */}
         <div className="w-full lg:w-[420px] shrink-0 h-full overflow-hidden flex flex-col">
           <OrderBook />
         </div>
 
-        {/* RIGHT COLUMN: Order Placement */}
         <div className="w-full lg:w-[320px] shrink-0 h-full overflow-hidden flex flex-col">
           <OrderPlacement onOpenAuth={openAuth} />
         </div>
       </main>
 
-      {/* GLOBAL FOOTER BANNER */}
       <footer className="bg-[#0B0D10] border-t border-gray-900 px-6 py-2.5 text-[11px] text-gray-500 flex justify-between items-center shrink-0">
-        <div className="flex items-center gap-4">
-          <span>© 2026 Backpack Futures. All rights reserved.</span>
-          <span className="cursor-pointer hover:text-gray-300">
-            Terms of Use
-          </span>
-          <span className="cursor-pointer hover:text-gray-300">
-            Privacy Policy
-          </span>
-        </div>
-        <div className="flex items-center gap-1.5 text-emerald-500 font-mono font-bold text-[10px]">
-          <div className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></div>
-          <span>API: Connected to Engine</span>
-        </div>
+        <span>© 2026 Backpack Futures</span>
+        <span
+          className={`font-mono font-bold text-[10px] ${wsConnected ? "text-emerald-500" : "text-red-500"}`}
+        >
+          {wsConnected ? "Engine connected" : "Engine disconnected"}
+        </span>
       </footer>
 
-      {/* AUTHENTICATION MODAL */}
       <AuthModal
         isOpen={authModalOpen}
         onClose={() => setAuthModalOpen(false)}

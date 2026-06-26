@@ -18,22 +18,26 @@ export const OrderPlacement: React.FC<OrderPlacementProps> = ({
     isAuthenticated,
     currentSymbol,
     lastTradedPrice,
-    balances,
+    balance,
     placeOrder,
     addBalance,
+    wsConnected,
+    error,
   } = useTrading();
 
   const [side, setSide] = useState<OrderSide>("BUY");
   const [orderType, setOrderType] = useState<OrderType>("LIMIT");
   const [marginType, setMarginType] = useState<MarginType>("ISOLATED");
-  const [leverage, setLeverage] = useState<number>(10); // Default 10x leverage
+  const [leverage, setLeverage] = useState<number>(10);
   const [price, setPrice] = useState<string>("");
   const [qty, setQty] = useState<string>("");
   const [sliderPct, setSliderPct] = useState<number>(0);
   const [orderValue, setOrderValue] = useState<string>("");
+  const [submitting, setSubmitting] = useState(false);
+  const [validationError, setValidationError] = useState<string | null>(null);
 
-  const assetName = currentSymbol.replace("USD", ""); // BTC, SOL, ETH
-  const usdBalance = balances["USD"] || 0;
+  const assetName = currentSymbol.replace("USD", "");
+  const usdBalance = balance.available;
 
   // Sync price input with lastTradedPrice if MARKET order or price is empty initially
   useEffect(() => {
@@ -109,21 +113,37 @@ export const OrderPlacement: React.FC<OrderPlacementProps> = ({
     setSliderPct(isNaN(pct) ? 0 : pct);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isAuthenticated) return;
+    if (!isAuthenticated || submitting) return;
+
+    setValidationError(null);
 
     const orderPrice =
       orderType === "MARKET" ? lastTradedPrice || 0 : parseFloat(price);
     const orderQty = parseFloat(qty);
 
-    if (!orderPrice || orderPrice <= 0) return;
-    if (!orderQty || orderQty <= 0) return;
+    if (orderType === "MARKET" && !lastTradedPrice) {
+      setValidationError("Waiting for market price — check engine connection");
+      return;
+    }
+    if (!orderPrice || orderPrice <= 0) {
+      setValidationError("Enter a valid price");
+      return;
+    }
+    if (!orderQty || orderQty <= 0) {
+      setValidationError("Enter a valid quantity");
+      return;
+    }
 
-    // Margin required = (Price * Qty) / Leverage
     const calculatedMargin = (orderPrice * orderQty) / leverage;
+    if (calculatedMargin > usdBalance) {
+      setValidationError("Insufficient balance — use the USD faucet");
+      return;
+    }
 
-    placeOrder({
+    setSubmitting(true);
+    await placeOrder({
       side,
       type: orderType,
       price: orderPrice,
@@ -131,8 +151,7 @@ export const OrderPlacement: React.FC<OrderPlacementProps> = ({
       margin: parseFloat(calculatedMargin.toFixed(4)),
       marginType,
     });
-
-    // Reset qty and slider after placing
+    setSubmitting(false);
     setQty("");
     setSliderPct(0);
   };
@@ -212,16 +231,33 @@ export const OrderPlacement: React.FC<OrderPlacementProps> = ({
           </button>
         </div>
 
-        {/* Available Equity / USD Balance */}
         <div className="flex justify-between items-center text-xs mb-4">
           <span className="text-gray-400 flex items-center gap-1">
-            <Wallet className="w-3.5 h-3.5" /> Available Equity
+            <Wallet className="w-3.5 h-3.5" /> Available
           </span>
           <span className="font-mono text-gray-200">
             ${usdBalance.toLocaleString("en-US", { minimumFractionDigits: 2 })}{" "}
             USD
           </span>
         </div>
+        {balance.locked > 0 && (
+          <div className="flex justify-between items-center text-xs mb-4 -mt-2">
+            <span className="text-gray-500">Locked margin</span>
+            <span className="font-mono text-amber-400 text-[11px]">
+              ${balance.locked.toFixed(2)}
+            </span>
+          </div>
+        )}
+        {!wsConnected && isAuthenticated && (
+          <div className="mb-4 p-2 bg-amber-950/30 border border-amber-900/40 rounded-lg text-[11px] text-amber-400">
+            Engine disconnected — orders may not execute
+          </div>
+        )}
+        {(validationError || error) && (
+          <div className="mb-4 p-2 bg-red-950/30 border border-red-900/40 rounded-lg text-[11px] text-red-400">
+            {validationError || error}
+          </div>
+        )}
 
         {/* Price Input */}
         <div className="space-y-1.5 mb-4">
@@ -395,15 +431,18 @@ export const OrderPlacement: React.FC<OrderPlacementProps> = ({
         {isAuthenticated ? (
           <button
             onClick={handleSubmit}
-            className={`w-full py-3.5 rounded-xl font-bold text-sm shadow-xl transition-all cursor-pointer ${
+            disabled={submitting || !wsConnected}
+            className={`w-full py-3.5 rounded-xl font-bold text-sm shadow-xl transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
               side === "BUY"
                 ? "bg-emerald-500 hover:bg-emerald-400 text-black"
                 : "bg-red-500 hover:bg-red-400 text-black"
             }`}
           >
-            {side === "BUY"
-              ? "Place Buy / Long Order"
-              : "Place Sell / Short Order"}
+            {submitting
+              ? "Submitting..."
+              : side === "BUY"
+                ? "Place Buy / Long Order"
+                : "Place Sell / Short Order"}
           </button>
         ) : (
           <div className="flex flex-col gap-2">

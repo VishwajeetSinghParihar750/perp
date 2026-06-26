@@ -22,7 +22,12 @@ export async function getOrders(req: Request, res: Response) {
   );
 
   const orders = await prismaClient.order.findMany({
-    where: { symbol: marketSymbol },
+    where: {
+      symbol: marketSymbol,
+      userId: req.user!.id,
+      status: { in: ["OPEN", "PARTIALLY_FILLED"] },
+    },
+    orderBy: { price: "desc" },
   });
   console.log(
     `[ORDER] Fetch orders successful for marketSymbol: ${marketSymbol}. Count: ${orders.length}`,

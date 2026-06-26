@@ -6,9 +6,6 @@ const STREAM_TO_MARKET: Record<string, string> = {
   BTCUSD: "BTCUSD",
   ETHUSD: "ETHUSD",
   SOLUSD: "SOLUSD",
-  BTCUSDT: "BTCUSD",
-  ETHUSDT: "ETHUSD",
-  SOLUSDT: "SOLUSD",
 };
 
 const REQUIRED_MARKETS = ["BTCUSD", "ETHUSD", "SOLUSD"] as const;

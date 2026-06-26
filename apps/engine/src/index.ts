@@ -75,7 +75,12 @@ class EngineServer implements Snapshotable<ENGINE_SERVER_SNAPSHOT> {
     this.tradeFactory = new TradeFactory();
     this.orderFactory = new OrderFactory();
     this.orderbook = new Orderbook(this.riskEngine, this.tradeFactory, this.eventBus);
-    this.positionManager = new PositionManager(this.eventBus, this.riskEngine, this.market);
+    this.positionManager = new PositionManager(
+      this.eventBus,
+      this.riskEngine,
+      this.market,
+      this.account,
+    );
 
     this.eventPublisher = new EventPublisher(this.eventBus, this.communicator);
     this.snapshotManager = new SnapshotManager(this);

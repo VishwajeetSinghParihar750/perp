@@ -355,8 +355,31 @@ export class SingleMarketOrderbook implements Snapshotable<SINGLE_MARKET_ORDERBO
     this.recordDepthLevel(order.side, price);
   }
 
+  private emitOrderCreated(order: Order) {
+    this.eventBus.emit({
+      type: "order.created",
+      data: {
+        orderId: order.orderId,
+        userId: order.userId,
+        price: order.price,
+        qty: order.quantity,
+        filledQty: order.filledQuantity,
+        side: order.side,
+        type: order.type,
+        marketSymbol: order.marketSymbol,
+        margin: order.margin,
+        marginType: order.marginType,
+        status: order.status,
+      },
+    });
+  }
+
   placeOrder(order: Order): Order {
     this.resetPendingDepthUpdates();
+
+   
+    this.emitOrderCreated(order);
+
     this.match(order);
 
     const toReturn = { ...order };

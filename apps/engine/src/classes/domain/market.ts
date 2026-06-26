@@ -27,6 +27,7 @@ export default class Market implements Snapshotable<MARKET_SNAPSHOT> {
 
   private communicator: Communicator;
   private sendFundingTo: ReplyAddress;
+  private eventBus: EventBus;
 
   private readonly fundingInterval = 8 * 60 * 1000 * 1000;
   private readonly fundingRate = 0.02; // would get about 20% return per year
@@ -55,12 +56,21 @@ export default class Market implements Snapshotable<MARKET_SNAPSHOT> {
 
     this.communicator = communicator;
     this.sendFundingTo = sendFundingTo;
+    this.eventBus = eventBus;
     setInterval(this.sendFunding.bind(this), this.fundingInterval);
   }
 
   private handleFills(fills: EngineEventPayload.FILLS_CREATED_EVENT_PAYLOAD) {
     for (const fill of fills.data.fills) {
+      const prevMarkPrice = this.markPrices.get(fill.marketSymbol);
       this.markPrices.set(fill.marketSymbol, fill.price);
+
+      if (prevMarkPrice !== fill.price) {
+        this.eventBus.emit({
+          type: "markprice.updated",
+          data: { marketSymbol: fill.marketSymbol, price: fill.price },
+        });
+      }
     }
   }
 

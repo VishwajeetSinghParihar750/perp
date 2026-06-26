@@ -3,6 +3,7 @@ const ORDERBOOK_EVENT_TYPE = z.union([
   // these are for end user
   z.literal("depth.updated"),
   z.literal("lastTradedPrice.updated"),
+  z.literal("markprice.updated"),
   z.literal("trades.created"),
 
   // these are for db poller
@@ -12,6 +13,9 @@ const ORDERBOOK_EVENT_TYPE = z.union([
 ]);
 
 const BALANCE_EVENT_TYPE = z.union([z.literal("userpnl.created")]);
+
+// personal events, routed by the backend to a single owning user
+const USER_EVENT_TYPE = z.union([z.literal("userfill.created")]);
 
 const LIQUIDATION_EVENT_TYPE = z.union([
   // for end user
@@ -27,14 +31,20 @@ const ENGINE_EVENT_TYPE_SCHEMA = z.union([
   ORDERBOOK_EVENT_TYPE,
   LIQUIDATION_EVENT_TYPE,
   BALANCE_EVENT_TYPE,
+  USER_EVENT_TYPE,
 ]);
 
 type ENGINE_EVENT_TYPE = z.infer<typeof ENGINE_EVENT_TYPE_SCHEMA>;
+
+// events that must only be delivered to a specific user (carry a userId)
+const PERSONAL_EVENT_TYPES: ENGINE_EVENT_TYPE[] = ["userfill.created"];
 
 export type { ENGINE_EVENT_TYPE };
 export {
   ENGINE_EVENT_TYPE_SCHEMA,
   LIQUIDATION_EVENT_TYPE,
   BALANCE_EVENT_TYPE,
+  USER_EVENT_TYPE,
   ORDERBOOK_EVENT_TYPE,
+  PERSONAL_EVENT_TYPES,
 };

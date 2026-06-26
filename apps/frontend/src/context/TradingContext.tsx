@@ -1,811 +1,587 @@
-import React, {
+import {
   createContext,
-  useContext,
-  useState,
-  useEffect,
   useCallback,
+  useContext,
+  useEffect,
+  useMemo,
   useRef,
+  useState,
+  type ReactNode,
 } from "react";
+import { ALL_EVENTS } from "../lib/constants";
 import {
-  applyDepthSnapshot,
-  applyDepthUpdate,
-  createDepthSyncInfo,
-  getLatestBufferedDepthId,
-  reconcileBufferedDepthUpdates,
-  shouldApplyLiveDepthUpdate,
-  type DepthSyncInfo,
-  type OrderbookState,
-} from "../lib/depthSync";
-import {
+  fetchFills,
   fetchOpenOrders,
-  fetchUserFills,
-  parseDecimal,
   signIn as apiSignIn,
   signUp as apiSignUp,
-  type HttpOpenOrder,
+  type OpenOrder,
 } from "../lib/api";
+import { TradingSocket } from "../lib/ws/client";
+import { OrderbookSync, type OrderbookView } from "../lib/sync/orderbookSync";
+import { PersonalSync, type PersonalBalance } from "../lib/sync/personalSync";
+import type {
+  BalanceSnapshot,
+  DepthSnapshot,
+  DepthUpdateData,
+  MarginType,
+  OrderType,
+  PositionSnapshot,
+  PriceUpdateData,
+  PublicTrade,
+  Side,
+  TradableSymbol,
+  TradesCreatedData,
+  UiFill,
+  UiPosition,
+  UserFillData,
+  WireOrder,
+} from "../lib/types";
 
-export type SymbolType = "BTCUSD" | "SOLUSD" | "ETHUSD";
-export type OrderSide = "BUY" | "SELL";
-export type OrderType = "LIMIT" | "MARKET";
-export type MarginType = "ISOLATED" | "CROSS";
-
-export interface Position {
-  positionId: string;
-  userId: string;
-  price: number;
-  qty: number;
-  type: "LONG" | "SHORT";
-  marketSymbol: SymbolType;
-  margin: number;
-  marginType: MarginType;
-}
-
-export interface OpenOrder {
+interface AuthUser {
   id: string;
-  side: OrderSide;
-  price: number;
-  quantity: number;
-  filledQuantity: number;
-  status: string;
-  type: OrderType;
-  marginType: MarginType;
-  marketSymbol: SymbolType;
+  username: string;
 }
 
-export interface Trade {
-  price: number;
-  qty: number;
-  side?: "BUY" | "SELL";
-  time: string;
-}
+type PriceMap = Partial<Record<TradableSymbol, number>>;
 
-export interface BalanceInfo {
-  available: number;
-  locked: number;
-}
-
-export interface TradingContextProps {
+interface TradingContextValue {
+  // auth
   isAuthenticated: boolean;
-  user: { username: string; id: string } | null;
-  token: string | null;
-  currentSymbol: SymbolType;
-  setCurrentSymbol: (marketSymbol: SymbolType) => void;
-  orderbook: OrderbookState;
-  lastTradedPrice: number | null;
-  indexPrice: number | null;
-  lastTradedPrices: Partial<Record<SymbolType, number>>;
-  indexPrices: Partial<Record<SymbolType, number>>;
-  trades: Trade[];
-  balance: BalanceInfo;
-  positions: Record<string, Position>;
-  openOrders: OpenOrder[];
-  wsConnected: boolean;
-  error: string | null;
-  notice: string | null;
-  setError: (err: string | null) => void;
-  clearNotice: () => void;
+  user: AuthUser | null;
   login: (username: string, password: string) => Promise<boolean>;
   signUp: (
     username: string,
     password: string,
   ) => Promise<{ success: boolean; message: string }>;
   logout: () => void;
+
+  // connection
+  connected: boolean;
+
+  // market
+  currentSymbol: TradableSymbol;
+  setCurrentSymbol: (symbol: TradableSymbol) => void;
+
+  // streamed market data
+  orderbook: OrderbookView;
+  trades: PublicTrade[];
+  indexPrices: PriceMap;
+  markPrices: PriceMap;
+  lastPrices: PriceMap;
+  indexPrice: number | null;
+  markPrice: number | null;
+  lastPrice: number | null;
+
+  // account
+  balance: PersonalBalance;
+  positions: UiPosition[];
+  openOrders: OpenOrder[];
+  fills: UiFill[];
+
+  // actions
   placeOrder: (params: {
-    side: OrderSide;
+    side: Side;
     type: OrderType;
     price: number;
     qty: number;
     margin: number;
     marginType: MarginType;
-  }) => Promise<boolean>;
-  cancelOrder: (orderId: string) => Promise<boolean>;
-  addBalance: (marketSymbol: string, amount: number) => void;
-  fetchBalanceAndPositions: () => void;
-  refreshOpenOrders: () => Promise<void>;
+  }) => Promise<void>;
+  cancelOrder: (orderId: string) => Promise<void>;
+  addBalance: (amount: number) => Promise<void>;
+
+  // notices
+  error: string | null;
+  notice: string | null;
+  setError: (msg: string | null) => void;
+  clearNotice: () => void;
 }
 
-const TradingContext = createContext<TradingContextProps | undefined>(
-  undefined,
-);
+const TradingContext = createContext<TradingContextValue | undefined>(undefined);
 
-export const useTrading = () => {
-  const context = useContext(TradingContext);
-  if (!context)
-    throw new Error("useTrading must be used within a TradingProvider");
-  return context;
-};
-
-const ALL_MARKET_EVENTS = [
-  "depth.updated",
-  "lastTradedPrice.updated",
-  "trades.created",
-  "indexprice.updated",
-] as const;
-
-function mapOpenOrder(order: HttpOpenOrder): OpenOrder {
-  return {
-    id: order.id,
-    side: order.side,
-    price: parseDecimal(order.price),
-    quantity: parseDecimal(order.quantity),
-    filledQuantity: parseDecimal(order.filledQuantity),
-    status: order.status,
-    type: order.type,
-    marginType: order.marginType,
-    marketSymbol: order.symbol,
-  };
+export function useTrading(): TradingContextValue {
+  const ctx = useContext(TradingContext);
+  if (!ctx) throw new Error("useTrading must be used within TradingProvider");
+  return ctx;
 }
 
-export const TradingProvider: React.FC<{ children: React.ReactNode }> = ({
-  children,
-}) => {
+const EMPTY_BOOK: OrderbookView = { asks: [], bids: [] };
+
+function decodeUser(token: string): AuthUser {
+  const payload = JSON.parse(atob(token.split(".")[1]));
+  return { id: payload.id, username: payload.username };
+}
+
+export function TradingProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(() =>
     localStorage.getItem("perp_token"),
   );
-  const [user, setUser] = useState<{ username: string; id: string } | null>(
-    () => {
-      try {
-        const stored = localStorage.getItem("perp_user");
-        return stored ? JSON.parse(stored) : null;
-      } catch {
-        return null;
-      }
-    },
-  );
-  const [currentSymbol, setCurrentSymbolState] = useState<SymbolType>("BTCUSD");
-  const [orderbook, setOrderbook] = useState<OrderbookState>({
-    asks: [],
-    bids: [],
+  const [user, setUser] = useState<AuthUser | null>(() => {
+    const t = localStorage.getItem("perp_token");
+    try {
+      return t ? decodeUser(t) : null;
+    } catch {
+      return null;
+    }
   });
-  const [lastTradedPrice, setLastTradedPrice] = useState<number | null>(null);
-  const [indexPrice, setIndexPrice] = useState<number | null>(null);
-  const [lastTradedPrices, setLastTradedPrices] = useState<
-    Partial<Record<SymbolType, number>>
-  >({});
-  const [indexPrices, setIndexPrices] = useState<
-    Partial<Record<SymbolType, number>>
-  >({});
-  const [trades, setTrades] = useState<Trade[]>([]);
-  const [balance, setBalance] = useState<BalanceInfo>({
+
+  const [connected, setConnected] = useState(false);
+  const [currentSymbol, setCurrentSymbolState] = useState<TradableSymbol>("SOLUSD");
+
+  const [orderbook, setOrderbook] = useState<OrderbookView>(EMPTY_BOOK);
+  const [trades, setTrades] = useState<PublicTrade[]>([]);
+  const [indexPrices, setIndexPrices] = useState<PriceMap>({});
+  const [markPrices, setMarkPrices] = useState<PriceMap>({});
+  const [lastPrices, setLastPrices] = useState<PriceMap>({});
+
+  const [balance, setBalance] = useState<PersonalBalance>({
     available: 0,
     locked: 0,
   });
-  const [positions, setPositions] = useState<Record<string, Position>>({});
+  const [positions, setPositions] = useState<UiPosition[]>([]);
   const [openOrders, setOpenOrders] = useState<OpenOrder[]>([]);
-  const [wsConnected, setWsConnected] = useState(false);
+  const [fills, setFills] = useState<UiFill[]>([]);
+
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
-  const wsRef = useRef<WebSocket | null>(null);
-  const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const intentionalCloseRef = useRef(false);
-  const nextReqIdRef = useRef(1);
-  const depthSyncRef = useRef<Record<string, DepthSyncInfo>>({});
-  const pendingDepthRequestsRef = useRef<Map<string, SymbolType>>(new Map());
-  const eventsSubscribedRef = useRef(false);
-  const currentSymbolRef = useRef<SymbolType>(currentSymbol);
+  const socketRef = useRef<TradingSocket | null>(null);
+  const orderbookSyncRef = useRef<OrderbookSync>(new OrderbookSync());
+  const personalSyncRef = useRef<PersonalSync>(new PersonalSync());
+  const openOrdersRef = useRef<Map<string, OpenOrder>>(new Map());
+  const currentSymbolRef = useRef<TradableSymbol>(currentSymbol);
   const tokenRef = useRef<string | null>(token);
 
-  const WS_URL = import.meta.env.VITE_WS_URL ?? "ws://localhost:3000";
-
-  const getNextRequestId = useCallback(() => {
-    const id = `req_${nextReqIdRef.current++}`;
-    return id;
-  }, []);
+  currentSymbolRef.current = currentSymbol;
+  tokenRef.current = token;
 
   const clearNotice = useCallback(() => setNotice(null), []);
 
-  const logout = useCallback(() => {
-    localStorage.removeItem("perp_token");
-    localStorage.removeItem("perp_user");
-    setToken(null);
-    tokenRef.current = null;
-    setUser(null);
-    setBalance({ available: 0, locked: 0 });
-    setPositions({});
-    setOpenOrders([]);
-    setWsConnected(false);
-    eventsSubscribedRef.current = false;
-    depthSyncRef.current = {};
-    pendingDepthRequestsRef.current.clear();
-    if (reconnectTimerRef.current) {
-      clearTimeout(reconnectTimerRef.current);
-      reconnectTimerRef.current = null;
-    }
-    if (wsRef.current) {
-      intentionalCloseRef.current = true;
-      wsRef.current.close();
-      wsRef.current = null;
-    }
+  const pushPersonalState = useCallback(() => {
+    const sync = personalSyncRef.current;
+    setBalance({ ...sync.getBalance() });
+    setPositions(sync.getPositions());
+    setFills(sync.getFills());
   }, []);
 
-  const login = async (
-    username: string,
-    password: string,
-  ): Promise<boolean> => {
-    try {
-      setError(null);
-      const jwt_token = await apiSignIn(username, password);
-      const payloadBase64 = jwt_token.split(".")[1];
-      const decoded = JSON.parse(atob(payloadBase64));
-      const userInfo = { username: decoded.username, id: decoded.id };
-      localStorage.setItem("perp_token", jwt_token);
-      localStorage.setItem("perp_user", JSON.stringify(userInfo));
-      tokenRef.current = jwt_token;
-      setToken(jwt_token);
-      setUser(userInfo);
-      return true;
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Login failed");
-      return false;
-    }
-  };
-
-  const signUp = async (
-    username: string,
-    password: string,
-  ): Promise<{ success: boolean; message: string }> => {
-    try {
-      setError(null);
-      await apiSignUp(username, password);
-      return {
-        success: true,
-        message: "Account created successfully! Please sign in.",
-      };
-    } catch (err) {
-      return {
-        success: false,
-        message: err instanceof Error ? err.message : "Signup failed",
-      };
-    }
-  };
-
-  const sendWsMessage = useCallback((msg: Record<string, unknown>) => {
-    if (wsRef.current?.readyState === WebSocket.OPEN) {
-      wsRef.current.send(JSON.stringify(msg));
-    }
+  const syncOpenOrders = useCallback(() => {
+    setOpenOrders([...openOrdersRef.current.values()]);
   }, []);
 
-  const applyBalancePayload = useCallback(
-    (payload: unknown) => {
-      if (
-        typeof payload === "object" &&
-        payload !== null &&
-        "balance" in payload
-      ) {
-        const { balance: available, lockedBalance } = payload as {
-          balance: number;
-          lockedBalance: number;
-        };
-        setBalance({ available, locked: lockedBalance });
-      }
-    },
-    [],
-  );
+  // ---- HTTP recovery (seed on connect / symbol switch) ---------------------
 
-  const requestDepthSnapshot = useCallback(
-    (symbol: SymbolType) => {
-      const existing = depthSyncRef.current[symbol];
-      depthSyncRef.current[symbol] = {
-        state: "fetching",
-        buffer: existing?.buffer ?? [],
-        lastAppliedDepthId: existing?.lastAppliedDepthId ?? 0,
-      };
-
-      const reqId = getNextRequestId();
-      pendingDepthRequestsRef.current.set(reqId, symbol);
-
-      const syncInfo = depthSyncRef.current[symbol];
-      const lastUpdatedDepthId = getLatestBufferedDepthId(syncInfo.buffer);
-      const payload: {
-        marketSymbol: SymbolType;
-        lastUpdatedDepthId?: number;
-      } = { marketSymbol: symbol };
-      if (lastUpdatedDepthId !== undefined) {
-        payload.lastUpdatedDepthId = lastUpdatedDepthId;
-      }
-
-      sendWsMessage({
-        requestId: reqId,
-        type: "get_depth",
-        payload,
-      });
-    },
-    [getNextRequestId, sendWsMessage],
-  );
-
-  const startInitialDepthSync = useCallback(
-    (symbol: SymbolType, subReqId: string) => {
-      depthSyncRef.current[symbol] = createDepthSyncInfo(subReqId);
-    },
-    [],
-  );
-
-  const fetchBalanceAndPositions = useCallback(() => {
-    sendWsMessage({
-      requestId: getNextRequestId(),
-      type: "get_balance",
-      payload: {},
-    });
-    sendWsMessage({
-      requestId: getNextRequestId(),
-      type: "get_position",
-      payload: {},
-    });
-  }, [sendWsMessage, getNextRequestId]);
-
-  const refreshOpenOrders = useCallback(async () => {
+  const loadOpenOrders = useCallback(async (symbol: TradableSymbol) => {
     const activeToken = tokenRef.current;
     if (!activeToken) return;
     try {
-      const orders = await fetchOpenOrders(
-        activeToken,
-        currentSymbolRef.current,
+      const orders = await fetchOpenOrders(activeToken, symbol);
+      for (const order of orders) {
+        if (order.status === "OPEN" || order.status === "PARTIALLY_FILLED") {
+          openOrdersRef.current.set(order.orderId, order);
+        }
+      }
+      syncOpenOrders();
+    } catch {
+      // db poller may lag; live order events keep us in sync regardless
+    }
+  }, [syncOpenOrders]);
+
+  const loadFills = useCallback(async () => {
+    const activeToken = tokenRef.current;
+    if (!activeToken || !user) return;
+    try {
+      const historical = await fetchFills(activeToken);
+      const mapped: UiFill[] = historical.map((f) => ({
+        fillId: f.fillId,
+        marketSymbol: f.marketSymbol,
+        side: f.longUserId === user.id ? "BUY" : "SELL",
+        price: f.price,
+        qty: f.qty,
+        status: "FILLED",
+        time: Date.now(),
+      }));
+      // only seed if live stream hasn't produced anything yet
+      if (personalSyncRef.current.getFills().length === 0 && mapped.length) {
+        setFills(mapped);
+      }
+    } catch {
+      // ignore
+    }
+  }, [user]);
+
+  // ---- event handling ------------------------------------------------------
+
+  const applyFillToOpenOrders = useCallback(
+    (data: UserFillData) => {
+      const existing = openOrdersRef.current.get(data.orderId);
+      if (data.orderStatus === "FILLED" || data.orderStatus === "CANCELLED") {
+        openOrdersRef.current.delete(data.orderId);
+      } else if (existing) {
+        openOrdersRef.current.set(data.orderId, {
+          ...existing,
+          filledQuantity: data.filledQty,
+          status: data.orderStatus,
+        });
+      }
+      syncOpenOrders();
+    },
+    [syncOpenOrders],
+  );
+
+  const handleEvent = useCallback(
+    (payload: { type: string; data: unknown }) => {
+      const activeSymbol = currentSymbolRef.current;
+
+      switch (payload.type) {
+        case "depth.updated": {
+          const data = payload.data as DepthUpdateData;
+          if (data.marketSymbol !== activeSymbol) return;
+          orderbookSyncRef.current.onUpdate(data);
+          setOrderbook(orderbookSyncRef.current.getView());
+          return;
+        }
+        case "trades.created": {
+          const data = payload.data as TradesCreatedData;
+          if (data.marketSymbol !== activeSymbol) return;
+          const incoming: PublicTrade[] = data.trades.map(([price, qty]) => ({
+            price,
+            qty,
+            time: Date.now(),
+            up: true,
+          }));
+          setTrades((prev) => {
+            const merged = [...incoming, ...prev].slice(0, 60);
+            for (let i = 0; i < merged.length - 1; i++) {
+              merged[i] = { ...merged[i], up: merged[i].price >= merged[i + 1].price };
+            }
+            return merged;
+          });
+          return;
+        }
+        case "indexprice.updated": {
+          const data = payload.data as PriceUpdateData;
+          setIndexPrices((prev) => ({ ...prev, [data.marketSymbol]: data.price }));
+          return;
+        }
+        case "markprice.updated": {
+          const data = payload.data as PriceUpdateData;
+          setMarkPrices((prev) => ({ ...prev, [data.marketSymbol]: data.price }));
+          return;
+        }
+        case "lastTradedPrice.updated": {
+          const data = payload.data as PriceUpdateData;
+          setLastPrices((prev) => ({ ...prev, [data.marketSymbol]: data.price }));
+          return;
+        }
+        case "userfill.created": {
+          const data = payload.data as UserFillData;
+          personalSyncRef.current.onUserFill(data);
+          pushPersonalState();
+          applyFillToOpenOrders(data);
+          return;
+        }
+      }
+    },
+    [pushPersonalState, applyFillToOpenOrders],
+  );
+
+  // ---- bootstrap on (re)connect -------------------------------------------
+
+  const bootstrap = useCallback(async () => {
+    const socket = socketRef.current;
+    if (!socket) return;
+    const symbol = currentSymbolRef.current;
+
+    // fresh sync engines: they buffer events until snapshots arrive
+    orderbookSyncRef.current = new OrderbookSync();
+    personalSyncRef.current = new PersonalSync();
+
+    try {
+      // 1. subscribe first so depth + personal fills start buffering
+      await socket.subscribe(ALL_EVENTS);
+
+      // 2. fetch snapshots
+      const [depthRes, balanceRes, positionRes] = await Promise.all([
+        socket.getDepth(symbol),
+        socket.getBalance(),
+        socket.getPosition(),
+      ]);
+
+      // 3. reconcile against buffered events
+      orderbookSyncRef.current.applySnapshot(depthRes.payload as DepthSnapshot);
+      setOrderbook(orderbookSyncRef.current.getView());
+
+      personalSyncRef.current.setBalance(balanceRes.payload as BalanceSnapshot);
+      personalSyncRef.current.applyPositionSnapshot(
+        positionRes.payload as PositionSnapshot,
       );
-      setOpenOrders(orders.map(mapOpenOrder));
+      pushPersonalState();
+
+      // 4. recover orders + fill history from db
+      void loadOpenOrders(symbol);
+      void loadFills();
     } catch (err) {
-      console.error("[HTTP] Failed to fetch open orders:", err);
+      console.error("[bootstrap] failed", err);
     }
+  }, [loadFills, loadOpenOrders, pushPersonalState]);
+
+  const doLogout = useCallback(() => {
+    localStorage.removeItem("perp_token");
+    setToken(null);
+    setUser(null);
+    setConnected(false);
+    setBalance({ available: 0, locked: 0 });
+    setPositions([]);
+    setFills([]);
+    setOrderbook(EMPTY_BOOK);
+    setTrades([]);
+    openOrdersRef.current.clear();
+    setOpenOrders([]);
   }, []);
 
-  const loadHistoricalTrades = useCallback(async (symbol: SymbolType) => {
-    const activeToken = tokenRef.current;
-    if (!activeToken) return;
-    try {
-      const fills = await fetchUserFills(activeToken);
-      const symbolFills = fills
-        .filter((fill) => fill.symbol === symbol)
-        .slice(0, 50)
-        .map((fill) => ({
-          price: parseDecimal(fill.price),
-          qty: parseDecimal(fill.quantity),
-          time: new Date().toLocaleTimeString(),
-        }));
-      setTrades(symbolFills);
-    } catch (err) {
-      console.error("[HTTP] Failed to fetch trades:", err);
-    }
-  }, []);
+  const handlersRef = useRef({ bootstrap, handleEvent, doLogout });
+  handlersRef.current = { bootstrap, handleEvent, doLogout };
+
+  // ---- socket lifecycle ----------------------------------------------------
+
+  useEffect(() => {
+    if (!token) return;
+
+    const socket = new TradingSocket({
+      onOpen: () => void handlersRef.current.bootstrap(),
+      onStatusChange: setConnected,
+      onEvent: (p) => handlersRef.current.handleEvent(p),
+      onAuthExpired: () => {
+        setError("Your session has expired. Please sign in again.");
+        handlersRef.current.doLogout();
+      },
+    });
+    socketRef.current = socket;
+    socket.connect(token);
+
+    return () => {
+      socket.disconnect();
+      socketRef.current = null;
+      setConnected(false);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token]);
+
+  // ---- auth ----------------------------------------------------------------
+
+  const login = useCallback(
+    async (username: string, password: string): Promise<boolean> => {
+      try {
+        setError(null);
+        const jwt = await apiSignIn(username, password);
+        const userInfo = decodeUser(jwt);
+        localStorage.setItem("perp_token", jwt);
+        setUser(userInfo);
+        setToken(jwt);
+        return true;
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Login failed");
+        return false;
+      }
+    },
+    [],
+  );
+
+  const signUp = useCallback(
+    async (username: string, password: string) => {
+      try {
+        setError(null);
+        await apiSignUp(username, password);
+        return { success: true, message: "Account created. Please sign in." };
+      } catch (err) {
+        return {
+          success: false,
+          message: err instanceof Error ? err.message : "Signup failed",
+        };
+      }
+    },
+    [],
+  );
+
+  // ---- actions -------------------------------------------------------------
 
   const placeOrder = useCallback(
     async (params: {
-      side: OrderSide;
+      side: Side;
       type: OrderType;
       price: number;
       qty: number;
       margin: number;
       marginType: MarginType;
-    }): Promise<boolean> => {
-      if (!tokenRef.current) {
-        setError("Please sign in to trade");
-        return false;
+    }) => {
+      const socket = socketRef.current;
+      if (!socket?.isOpen()) {
+        setError("Not connected to engine");
+        return;
       }
-      const reqId = getNextRequestId();
-      sendWsMessage({
-        requestId: reqId,
-        type: "create_order",
-        payload: {
-          side: params.side,
-          type: params.type,
-          price: params.price,
-          qty: params.qty,
-          margin: params.margin,
-          marginType: params.marginType,
+      try {
+        const res = await socket.createOrder({
+          ...params,
           marketSymbol: currentSymbolRef.current,
-        },
-      });
-      setNotice("Order submitted");
-      return true;
+        });
+        if (res.type === "error") {
+          setError(String(res.payload));
+          return;
+        }
+        if (res.type === "order_created") {
+          const order = res.payload as WireOrder;
+          if (order.status === "OPEN" || order.status === "PARTIALLY_FILLED") {
+            openOrdersRef.current.set(order.orderId, {
+              orderId: order.orderId,
+              side: order.side,
+              type: order.type,
+              price: order.price,
+              quantity: order.quantity,
+              filledQuantity: order.filledQuantity,
+              status: order.status,
+              marginType: order.marginType,
+              marketSymbol: order.marketSymbol,
+            });
+            syncOpenOrders();
+          }
+          setNotice("Order placed");
+          // margin lock for resting orders isn't covered by fills, so re-pull
+          const balRes = await socket.getBalance();
+          personalSyncRef.current.setBalance(balRes.payload as BalanceSnapshot);
+          pushPersonalState();
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Order failed");
+      }
     },
-    [getNextRequestId, sendWsMessage],
+    [pushPersonalState, syncOpenOrders],
   );
 
   const cancelOrder = useCallback(
-    async (orderId: string): Promise<boolean> => {
-      if (!tokenRef.current) return false;
-      sendWsMessage({
-        requestId: getNextRequestId(),
-        type: "cancel_order",
-        payload: { orderId },
-      });
-      setNotice("Cancel request sent");
-      return true;
+    async (orderId: string) => {
+      const socket = socketRef.current;
+      if (!socket?.isOpen()) return;
+      try {
+        const res = await socket.cancelOrder(orderId);
+        if (res.type === "error") {
+          setError(String(res.payload));
+          return;
+        }
+        openOrdersRef.current.delete(orderId);
+        syncOpenOrders();
+        setNotice("Order cancelled");
+        const balRes = await socket.getBalance();
+        personalSyncRef.current.setBalance(balRes.payload as BalanceSnapshot);
+        pushPersonalState();
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Cancel failed");
+      }
     },
-    [getNextRequestId, sendWsMessage],
+    [pushPersonalState, syncOpenOrders],
   );
 
   const addBalance = useCallback(
-    (marketSymbol: string, amount: number) => {
-      if (!tokenRef.current) return;
-      sendWsMessage({
-        requestId: getNextRequestId(),
-        type: "add_balance",
-        payload: { marketSymbol, amount },
-      });
+    async (amount: number) => {
+      const socket = socketRef.current;
+      if (!socket?.isOpen()) return;
+      try {
+        const res = await socket.addBalance("USD", amount);
+        if (res.type === "balance_updated" || res.type === "balance") {
+          personalSyncRef.current.setBalance(res.payload as BalanceSnapshot);
+          pushPersonalState();
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Deposit failed");
+      }
     },
-    [getNextRequestId, sendWsMessage],
+    [pushPersonalState],
   );
 
-  const handleDepthSnapshot = useCallback(
-    (symbol: SymbolType, payload: Record<string, unknown>) => {
-      const syncInfo = depthSyncRef.current[symbol];
-      const snapshotDepthId = (payload.lastUpdatedDepthId as number) ?? 0;
-      const snapshotBook = applyDepthSnapshot(
-        (payload.asks as { price: number; quantity: number }[]) || [],
-        (payload.bids as { price: number; quantity: number }[]) || [],
-      );
-      const buffered = syncInfo?.buffer ?? [];
-      const { book, lastAppliedDepthId } = reconcileBufferedDepthUpdates(
-        snapshotBook,
-        snapshotDepthId,
-        buffered,
-      );
-
-      if (symbol === currentSymbolRef.current) {
-        setOrderbook(book);
-      }
-
-      depthSyncRef.current[symbol] = {
-        state: "live",
-        buffer: [],
-        lastAppliedDepthId,
-      };
-    },
-    [],
-  );
-
-  // Keep latest callbacks in refs so the WebSocket effect stays stable
-  const handlersRef = useRef({
-    getNextRequestId,
-    sendWsMessage,
-    startInitialDepthSync,
-    requestDepthSnapshot,
-    handleDepthSnapshot,
-    applyBalancePayload,
-    fetchBalanceAndPositions,
-    refreshOpenOrders,
-    loadHistoricalTrades,
-    logout,
-  });
-  handlersRef.current = {
-    getNextRequestId,
-    sendWsMessage,
-    startInitialDepthSync,
-    requestDepthSnapshot,
-    handleDepthSnapshot,
-    applyBalancePayload,
-    fetchBalanceAndPositions,
-    refreshOpenOrders,
-    loadHistoricalTrades,
-    logout,
-  };
-
-  useEffect(() => {
-    tokenRef.current = token;
-    if (!token) return;
-
-    const connect = () => {
-      if (!tokenRef.current) return;
-
-      if (reconnectTimerRef.current) {
-        clearTimeout(reconnectTimerRef.current);
-        reconnectTimerRef.current = null;
-      }
-
-      if (wsRef.current) {
-        intentionalCloseRef.current = true;
-        wsRef.current.close();
-        wsRef.current = null;
-      }
-
-      const ws = new WebSocket(`${WS_URL}?jwt_token=${tokenRef.current}`);
-      wsRef.current = ws;
-      intentionalCloseRef.current = false;
-
-      ws.onopen = () => {
-        setWsConnected(true);
-        setError(null);
-        eventsSubscribedRef.current = false;
-
-        const h = handlersRef.current;
-        const subReqId = h.getNextRequestId();
-        h.startInitialDepthSync(currentSymbolRef.current, subReqId);
-
-        ws.send(
-          JSON.stringify({
-            requestId: subReqId,
-            type: "subscribe_event",
-            payload: { events: [...ALL_MARKET_EVENTS] },
-          }),
-        );
-        ws.send(
-          JSON.stringify({
-            requestId: h.getNextRequestId(),
-            type: "get_balance",
-            payload: {},
-          }),
-        );
-        ws.send(
-          JSON.stringify({
-            requestId: h.getNextRequestId(),
-            type: "get_position",
-            payload: {},
-          }),
-        );
-
-        void h.refreshOpenOrders();
-        void h.loadHistoricalTrades(currentSymbolRef.current);
-      };
-
-      ws.onclose = (event) => {
-        setWsConnected(false);
-        eventsSubscribedRef.current = false;
-        wsRef.current = null;
-
-        if (intentionalCloseRef.current) return;
-
-        if (event.code === 4001) {
-          handlersRef.current.logout();
-          setError("Your session has expired. Please sign in again.");
-          return;
-        }
-
-        if (tokenRef.current) {
-          reconnectTimerRef.current = setTimeout(connect, 3000);
-        }
-      };
-
-      ws.onerror = () => {
-        setError("WebSocket connection error");
-      };
-
-      ws.onmessage = (event) => {
-        try {
-          const msg = JSON.parse(event.data);
-          const { type, payload, requestId } = msg;
-          const h = handlersRef.current;
-
-          if (type === "depth" && payload) {
-            const symbol =
-              pendingDepthRequestsRef.current.get(requestId) ??
-              currentSymbolRef.current;
-            pendingDepthRequestsRef.current.delete(requestId);
-            h.handleDepthSnapshot(symbol, payload);
-            return;
-          }
-
-          if (type === "event_subscribed") {
-            eventsSubscribedRef.current = true;
-            const symbol = currentSymbolRef.current;
-            const syncInfo = depthSyncRef.current[symbol];
-            if (
-              syncInfo?.state === "subscribing" &&
-              syncInfo.subReqId === requestId
-            ) {
-              h.requestDepthSnapshot(symbol);
-            }
-            return;
-          }
-
-          if (type === "balance" || type === "balance_updated") {
-            h.applyBalancePayload(payload);
-            return;
-          }
-
-          if (type === "position" && payload) {
-            const mapped: Record<string, Position> = {};
-            for (const [symbol, pos] of Object.entries(
-              payload as Record<string, Record<string, unknown>>,
-            )) {
-              mapped[symbol] = {
-                positionId: `${pos.userId}_${symbol}`,
-                userId: String(pos.userId),
-                price: Number(pos.price),
-                qty: Number(pos.quantity ?? pos.qty ?? 0),
-                type: pos.type as "LONG" | "SHORT",
-                marketSymbol: symbol as SymbolType,
-                margin: Number(pos.margin),
-                marginType: pos.marginType as MarginType,
-              };
-            }
-            setPositions(mapped);
-            return;
-          }
-
-          if (type === "order_created") {
-            setNotice("Order placed successfully");
-            setTimeout(() => {
-              h.fetchBalanceAndPositions();
-              void h.refreshOpenOrders();
-            }, 150);
-            return;
-          }
-
-          if (type === "order_cancelled") {
-            setNotice("Order cancelled");
-            setTimeout(() => {
-              h.fetchBalanceAndPositions();
-              void h.refreshOpenOrders();
-            }, 150);
-            return;
-          }
-
-          if (type === "error" && payload) {
-            setError(String(payload));
-            return;
-          }
-
-          if (type === "event" && payload?.type) {
-            const { type: eventType, data } = payload;
-            const activeSymbol = currentSymbolRef.current;
-
-            if (eventType === "depth.updated" && data) {
-              const symbol = data.marketSymbol as SymbolType;
-              const syncInfo = depthSyncRef.current[symbol];
-              const updateId = data.lastUpdatedDepthId as number | undefined;
-              if (!syncInfo || updateId === undefined) return;
-
-              const update = {
-                lastUpdatedDepthId: updateId,
-                asks: data.depthUpdates?.asks ?? {},
-                bids: data.depthUpdates?.bids ?? {},
-              };
-
-              if (
-                syncInfo.state === "subscribing" ||
-                syncInfo.state === "fetching"
-              ) {
-                syncInfo.buffer.push(update);
-              } else if (
-                syncInfo.state === "live" &&
-                symbol === activeSymbol &&
-                shouldApplyLiveDepthUpdate(
-                  updateId,
-                  syncInfo.lastAppliedDepthId,
-                )
-              ) {
-                setOrderbook((prev) => applyDepthUpdate(prev, update));
-                syncInfo.lastAppliedDepthId = updateId;
-              }
-              return;
-            }
-
-            if (eventType === "lastTradedPrice.updated" && data) {
-              const symbol = data.marketSymbol as SymbolType;
-              setLastTradedPrices((prev) => ({
-                ...prev,
-                [symbol]: data.price,
-              }));
-              if (symbol === activeSymbol) {
-                setLastTradedPrice(data.price);
-              }
-              return;
-            }
-
-            if (eventType === "indexprice.updated" && data) {
-              const symbol = data.marketSymbol as SymbolType;
-              setIndexPrices((prev) => ({ ...prev, [symbol]: data.price }));
-              if (symbol === activeSymbol) {
-                setIndexPrice(data.price);
-              }
-              return;
-            }
-
-            if (eventType === "trades.created" && data) {
-              const symbol = data.marketSymbol as SymbolType;
-              if (symbol !== activeSymbol) return;
-              const newTrades = (data.trades || []).map(
-                ([price, qty]: [number, number]) => ({
-                  price,
-                  qty,
-                  time: new Date().toLocaleTimeString(),
-                }),
-              );
-              setTrades((prev) => [...newTrades, ...prev].slice(0, 50));
-              setTimeout(h.fetchBalanceAndPositions, 100);
-              return;
-            }
-
-            if (eventType === "fills.created") {
-              setTimeout(() => {
-                h.fetchBalanceAndPositions();
-                void h.refreshOpenOrders();
-              }, 100);
-            }
-          }
-        } catch (err) {
-          console.error("[WS] Error handling message:", err);
-        }
-      };
-    };
-
-    connect();
-
-    return () => {
-      if (reconnectTimerRef.current) {
-        clearTimeout(reconnectTimerRef.current);
-        reconnectTimerRef.current = null;
-      }
-      intentionalCloseRef.current = true;
-      wsRef.current?.close();
-      wsRef.current = null;
-      depthSyncRef.current = {};
-      pendingDepthRequestsRef.current.clear();
-      eventsSubscribedRef.current = false;
-    };
-  }, [token, WS_URL]);
+  // ---- symbol switch -------------------------------------------------------
 
   const setCurrentSymbol = useCallback(
-    (symbol: SymbolType) => {
+    (symbol: TradableSymbol) => {
       if (symbol === currentSymbolRef.current) return;
       currentSymbolRef.current = symbol;
       setCurrentSymbolState(symbol);
-
-      setOrderbook({ asks: [], bids: [] });
       setTrades([]);
-      setLastTradedPrice(lastTradedPrices[symbol] ?? null);
-      setIndexPrice(indexPrices[symbol] ?? null);
+      setOrderbook(EMPTY_BOOK);
 
-      if (wsRef.current?.readyState === WebSocket.OPEN) {
-        if (eventsSubscribedRef.current) {
-          requestDepthSnapshot(symbol);
-        }
-        void refreshOpenOrders();
-        void loadHistoricalTrades(symbol);
-      }
+      const socket = socketRef.current;
+      if (!socket?.isOpen()) return;
+
+      // re-sync the book for the new symbol (already subscribed to all symbols)
+      orderbookSyncRef.current = new OrderbookSync();
+      socket
+        .getDepth(symbol)
+        .then((res) => {
+          orderbookSyncRef.current.applySnapshot(res.payload as DepthSnapshot);
+          setOrderbook(orderbookSyncRef.current.getView());
+        })
+        .catch(() => {});
+      void loadOpenOrders(symbol);
     },
-    [
+    [loadOpenOrders],
+  );
+
+  const value = useMemo<TradingContextValue>(
+    () => ({
+      isAuthenticated: !!token,
+      user,
+      login,
+      signUp,
+      logout: doLogout,
+      connected,
+      currentSymbol,
+      setCurrentSymbol,
+      orderbook,
+      trades,
       indexPrices,
-      lastTradedPrices,
-      loadHistoricalTrades,
-      refreshOpenOrders,
-      requestDepthSnapshot,
+      markPrices,
+      lastPrices,
+      indexPrice: indexPrices[currentSymbol] ?? null,
+      markPrice: markPrices[currentSymbol] ?? null,
+      lastPrice: lastPrices[currentSymbol] ?? null,
+      balance,
+      positions,
+      openOrders,
+      fills,
+      placeOrder,
+      cancelOrder,
+      addBalance,
+      error,
+      notice,
+      setError,
+      clearNotice,
+    }),
+    [
+      token,
+      user,
+      login,
+      signUp,
+      doLogout,
+      connected,
+      currentSymbol,
+      setCurrentSymbol,
+      orderbook,
+      trades,
+      indexPrices,
+      markPrices,
+      lastPrices,
+      balance,
+      positions,
+      openOrders,
+      fills,
+      placeOrder,
+      cancelOrder,
+      addBalance,
+      error,
+      notice,
+      clearNotice,
     ],
   );
 
-  useEffect(() => {
-    if (!wsConnected || !token) return;
-    const interval = setInterval(() => {
-      fetchBalanceAndPositions();
-      void refreshOpenOrders();
-    }, 5000);
-    return () => clearInterval(interval);
-  }, [wsConnected, token, fetchBalanceAndPositions, refreshOpenOrders]);
-
   return (
-    <TradingContext.Provider
-      value={{
-        isAuthenticated: !!token,
-        user,
-        token,
-        currentSymbol,
-        setCurrentSymbol,
-        orderbook,
-        lastTradedPrice,
-        indexPrice,
-        lastTradedPrices,
-        indexPrices,
-        trades,
-        balance,
-        positions,
-        openOrders,
-        wsConnected,
-        error,
-        notice,
-        setError,
-        clearNotice,
-        login,
-        signUp,
-        logout,
-        placeOrder,
-        cancelOrder,
-        addBalance,
-        fetchBalanceAndPositions,
-        refreshOpenOrders,
-      }}
-    >
-      {children}
-    </TradingContext.Provider>
+    <TradingContext.Provider value={value}>{children}</TradingContext.Provider>
   );
-};
+}

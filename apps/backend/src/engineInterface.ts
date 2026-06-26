@@ -9,6 +9,10 @@ import {
   EngineEventType,
 } from "@repo/shared-types";
 
+const PERSONAL_EVENT_TYPES = new Set<EngineEventType.ENGINE_EVENT_TYPE>(
+  EngineEventType.PERSONAL_EVENT_TYPES,
+);
+
 import { sendMessageOnWebSocket } from "./ws/utils/messaging.js";
 
 type EngineRequestResponse = Exclude<
@@ -24,9 +28,33 @@ class EngineInterface {
     Record<EngineEventType.ENGINE_EVENT_TYPE, Set<WebSocket>>
   > = {};
 
+  // userId -> their connected sockets, so personal events can be delivered
+  // directly to the owning user instead of scanning every subscriber.
+  userSockets: Map<string, Set<WebSocket>> = new Map();
+
   // saving resolve, reject functions of promise
   pendingRequests: Record<string, [(data: any) => void, (data: any) => void]> =
     {};
+
+  private registerUserSocket(ws: WebSocket) {
+    const userId = ws.user?.id;
+    if (!userId) return;
+    let sockets = this.userSockets.get(userId);
+    if (!sockets) {
+      sockets = new Set();
+      this.userSockets.set(userId, sockets);
+    }
+    sockets.add(ws);
+  }
+
+  private unregisterUserSocket(ws: WebSocket) {
+    const userId = ws.user?.id;
+    if (!userId) return;
+    const sockets = this.userSockets.get(userId);
+    if (!sockets) return;
+    sockets.delete(ws);
+    if (sockets.size === 0) this.userSockets.delete(userId);
+  }
 
   private subscribeEvent(
     eventTypes: EngineEventType.ENGINE_EVENT_TYPE[],
@@ -35,6 +63,7 @@ class EngineInterface {
     console.log(
       `[ENGINE_INTERFACE] User ${ws.user?.username} subscribing to events: ${eventTypes.join(", ")}`,
     );
+    this.registerUserSocket(ws);
     eventTypes.forEach((eventType) => {
       if (!this.eventSubscriptions[eventType])
         this.eventSubscriptions[eventType] = new Set();
@@ -93,17 +122,37 @@ class EngineInterface {
 
   private broadcastEvent = (event: EngineEvent.ENGINE_EVENT) => {
     let { type } = event.payload;
-    const subscribersCount = this.eventSubscriptions[type]?.size || 0;
+    const subscribers = this.eventSubscriptions[type];
+    if (!subscribers) return;
+
+    // personal events carry a userId and must only reach that single user:
+    // look up their sockets directly and send to the ones subscribed to `type`.
+    if (PERSONAL_EVENT_TYPES.has(type)) {
+      const targetUserId =
+        "userId" in event.payload.data ? event.payload.data.userId : undefined;
+      if (!targetUserId) return;
+
+      const userSockets = this.userSockets.get(targetUserId);
+      if (!userSockets) return;
+
+      console.log(
+        `[ENGINE_INTERFACE] Broadcasting personal event of type: ${type} -> ${targetUserId}`,
+      );
+      userSockets.forEach((ws) => {
+        if (subscribers.has(ws)) sendMessageOnWebSocket(ws, event);
+      });
+      return;
+    }
+
     console.log(
-      `[ENGINE_INTERFACE] Broadcasting event of type: ${type} to ${subscribersCount} subscribers`,
+      `[ENGINE_INTERFACE] Broadcasting event of type: ${type} to ${subscribers.size} subscribers`,
     );
-    this.eventSubscriptions[type]?.forEach((ws) => {
-      sendMessageOnWebSocket(ws, event);
-    });
+    subscribers.forEach((ws) => sendMessageOnWebSocket(ws, event));
   };
 
   async handleWsDisconnected(ws: WebSocket) {
     this.unsubscribeEvent("ALL_EVENTS", ws);
+    this.unregisterUserSocket(ws);
   }
 
   async handleEngineMessages(

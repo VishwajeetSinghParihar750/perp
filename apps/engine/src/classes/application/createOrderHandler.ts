@@ -73,7 +73,8 @@ export default class CreateOrderHandler {
       order.marketSymbol,
     );
     let position: Position | undefined = undefined;
-    if (positionRes.success) position = positionRes.value[order.marketSymbol];
+    if (positionRes.success)
+      position = positionRes.value.positions[order.marketSymbol];
 
     const evaluateRes = this.riskEngine.evaluateOrder(order, position);
     if (!evaluateRes.success) {

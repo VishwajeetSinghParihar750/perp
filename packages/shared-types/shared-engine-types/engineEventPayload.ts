@@ -12,6 +12,20 @@ import {
   FILL_ID_SCHEMA,
 } from "./types.js";
 
+// shape of a user's open position, kept here (instead of importing from
+// engineResponsePayload) to avoid a circular dependency.
+const POSITION_PAYLOAD_SCHEMA = z.object({
+  userId: USER_ID_SCHEMA,
+  price: PRICE_SCHEMA,
+  quantity: QUANTITY_SCHEMA,
+  type: z.union([z.literal("LONG"), z.literal("SHORT")]),
+  marketSymbol: TRADBLE_SYMBOL_SCHEMA,
+  createdAt: z.string(),
+  margin: PRICE_SCHEMA,
+  marginType: MARGIN_TYPE_SCHEMA,
+  liquidationPrice: PRICE_SCHEMA,
+});
+
 const BASE_EVENT_SCHEMA = z.object({
   idempotencyKey: z.string(),
   type: z.literal("event"),
@@ -53,6 +67,38 @@ const LAST_TRADED_PRICE_UPDATED_PAYLOAD_SCHEMA = z.object({
   data: z.object({
     price: PRICE_SCHEMA,
     marketSymbol: TRADBLE_SYMBOL_SCHEMA,
+  }),
+});
+
+const MARKPRICE_UPDATED_PAYLOAD_SCHEMA = z.object({
+  type: z.literal("markprice.updated"),
+  data: z.object({
+    price: PRICE_SCHEMA,
+    marketSymbol: TRADBLE_SYMBOL_SCHEMA,
+  }),
+});
+
+// personal fill, only ever delivered to the owning user. carries a per-user
+// monotonic `userFillId` so the frontend can apply only the fills that happened
+// after the position snapshot it already has (and discard older/duplicate ones).
+const USERFILL_CREATED_PAYLOAD_SCHEMA = z.object({
+  type: z.literal("userfill.created"),
+  data: z.object({
+    userFillId: z.number().int().nonnegative(),
+    userId: USER_ID_SCHEMA,
+    fillId: FILL_ID_SCHEMA,
+    orderId: ORDER_ID_SCHEMA,
+    marketSymbol: TRADBLE_SYMBOL_SCHEMA,
+    side: SIDE_SCHEMA,
+    price: PRICE_SCHEMA,
+    qty: QUANTITY_SCHEMA,
+    filledQty: QUANTITY_SCHEMA,
+    totalQty: QUANTITY_SCHEMA,
+    orderStatus: ORDER_STATUS_SCHEMA,
+    // authoritative account/position state right after this fill was applied
+    balance: QUANTITY_SCHEMA,
+    lockedBalance: QUANTITY_SCHEMA,
+    position: POSITION_PAYLOAD_SCHEMA.nullable(),
   }),
 });
 
@@ -163,6 +209,12 @@ type INDEXPRICE_UPDATED_EVENT_PAYLOAD = z.infer<
 type LAST_TRADED_PRICE_UPDATED_EVENT_PAYLOAD = z.infer<
   typeof LAST_TRADED_PRICE_UPDATED_PAYLOAD_SCHEMA
 >;
+type MARKPRICE_UPDATED_EVENT_PAYLOAD = z.infer<
+  typeof MARKPRICE_UPDATED_PAYLOAD_SCHEMA
+>;
+type USERFILL_CREATED_EVENT_PAYLOAD = z.infer<
+  typeof USERFILL_CREATED_PAYLOAD_SCHEMA
+>;
 type FILLS_CREATED_EVENT_PAYLOAD = z.infer<typeof FILLS_CREATED_PAYLOAD_SCHEMA>;
 type TRADES_CREATED_EVENT_PAYLOAD = z.infer<
   typeof TRADES_CREATED_PAYLOAD_SCHEMA
@@ -184,6 +236,8 @@ const ENGINE_EVENT_PAYLOAD_SCHEMA = z.union([
   FILLS_CREATED_PAYLOAD_SCHEMA,
   TRADES_CREATED_PAYLOAD_SCHEMA,
   LAST_TRADED_PRICE_UPDATED_PAYLOAD_SCHEMA,
+  MARKPRICE_UPDATED_PAYLOAD_SCHEMA,
+  USERFILL_CREATED_PAYLOAD_SCHEMA,
   ORDER_CANCELLED_PAYLOAD_SCHEMA,
   USER_PNL_CREATED_PAYLOAD_SCHEMA,
 ]);
@@ -199,6 +253,8 @@ export type {
   LIQUIDATION_COMPLETED_EVENT_PAYLOAD,
   INDEXPRICE_UPDATED_EVENT_PAYLOAD,
   LAST_TRADED_PRICE_UPDATED_EVENT_PAYLOAD,
+  MARKPRICE_UPDATED_EVENT_PAYLOAD,
+  USERFILL_CREATED_EVENT_PAYLOAD,
   FILLS_CREATED_EVENT_PAYLOAD,
   FUNDING_EVENT_PAYLOAD,
   TRADES_CREATED_EVENT_PAYLOAD,
@@ -215,6 +271,8 @@ export {
   FILLS_CREATED_PAYLOAD_SCHEMA,
   TRADES_CREATED_PAYLOAD_SCHEMA,
   LAST_TRADED_PRICE_UPDATED_PAYLOAD_SCHEMA,
+  MARKPRICE_UPDATED_PAYLOAD_SCHEMA,
+  USERFILL_CREATED_PAYLOAD_SCHEMA,
   ORDER_CANCELLED_PAYLOAD_SCHEMA,
   USER_PNL_CREATED_PAYLOAD_SCHEMA,
 };

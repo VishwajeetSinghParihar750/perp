@@ -11,10 +11,17 @@ import {
 import assert from "node:assert";
 import { OrderedMap } from "js-sdsl";
 import type Market from "./market.js";
+import type Account from "./account.js";
 import type { Snapshotable } from "../infrastructure/snapshotManager.js";
 
 export type POSITION_MANAGER_SNAPSHOT = {
   positions: [EngineTypes.TRADABLE_SYMBOL, [EngineTypes.USER_ID, Position][]][];
+  userFillSeq: [EngineTypes.USER_ID, number][];
+};
+
+export type GetPositionResult = {
+  positions: Partial<Record<EngineTypes.TRADABLE_SYMBOL, Position>>;
+  lastFillId: number;
 };
 
 export default class PositionManager implements Snapshotable<POSITION_MANAGER_SNAPSHOT> {
@@ -40,6 +47,11 @@ export default class PositionManager implements Snapshotable<POSITION_MANAGER_SN
   private eventBus: EventBus;
   private riskEngine: RiskEngine;
   private market: Market;
+  private account: Account;
+
+  // per-user monotonic fill sequence. used to tag personal `userfill.created`
+  // events so the frontend can apply only the fills after its snapshot.
+  private userFillSeq: Map<EngineTypes.USER_ID, number> = new Map();
 
   getSnapshot(): POSITION_MANAGER_SNAPSHOT {
     const serializedPositions: [
@@ -51,10 +63,12 @@ export default class PositionManager implements Snapshotable<POSITION_MANAGER_SN
     }
     return {
       positions: serializedPositions,
+      userFillSeq: Array.from(this.userFillSeq.entries()),
     };
   }
 
   loadSnapshot(snapshot: POSITION_MANAGER_SNAPSHOT) {
+    this.userFillSeq = new Map(snapshot.userFillSeq ?? []);
     this.positions = new Map();
     this.liquidationPrice = {
       LONG: new Map(),
@@ -91,10 +105,16 @@ export default class PositionManager implements Snapshotable<POSITION_MANAGER_SN
     });
   }
 
-  constructor(eventBus: EventBus, riskEngine: RiskEngine, market: Market) {
+  constructor(
+    eventBus: EventBus,
+    riskEngine: RiskEngine,
+    market: Market,
+    account: Account,
+  ) {
     this.eventBus = eventBus;
     this.riskEngine = riskEngine;
     this.market = market;
+    this.account = account;
 
     // Initialize liquidationPrice maps for all tradable symbols
     EngineTypes.TRADABLE_SYMBOL_ARRAY.forEach((symbol) => {
@@ -240,27 +260,80 @@ export default class PositionManager implements Snapshotable<POSITION_MANAGER_SN
     if (symbolPositionsToUpdate && symbolPositionsToUpdate.size === 0) {
       this.positions.delete(marketSymbol);
     }
+
+    this.emitUserFill(userId, marketSymbol, side, trade, curSideTrade);
+  }
+
+  private nextUserFillId(userId: EngineTypes.USER_ID): number {
+    const next = (this.userFillSeq.get(userId) ?? 0) + 1;
+    this.userFillSeq.set(userId, next);
+    return next;
+  }
+
+  getLastFillId(userId: EngineTypes.USER_ID): number {
+    return this.userFillSeq.get(userId) ?? 0;
+  }
+
+  // emit a personal fill carrying the authoritative balance + resulting
+  // position so the owning user can keep its state in sync from this single
+  // event (no need to re-fetch). userpnl.created was already emitted above, so
+  // the account balance read here is up to date.
+  private emitUserFill(
+    userId: EngineTypes.USER_ID,
+    marketSymbol: EngineTypes.TRADABLE_SYMBOL,
+    side: EngineTypes.SIDE,
+    trade: EngineEventPayload.FILLS_CREATED_EVENT_PAYLOAD["data"]["fills"][number],
+    orderInfo: { orderId: string; filledQty: number; totalQty: number; orderStatus: EngineTypes.ORDER_STATUS },
+  ) {
+    const resultingPosition = this.positions.get(marketSymbol)?.get(userId);
+    const { balance, lockedBalance } = this.account.getBalance(userId);
+
+    this.eventBus.emit({
+      type: "userfill.created",
+      data: {
+        userFillId: this.nextUserFillId(userId),
+        userId,
+        fillId: trade.fillId,
+        orderId: orderInfo.orderId,
+        marketSymbol,
+        side,
+        price: trade.price,
+        qty: trade.qty,
+        filledQty: orderInfo.filledQty,
+        totalQty: orderInfo.totalQty,
+        orderStatus: orderInfo.orderStatus,
+        balance,
+        lockedBalance,
+        position: resultingPosition ? { ...resultingPosition } : null,
+      },
+    });
   }
 
   getPosition(
     userId: EngineTypes.USER_ID,
     marketSymbol?: EngineTypes.TRADABLE_SYMBOL,
-  ): Result<Partial<Record<EngineTypes.TRADABLE_SYMBOL, Position>>> {
-    const result: Partial<Record<EngineTypes.TRADABLE_SYMBOL, Position>> = {};
+  ): Result<GetPositionResult> {
+    const positions: Partial<Record<EngineTypes.TRADABLE_SYMBOL, Position>> = {};
 
     if (marketSymbol) {
       let res = this.positions.get(marketSymbol)?.get(userId);
-      if (res) result[marketSymbol] = res;
-      return { success: true, value: result };
+      if (res) positions[marketSymbol] = res;
+      return {
+        success: true,
+        value: { positions, lastFillId: this.getLastFillId(userId) },
+      };
     }
 
     for (const [marketSymbol, symbolPositions] of this.positions) {
       const pos = symbolPositions.get(userId);
       if (pos) {
-        result[marketSymbol] = pos;
+        positions[marketSymbol] = pos;
       }
     }
-    return { success: true, value: result };
+    return {
+      success: true,
+      value: { positions, lastFillId: this.getLastFillId(userId) },
+    };
   }
 
   handleIndexPriceUpdate(

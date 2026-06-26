@@ -45,6 +45,7 @@ const POSITION_SCHEMA = z.object({
   createdAt: z.iso.datetime(),
   margin: PRICE_SCHEMA,
   marginType: MARGIN_TYPE_SCHEMA,
+  liquidationPrice: PRICE_SCHEMA,
 });
 
 // =======================================================================================
@@ -69,9 +70,12 @@ const DEPTH_RESPONSE_PAYLOAD_SCHEMA = z.object({
   lastUpdatedDepthId: z.number().int().nonnegative(),
 });
 
-const POSITION_RESPONSE_PAYLOAD_SCHEMA = z.union([
-  z.partialRecord(TRADBLE_SYMBOL_SCHEMA, POSITION_SCHEMA),
-]);
+const POSITION_RESPONSE_PAYLOAD_SCHEMA = z.object({
+  positions: z.partialRecord(TRADBLE_SYMBOL_SCHEMA, POSITION_SCHEMA),
+  // per-user monotonic fill sequence already reflected in `positions`. the
+  // frontend applies only `userfill.created` events with userFillId > lastFillId.
+  lastFillId: z.number().int().nonnegative(),
+});
 
 const ERROR_RESPONSE_PAYLOAD_SCHEMA = z.string();
 

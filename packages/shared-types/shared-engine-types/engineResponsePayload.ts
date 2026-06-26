@@ -66,6 +66,7 @@ const BALANCE_UPDATED_RESPONSE_PAYLOAD_SCHEMA = z.object({
 const DEPTH_RESPONSE_PAYLOAD_SCHEMA = z.object({
   bids: z.array(z.object({ price: PRICE_SCHEMA, quantity: z.number() })),
   asks: z.array(z.object({ price: PRICE_SCHEMA, quantity: z.number() })),
+  lastUpdatedDepthId: z.number().int().nonnegative(),
 });
 
 const POSITION_RESPONSE_PAYLOAD_SCHEMA = z.union([

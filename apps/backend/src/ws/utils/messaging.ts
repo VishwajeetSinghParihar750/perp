@@ -6,6 +6,8 @@ const sendMessageOnWebSocket = (
   ws: WebSocket,
   message: BackendResponse.BACKEND_RESPOSNE,
 ) => {
-  if (ws.OPEN) ws.send(JSON.stringify(message));
+  if (ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify(message));
+  }
 };
 export { sendMessageOnWebSocket };

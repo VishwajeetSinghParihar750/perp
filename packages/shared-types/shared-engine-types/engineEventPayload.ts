@@ -32,10 +32,11 @@ const DEPTH_UPDATED_PAYLOAD_SCHEMA = z.object({
   type: z.literal("depth.updated"),
   data: z.object({
     marketSymbol: TRADBLE_SYMBOL_SCHEMA,
-    depthUpdates: {
-      asks: z.record(PRICE_SCHEMA, QUANTITY_SCHEMA),
-      bids: z.record(PRICE_SCHEMA, QUANTITY_SCHEMA),
-    },
+    lastUpdatedDepthId: z.number().int().nonnegative(),
+    depthUpdates: z.object({
+      asks: z.record(z.string(), QUANTITY_SCHEMA),
+      bids: z.record(z.string(), QUANTITY_SCHEMA),
+    }),
   }),
 });
 

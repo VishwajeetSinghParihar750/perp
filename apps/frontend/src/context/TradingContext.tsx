@@ -6,6 +6,16 @@ import React, {
   useCallback,
   useRef,
 } from "react";
+import {
+  applyDepthSnapshot,
+  applyDepthUpdate,
+  createDepthSyncInfo,
+  getLatestBufferedDepthId,
+  reconcileBufferedDepthUpdates,
+  shouldApplyLiveDepthUpdate,
+  type DepthSyncInfo,
+  type OrderbookState,
+} from "../lib/depthSync";
 
 export type SymbolType = "BTCUSD" | "SOLUSD" | "ETHUSD";
 export type OrderSide = "BUY" | "SELL";
@@ -67,22 +77,6 @@ export const useTrading = () => {
   return context;
 };
 
-// ─── Depth sync state machine ────────────────────────────────────────────────
-// For each symbol we can be in one of three states:
-//   "subscribing"  → subscribe_event sent, waiting for confirmation
-//   "fetching"     → subscription confirmed, get_depth sent, buffering updates
-//   "live"         → snapshot applied, processing updates normally
-type DepthSyncState = "subscribing" | "fetching" | "live";
-
-interface DepthSyncInfo {
-  state: DepthSyncState;
-  // Buffered depth updates that arrived while we were in "fetching" state
-  buffer: Array<{
-    asks: Record<string, number>;
-    bids: Record<string, number>;
-  }>;
-}
-
 export const TradingProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
@@ -100,10 +94,10 @@ export const TradingProvider: React.FC<{ children: React.ReactNode }> = ({
     },
   );
   const [currentSymbol, setCurrentSymbolState] = useState<SymbolType>("BTCUSD");
-  const [orderbook, setOrderbook] = useState<{
-    asks: [number, number][];
-    bids: [number, number][];
-  }>({ asks: [], bids: [] });
+  const [orderbook, setOrderbook] = useState<OrderbookState>({
+    asks: [],
+    bids: [],
+  });
   const [lastTradedPrice, setLastTradedPrice] = useState<number | null>(null);
   const [indexPrice, setIndexPrice] = useState<number | null>(null);
   const [trades, setTrades] = useState<
@@ -237,102 +231,21 @@ export const TradingProvider: React.FC<{ children: React.ReactNode }> = ({
   }, [sendWsMessage, getNextRequestId]);
 
   /**
-   * Apply a depth snapshot to the orderbook state.
-   */
-  const applyDepthSnapshot = useCallback(
-    (
-      snapshotAsks: { price: number; quantity: number }[],
-      snapshotBids: { price: number; quantity: number }[],
-    ) => {
-      const asksMap = new Map<number, number>();
-      const bidsMap = new Map<number, number>();
-
-      for (const { price, quantity } of snapshotAsks) {
-        if (quantity > 0) asksMap.set(price, quantity);
-      }
-      for (const { price, quantity } of snapshotBids) {
-        if (quantity > 0) bidsMap.set(price, quantity);
-      }
-
-      return {
-        asks: Array.from(asksMap.entries()).sort((a, b) => a[0] - b[0]) as [number, number][],
-        bids: Array.from(bidsMap.entries()).sort((a, b) => b[0] - a[0]) as [number, number][],
-      };
-    },
-    [],
-  );
-
-  /**
-   * Apply a single depth delta update to an existing orderbook map state.
-   */
-  const applyDepthUpdate = useCallback(
-    (
-      prev: { asks: [number, number][]; bids: [number, number][] },
-      update: { asks: Record<string, number>; bids: Record<string, number> },
-    ): { asks: [number, number][]; bids: [number, number][] } => {
-      const asksMap = new Map<number, number>(prev.asks);
-      const bidsMap = new Map<number, number>(prev.bids);
-
-      if (update.asks) {
-        for (const [priceStr, qty] of Object.entries(update.asks)) {
-          const price = parseFloat(priceStr);
-          if (qty === 0) asksMap.delete(price);
-          else asksMap.set(price, qty);
-        }
-      }
-
-      if (update.bids) {
-        for (const [priceStr, qty] of Object.entries(update.bids)) {
-          const price = parseFloat(priceStr);
-          if (qty === 0) bidsMap.delete(price);
-          else bidsMap.set(price, qty);
-        }
-      }
-
-      return {
-        asks: Array.from(asksMap.entries()).sort((a, b) => a[0] - b[0]) as [number, number][],
-        bids: Array.from(bidsMap.entries()).sort((a, b) => b[0] - a[0]) as [number, number][],
-      };
-    },
-    [],
-  );
-
-  /**
-   * Initiate depth sync for a given symbol.
-   * 
-   * Protocol (Binance-style without explicit sequence IDs since engine doesn't send them):
-   *   1. Send subscribe_event for depth.updated
-   *   2. Buffer all depth.updated events that arrive
-   *   3. Once subscribe_event is confirmed (event_subscribed), send get_depth
-   *   4. When depth snapshot arrives, apply it, then replay all buffered updates on top
-   *   5. Subsequent updates are applied directly (live state)
-   * 
-   * NOTE: Since the engine does not send lastUpdateId sequence numbers,
-   * we can't do ID-based filtering. Instead we rely on ordering:
-   *   - All buffered updates were emitted AFTER we started listening (step 1)
-   *   - The snapshot is a point-in-time view taken AFTER buffering started  
-   *   - So snapshot >= buffer start ⟹ all buffered updates after the snapshot
-   *     are valid deltas. But we can't know which buffered updates are before
-   *     the snapshot vs after. The safest approach: after receiving snapshot,
-   *     discard the buffer (the snapshot already includes those changes) OR
-   *     apply buffer naively on top (may double-apply but self-corrects next update).
-   * 
-   * Since the engine sends FULL level quantities (not just deltas to a running total),
-   * applying buffer updates on top of the snapshot is idempotent and safe.
-   * qty=0 removes the level, qty>0 sets/overwrites the level.
+   * Depth sync protocol:
+   *   1. Subscribe to depth.updated
+   *   2. Buffer incoming updates (with lastUpdatedDepthId)
+   *   3. After subscription confirms, request full depth and include the latest
+   *      buffered depth id so the backend knows what the client has already seen
+   *   4. Apply snapshot, discard buffered updates at or before snapshot id,
+   *      replay newer buffered updates, then go live
    */
   const startDepthSync = useCallback(
     (symbol: SymbolType) => {
       console.log(`[DEPTH] Starting sync for ${symbol}`);
 
-      // Reset state for this symbol
-      depthSyncRef.current[symbol] = {
-        state: "subscribing",
-        buffer: [],
-      };
-
-      // Step 1: Subscribe to depth.updated events FIRST
       const subReqId = `sub_depth_${symbol}_${Date.now()}`;
+      depthSyncRef.current[symbol] = createDepthSyncInfo(subReqId);
+
       sendWsMessage({
         requestId: subReqId,
         type: "subscribe_event",
@@ -342,12 +255,6 @@ export const TradingProvider: React.FC<{ children: React.ReactNode }> = ({
       });
 
       console.log(`[DEPTH] Subscribe sent for ${symbol}, reqId: ${subReqId}`);
-      // The onmessage handler will catch event_subscribed response,
-      // then send get_depth and transition to "fetching" state
-      // We store the subReqId so we know which response corresponds to this subscription
-      depthSyncRef.current[symbol].buffer = [];
-      // @ts-ignore - stash for response matching
-      depthSyncRef.current[symbol].subReqId = subReqId;
     },
     [sendWsMessage],
   );
@@ -474,59 +381,72 @@ export const TradingProvider: React.FC<{ children: React.ReactNode }> = ({
         if (type === "depth" && payload) {
           const symbol = currentSymbolRef.current;
           const syncInfo = depthSyncRef.current[symbol];
-          console.log(`[DEPTH] Snapshot received for ${symbol}, state: ${syncInfo?.state}`);
+          const snapshotDepthId = payload.lastUpdatedDepthId ?? 0;
+          console.log(
+            `[DEPTH] Snapshot received for ${symbol}, id: ${snapshotDepthId}, state: ${syncInfo?.state}`,
+          );
 
           if (!syncInfo || syncInfo.state !== "fetching") {
-            // Unexpected or stale snapshot — still apply it as best effort
-            console.warn(`[DEPTH] Received snapshot in unexpected state for ${symbol}`);
+            console.warn(
+              `[DEPTH] Received snapshot in unexpected state for ${symbol}`,
+            );
           }
 
-          // Build snapshot orderbook
           const snapshotBook = applyDepthSnapshot(
             payload.asks || [],
             payload.bids || [],
           );
-
-          // Replay all buffered updates on top of the snapshot
           const buffered = syncInfo?.buffer ?? [];
-          console.log(`[DEPTH] Replaying ${buffered.length} buffered updates for ${symbol}`);
+          const { book, lastAppliedDepthId } = reconcileBufferedDepthUpdates(
+            snapshotBook,
+            snapshotDepthId,
+            buffered,
+          );
 
-          let book = snapshotBook;
-          for (const update of buffered) {
-            book = applyDepthUpdate(book, update);
-          }
+          console.log(
+            `[DEPTH] Replayed ${buffered.filter((update) => update.lastUpdatedDepthId > snapshotDepthId).length}/${buffered.length} buffered updates for ${symbol}`,
+          );
 
           setOrderbook(book);
 
-          // Transition to live
           if (depthSyncRef.current[symbol]) {
             depthSyncRef.current[symbol].state = "live";
             depthSyncRef.current[symbol].buffer = [];
+            depthSyncRef.current[symbol].lastAppliedDepthId = lastAppliedDepthId;
           }
           return;
         }
 
         // event_subscribed — check if this is a depth subscription confirmation
         if (type === "event_subscribed" && payload) {
-          // Check if we're waiting for a depth subscription to confirm
           const symbol = currentSymbolRef.current;
           const syncInfo = depthSyncRef.current[symbol];
 
-          // @ts-ignore
-          if (syncInfo && syncInfo.state === "subscribing" && requestId === syncInfo.subReqId) {
-            console.log(`[DEPTH] Subscription confirmed for ${symbol}, sending get_depth`);
+          if (
+            syncInfo &&
+            syncInfo.state === "subscribing" &&
+            requestId === syncInfo.subReqId
+          ) {
+            console.log(
+              `[DEPTH] Subscription confirmed for ${symbol}, sending get_depth`,
+            );
             syncInfo.state = "fetching";
 
-            // Step 3: Now send get_depth
-            const depthReqId = `get_depth_${symbol}_${Date.now()}`;
-            // @ts-ignore
-            syncInfo.depthReqId = depthReqId;
+            const lastUpdatedDepthId = getLatestBufferedDepthId(syncInfo.buffer);
+            const depthPayload: {
+              marketSymbol: SymbolType;
+              lastUpdatedDepthId?: number;
+            } = { marketSymbol: symbol };
+            if (lastUpdatedDepthId !== undefined) {
+              depthPayload.lastUpdatedDepthId = lastUpdatedDepthId;
+            }
+
             if (ws.readyState === WebSocket.OPEN) {
               ws.send(
                 JSON.stringify({
-                  requestId: depthReqId,
+                  requestId: getNextRequestId(),
                   type: "get_depth",
-                  payload: { marketSymbol: symbol },
+                  payload: depthPayload,
                 }),
               );
             }
@@ -596,29 +516,41 @@ export const TradingProvider: React.FC<{ children: React.ReactNode }> = ({
           const activeSymbol = currentSymbolRef.current;
 
           if (eventType === "depth.updated" && data) {
-            // Always buffer or apply depending on sync state
             const symbol = data.marketSymbol as SymbolType;
             const syncInfo = depthSyncRef.current[symbol];
+            const updateId = data.lastUpdatedDepthId as number | undefined;
 
-            if (!syncInfo) {
-              // No sync started for this symbol — ignore
-              console.log(`[DEPTH] Received update for ${symbol} but no sync started, ignoring`);
+            if (!syncInfo || updateId === undefined) {
+              console.log(
+                `[DEPTH] Received update for ${symbol} without sync state or id, ignoring`,
+              );
               return;
             }
 
             const update = {
+              lastUpdatedDepthId: updateId,
               asks: data.depthUpdates?.asks ?? {},
               bids: data.depthUpdates?.bids ?? {},
             };
 
-            if (syncInfo.state === "subscribing" || syncInfo.state === "fetching") {
-              // Buffer the update — we haven't received the snapshot yet
+            if (
+              syncInfo.state === "subscribing" ||
+              syncInfo.state === "fetching"
+            ) {
               syncInfo.buffer.push(update);
-              console.log(`[DEPTH] Buffered update for ${symbol} (state: ${syncInfo.state}), buffer size: ${syncInfo.buffer.length}`);
+              console.log(
+                `[DEPTH] Buffered update ${updateId} for ${symbol} (state: ${syncInfo.state})`,
+              );
             } else if (syncInfo.state === "live") {
-              // Apply immediately to the current orderbook
-              if (symbol === activeSymbol) {
+              if (
+                symbol === activeSymbol &&
+                shouldApplyLiveDepthUpdate(
+                  updateId,
+                  syncInfo.lastAppliedDepthId,
+                )
+              ) {
                 setOrderbook((prev) => applyDepthUpdate(prev, update));
+                syncInfo.lastAppliedDepthId = updateId;
               }
             }
             return;

@@ -20,7 +20,7 @@ export default class UnsubscribeEventHandler {
   ): Result<EngineEventType.ENGINE_EVENT_TYPE[]> {
     return {
       success: true,
-      value: this.eventPublisher.subscribe(
+      value: this.eventPublisher.unsubscribe(
         command.replyAddress,
         command.events,
       ),

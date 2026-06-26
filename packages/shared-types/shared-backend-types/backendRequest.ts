@@ -63,6 +63,7 @@ const GET_DEPTH_SCHEMA = BASE_SCHEMA.extend({
   type: z.literal("get_depth"),
   payload: z.object({
     marketSymbol: TRADBLE_SYMBOL_SCHEMA,
+    lastUpdatedDepthId: z.number().int().nonnegative().optional(),
   }),
 });
 const GET_POSITION_SCHEMA = BASE_SCHEMA.extend({

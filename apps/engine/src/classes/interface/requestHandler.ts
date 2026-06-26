@@ -109,7 +109,10 @@ export default class RequestHandler {
         const req = request as EngineRequest.GET_DEPTH_REQUEST;
 
         const res = this.deps!.getDepthHandler.handle({
-          ...req.payload,
+          marketSymbol: req.payload.marketSymbol,
+          ...(req.payload.lastUpdatedDepthId !== undefined
+            ? { lastUpdatedDepthId: req.payload.lastUpdatedDepthId }
+            : {}),
         });
 
         return this.responseHelper(req, res, "depth");

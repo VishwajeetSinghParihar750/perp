@@ -4,11 +4,13 @@ import type { Result } from "../types.js";
 
 export interface GetDepthCommand {
   marketSymbol: EngineTypes.TRADABLE_SYMBOL;
+  lastUpdatedDepthId?: number;
 }
 
 type DepthResponse = {
   asks: { price: number; quantity: number }[];
   bids: { price: number; quantity: number }[];
+  lastUpdatedDepthId: number;
 };
 
 export default class GetDepthHandler {
@@ -19,19 +21,18 @@ export default class GetDepthHandler {
   }
 
   handle(command: GetDepthCommand): Result<DepthResponse> {
-    let symOrderbook = this.orderbook.getOrderbook(command.marketSymbol);
-
-    let value: DepthResponse = { asks: [], bids: [] };
-    symOrderbook.asks.forEach((askLevel) => {
-      value.asks.push({ price: askLevel[0], quantity: askLevel[1].totalQty });
-    });
-    symOrderbook.bids.forEach((bidLevel) => {
-      value.asks.push({ price: bidLevel[0], quantity: bidLevel[1].totalQty });
-    });
+    const [asksDepth, bidsDepth] = this.orderbook.getDepth(command.marketSymbol);
+    const lastUpdatedDepthId = this.orderbook.getLastUpdatedDepthId(
+      command.marketSymbol,
+    );
 
     return {
       success: true,
-      value,
+      value: {
+        asks: asksDepth.map(([price, quantity]) => ({ price, quantity })),
+        bids: bidsDepth.map(([price, quantity]) => ({ price, quantity })),
+        lastUpdatedDepthId,
+      },
     };
   }
 }

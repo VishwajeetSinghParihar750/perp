@@ -15,7 +15,8 @@ const TABS: { id: Tab; label: string }[] = [
 const DECORATIVE = ["Borrows", "TWAP", "Order History", "Position History", "Funding History"];
 
 export function BottomPanel({ onOpenAuth }: { onOpenAuth: (mode: "signin" | "signup") => void }) {
-  const { isAuthenticated, positions, openOrders, fills, balance, markPrices } = useTrading();
+  const { isAuthenticated, positions, openOrders, fills, balance, markPrices, indexPrices } =
+    useTrading();
   const [tab, setTab] = useState<Tab>("balances");
 
   return (
@@ -76,7 +77,7 @@ export function BottomPanel({ onOpenAuth }: { onOpenAuth: (mode: "signin" | "sig
         ) : tab === "balances" ? (
           <Balances balance={balance} />
         ) : tab === "positions" ? (
-          <Positions positions={positions} markPrices={markPrices} />
+          <Positions positions={positions} markPrices={markPrices} indexPrices={indexPrices} />
         ) : tab === "orders" ? (
           <OpenOrders />
         ) : (
@@ -127,9 +128,11 @@ function Balances({ balance }: { balance: { available: number; locked: number } 
 function Positions({
   positions,
   markPrices,
+  indexPrices,
 }: {
   positions: ReturnType<typeof useTrading>["positions"];
   markPrices: ReturnType<typeof useTrading>["markPrices"];
+  indexPrices: ReturnType<typeof useTrading>["indexPrices"];
 }) {
   if (positions.length === 0) return <Empty>No open positions</Empty>;
 
@@ -151,7 +154,8 @@ function Positions({
         {positions.map((p) => {
           const market = getMarket(p.marketSymbol);
           const mark = markPrices[p.marketSymbol] ?? p.entryPrice;
-          const diff = p.type === "LONG" ? mark - p.entryPrice : p.entryPrice - mark;
+          const index = indexPrices[p.marketSymbol] ?? p.entryPrice;
+          const diff = p.type === "LONG" ? index - p.entryPrice : p.entryPrice - index;
           const pnl = diff * p.quantity;
           const pnlPct = p.margin > 0 ? (pnl / p.margin) * 100 : 0;
           return (

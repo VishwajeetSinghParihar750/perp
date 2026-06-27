@@ -6,6 +6,7 @@ import type { MarginType, OrderType, Side } from "../lib/types";
 
 const LEVERAGES = [1, 3, 5, 10, 20, 50];
 const FAUCET = [100, 1000, 10000];
+const MARKET_SLIPPAGE = 0.01;
 
 interface OrderFormProps {
   onOpenAuth: (mode: "signin" | "signup") => void;
@@ -18,13 +19,14 @@ export function OrderForm({ onOpenAuth }: OrderFormProps) {
     currentSymbol,
     markPrice,
     lastPrice,
+    indexPrice,
+    orderbook,
     balance,
     placeOrder,
     addBalance,
   } = useTrading();
 
   const market = getMarket(currentSymbol);
-  const refPrice = lastPrice ?? markPrice ?? null;
 
   const [side, setSide] = useState<Side>("BUY");
   const [orderType, setOrderType] = useState<OrderType>("LIMIT");
@@ -36,51 +38,73 @@ export function OrderForm({ onOpenAuth }: OrderFormProps) {
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (orderType === "LIMIT" && !price && refPrice) {
-      setPrice(refPrice.toFixed(market.pricePrecision));
-    }
-  }, [orderType, refPrice, price, market.pricePrecision]);
+  const limitPrice = parseFloat(price) || 0;
+  const bookMid =
+    orderbook.asks[0]?.[0] != null && orderbook.bids[0]?.[0] != null
+      ? (orderbook.asks[0][0] + orderbook.bids[0][0]) / 2
+      : null;
+  const basePrice =
+    lastPrice ??
+    markPrice ??
+    indexPrice ??
+    bookMid ??
+    (limitPrice > 0 ? limitPrice : null);
 
-  const effPrice = orderType === "MARKET" ? refPrice ?? 0 : parseFloat(price) || 0;
+  useEffect(() => {
+    if (orderType === "LIMIT" && !price && basePrice) {
+      setPrice(basePrice.toFixed(market.pricePrecision));
+    }
+  }, [orderType, basePrice, price, market.pricePrecision]);
+
+  const submitPrice =
+    orderType === "MARKET" && basePrice != null
+      ? side === "BUY"
+        ? basePrice * (1 + MARKET_SLIPPAGE)
+        : basePrice * (1 - MARKET_SLIPPAGE)
+      : limitPrice;
+  const displayPrice = orderType === "MARKET" ? basePrice ?? 0 : limitPrice;
+  const sizingPrice = submitPrice > 0 ? submitPrice : displayPrice;
   const qtyNum = parseFloat(qty) || 0;
-  const orderValue = effPrice * qtyNum;
-  const marginRequired = leverage > 0 ? orderValue / leverage : 0;
+  const orderValue = displayPrice * qtyNum;
+  const marginRequired =
+    leverage > 0 ? (submitPrice * qtyNum) / leverage : 0;
   const buyingPower = balance.available * leverage;
 
   const estLiqPrice = useMemo(() => {
-    if (effPrice <= 0 || leverage <= 1) return null;
+    if (submitPrice <= 0 || leverage <= 1) return null;
     return side === "BUY"
-      ? effPrice * (1 - 1 / leverage)
-      : effPrice * (1 + 1 / leverage);
-  }, [effPrice, leverage, side]);
+      ? submitPrice * (1 - 1 / leverage)
+      : submitPrice * (1 + 1 / leverage);
+  }, [submitPrice, leverage, side]);
 
   const applySlider = (pct: number) => {
     setSliderPct(pct);
-    if (effPrice <= 0) return;
+    if (sizingPrice <= 0) return;
     const target = buyingPower * (pct / 100);
-    setQty((target / effPrice).toFixed(market.qtyPrecision));
+    setQty((target / sizingPrice).toFixed(market.qtyPrecision));
   };
 
   const onQtyChange = (val: string) => {
     setQty(val);
     const q = parseFloat(val) || 0;
-    if (effPrice <= 0 || buyingPower <= 0) {
+    if (sizingPrice <= 0 || buyingPower <= 0) {
       setSliderPct(0);
       return;
     }
-    setSliderPct(Math.min(100, Math.round(((q * effPrice) / buyingPower) * 100)));
+    setSliderPct(
+      Math.min(100, Math.round(((q * sizingPrice) / buyingPower) * 100)),
+    );
   };
 
   const submit = async () => {
     if (!isAuthenticated || submitting) return;
     setFormError(null);
 
-    if (orderType === "MARKET" && !refPrice) {
+    if (orderType === "MARKET" && !basePrice) {
       setFormError("Waiting for price feed");
       return;
     }
-    if (effPrice <= 0) {
+    if (submitPrice <= 0) {
       setFormError("Enter a valid price");
       return;
     }
@@ -97,7 +121,7 @@ export function OrderForm({ onOpenAuth }: OrderFormProps) {
     await placeOrder({
       side,
       type: orderType,
-      price: effPrice,
+      price: submitPrice,
       qty: qtyNum,
       margin: parseFloat(marginRequired.toFixed(4)),
       marginType,
@@ -244,6 +268,9 @@ export function OrderForm({ onOpenAuth }: OrderFormProps) {
             value={estLiqPrice ? formatUsd(estLiqPrice) : "—"}
             valueClass="text-[#e6a700]"
           />
+          {orderType === "MARKET" && (
+            <Row label="Max Slippage" value="1%" />
+          )}
         </div>
 
         {formError && (

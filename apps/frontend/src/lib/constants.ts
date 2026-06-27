@@ -13,6 +13,8 @@ export interface MarketMeta {
   base: string;
   pricePrecision: number;
   qtyPrecision: number;
+  /** Fallback when no live index/mark/trade price is available */
+  referencePrice: number;
 }
 
 export const MARKETS: MarketMeta[] = [
@@ -22,6 +24,7 @@ export const MARKETS: MarketMeta[] = [
     base: "BTC",
     pricePrecision: 2,
     qtyPrecision: 4,
+    referencePrice: 95_000,
   },
   {
     symbol: "ETHUSD",
@@ -29,6 +32,7 @@ export const MARKETS: MarketMeta[] = [
     base: "ETH",
     pricePrecision: 2,
     qtyPrecision: 4,
+    referencePrice: 3_500,
   },
   {
     symbol: "SOLUSD",
@@ -36,11 +40,28 @@ export const MARKETS: MarketMeta[] = [
     base: "SOL",
     pricePrecision: 2,
     qtyPrecision: 2,
+    referencePrice: 150,
   },
 ];
 
 export function getMarket(symbol: TradableSymbol): MarketMeta {
   return MARKETS.find((m) => m.symbol === symbol) ?? MARKETS[0];
+}
+
+/** Live prices only — no stale hardcoded fallback. */
+export function resolveLivePrice(
+  _symbol: TradableSymbol,
+  live?: { last?: number; mark?: number; index?: number },
+): number | undefined {
+  return live?.index ?? live?.mark ?? live?.last;
+}
+
+/** Same priority as OrderForm: last → mark → index → market default. */
+export function resolveReferencePrice(
+  symbol: TradableSymbol,
+  live?: { last?: number; mark?: number; index?: number },
+): number {
+  return resolveLivePrice(symbol, live) ?? getMarket(symbol).referencePrice;
 }
 
 // market-wide channels: just subscribe and stream

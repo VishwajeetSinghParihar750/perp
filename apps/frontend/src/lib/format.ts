@@ -8,6 +8,7 @@ export function formatPrice(value: number | null | undefined, precision = 2): st
 
 export function formatQty(value: number | null | undefined, precision = 4): string {
   if (value === null || value === undefined || Number.isNaN(value)) return "—";
+  if (value > 0 && value < 0.01) return "<.01";
   return value.toLocaleString("en-US", {
     minimumFractionDigits: precision,
     maximumFractionDigits: precision,

@@ -6,7 +6,10 @@ interface Snapshotable<T> {
   loadSnapshot(snapshot: T): void;
 }
 
-const compareRedisStreamId = (id1: string, id2: string): -1 | 0 | 1 => {
+export const compareRedisStreamId = (
+  id1: string,
+  id2: string,
+): -1 | 0 | 1 => {
   const [lhs1, rhs1] = id1.split("-").map(BigInt);
   const [lhs2, rhs2] = id2.split("-").map(BigInt);
 
@@ -44,14 +47,14 @@ class SnapshotManager {
   }
 
   private loadSnapshot(): string {
-    let lastRedisMessageId = "0-0";
+    let resumeMessageId = "0-0";
 
     const snapshotsDir = path.join(process.cwd(), "data/snapshots");
     let files: string[] = [];
     try {
       files = readdirSync(snapshotsDir);
     } catch {
-      return lastRedisMessageId;
+      return resumeMessageId;
     }
 
     files.sort((a, b) => {
@@ -66,7 +69,6 @@ class SnapshotManager {
       try {
         let fileName = files.pop();
 
-        // load snapshot from this file
         let fileData = readFileSync(
           path.join(process.cwd(), `data/snapshots/${fileName}`),
           "utf-8",
@@ -75,29 +77,26 @@ class SnapshotManager {
         let {
           snapshot,
           lastFullyProcessedRedisStreamMessageId,
-          lastRedisMessageId,
+          lastRedisStreamMessageId: fileMessageId,
         } = JSON.parse(fileData);
 
         lastProcessed ??= lastFullyProcessedRedisStreamMessageId;
 
-        if (compareRedisStreamId(lastRedisMessageId, lastProcessed!) != 1) {
+        if (compareRedisStreamId(fileMessageId, lastProcessed!) != 1) {
           this.snapshotableClass.loadSnapshot(snapshot);
-          lastRedisMessageId = lastRedisMessageId;
+          resumeMessageId = fileMessageId;
+          this.lastRedisStreamMessageId = fileMessageId;
+          this.lastFullyProcessedRedisStreamMessageId =
+            lastFullyProcessedRedisStreamMessageId;
           break;
         }
-
-        // maybe throw when unable to load snapshot so, we can replay from 0 in event stream
-        // TODO : if this fails we should restart the engine server,, coz some might have got the state loaded ,and others failed
       } catch (error) {
-        // start from 0
-        lastRedisMessageId = "0-0";
+        resumeMessageId = "0-0";
         break;
       }
     }
 
-    // console.log(JSON.stringify(snapshotableClass.getSnapshot(), null, 2));
-
-    return lastRedisMessageId;
+    return resumeMessageId;
   }
 
   onMessageProcessed = (messageId: string) => {

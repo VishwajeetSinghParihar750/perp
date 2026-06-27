@@ -242,7 +242,13 @@ export class SingleMarketOrderbook implements Snapshotable<SINGLE_MARKET_ORDERBO
       type: "trades.created",
       data: {
         marketSymbol: this.marketSymbol,
-        trades: [[tradePrice, tradeQuantity]],
+        trades: [
+          {
+            fillId: tradeEvent.fillId,
+            price: tradePrice,
+            qty: tradeQuantity,
+          },
+        ],
       },
     });
 

@@ -149,3 +149,36 @@ export async function fetchFills(token: string): Promise<HistoricalFill[]> {
     shortUserId: f.shortUserId,
   }));
 }
+
+export async function fetchMarketTrades(
+  token: string,
+  marketSymbol: TradableSymbol,
+  limit = 100,
+): Promise<
+  {
+    fillId: string;
+    price: number;
+    qty: number;
+    time: number;
+    up: boolean;
+  }[]
+> {
+  const fills = await apiFetch<HttpFill[]>(
+    `/fills/${marketSymbol}?limit=${limit}`,
+    token,
+  );
+  const trades = fills.map((f) => ({
+    fillId: f.id,
+    price: toNumber(f.price),
+    qty: toNumber(f.quantity),
+    time: Date.now(),
+    up: true,
+  }));
+  for (let i = 0; i < trades.length - 1; i++) {
+    trades[i] = {
+      ...trades[i],
+      up: trades[i].price >= trades[i + 1].price,
+    };
+  }
+  return trades;
+}

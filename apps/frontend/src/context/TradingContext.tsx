@@ -11,6 +11,7 @@ import {
 import { ALL_EVENTS } from "../lib/constants";
 import {
   fetchFills,
+  fetchMarketTrades,
   fetchOpenOrders,
   signIn as apiSignIn,
   signUp as apiSignUp,
@@ -19,6 +20,7 @@ import {
 import { TradingSocket } from "../lib/ws/client";
 import { OrderbookSync, type OrderbookView } from "../lib/sync/orderbookSync";
 import { PersonalSync, type PersonalBalance } from "../lib/sync/personalSync";
+import { TradesSync } from "../lib/sync/tradesSync";
 import type {
   BalanceSnapshot,
   DepthSnapshot,
@@ -154,6 +156,7 @@ export function TradingProvider({ children }: { children: ReactNode }) {
 
   const socketRef = useRef<TradingSocket | null>(null);
   const orderbookSyncRef = useRef<OrderbookSync>(new OrderbookSync());
+  const tradesSyncRef = useRef<TradesSync>(new TradesSync("SOLUSD"));
   const personalSyncRef = useRef<PersonalSync>(new PersonalSync());
   const openOrdersRef = useRef<Map<string, OpenOrder>>(new Map());
   const currentSymbolRef = useRef<TradableSymbol>(currentSymbol);
@@ -218,6 +221,18 @@ export function TradingProvider({ children }: { children: ReactNode }) {
     }
   }, [user]);
 
+  const loadMarketTrades = useCallback(async (symbol: TradableSymbol) => {
+    const activeToken = tokenRef.current;
+    if (!activeToken) return;
+    try {
+      const snapshot = await fetchMarketTrades(activeToken, symbol, 100);
+      tradesSyncRef.current.applySnapshot(snapshot);
+      setTrades(tradesSyncRef.current.getTrades());
+    } catch {
+      // live stream keeps the tape updated regardless
+    }
+  }, []);
+
   // ---- event handling ------------------------------------------------------
 
   const applyFillToOpenOrders = useCallback(
@@ -252,19 +267,8 @@ export function TradingProvider({ children }: { children: ReactNode }) {
         case "trades.created": {
           const data = payload.data as TradesCreatedData;
           if (data.marketSymbol !== activeSymbol) return;
-          const incoming: PublicTrade[] = data.trades.map(([price, qty]) => ({
-            price,
-            qty,
-            time: Date.now(),
-            up: true,
-          }));
-          setTrades((prev) => {
-            const merged = [...incoming, ...prev].slice(0, 60);
-            for (let i = 0; i < merged.length - 1; i++) {
-              merged[i] = { ...merged[i], up: merged[i].price >= merged[i + 1].price };
-            }
-            return merged;
-          });
+          tradesSyncRef.current.onTradesCreated(data);
+          setTrades(tradesSyncRef.current.getTrades());
           return;
         }
         case "indexprice.updated": {
@@ -303,10 +307,11 @@ export function TradingProvider({ children }: { children: ReactNode }) {
 
     // fresh sync engines: they buffer events until snapshots arrive
     orderbookSyncRef.current = new OrderbookSync();
+    tradesSyncRef.current = new TradesSync(symbol);
     personalSyncRef.current = new PersonalSync();
 
     try {
-      // 1. subscribe first so depth + personal fills start buffering
+      // 1. subscribe first so depth, trades + personal fills start buffering
       await socket.subscribe(ALL_EVENTS);
 
       // 2. fetch snapshots
@@ -326,13 +331,14 @@ export function TradingProvider({ children }: { children: ReactNode }) {
       );
       pushPersonalState();
 
-      // 4. recover orders + fill history from db
+      // 4. recover trades, orders + fill history from db
+      void loadMarketTrades(symbol);
       void loadOpenOrders(symbol);
       void loadFills();
     } catch (err) {
       console.error("[bootstrap] failed", err);
     }
-  }, [loadFills, loadOpenOrders, pushPersonalState]);
+  }, [loadFills, loadMarketTrades, loadOpenOrders, pushPersonalState]);
 
   const doLogout = useCallback(() => {
     localStorage.removeItem("perp_token");
@@ -519,8 +525,9 @@ export function TradingProvider({ children }: { children: ReactNode }) {
       const socket = socketRef.current;
       if (!socket?.isOpen()) return;
 
-      // re-sync the book for the new symbol (already subscribed to all symbols)
+      // re-sync the book + trade tape for the new symbol (already subscribed)
       orderbookSyncRef.current = new OrderbookSync();
+      tradesSyncRef.current = new TradesSync(symbol);
       socket
         .getDepth(symbol)
         .then((res) => {
@@ -528,9 +535,10 @@ export function TradingProvider({ children }: { children: ReactNode }) {
           setOrderbook(orderbookSyncRef.current.getView());
         })
         .catch(() => {});
+      void loadMarketTrades(symbol);
       void loadOpenOrders(symbol);
     },
-    [loadOpenOrders],
+    [loadMarketTrades, loadOpenOrders],
   );
 
   const value = useMemo<TradingContextValue>(

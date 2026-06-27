@@ -24,9 +24,9 @@ export function Trades() {
             No recent trades
           </div>
         ) : (
-          trades.map((t, i) => (
+          trades.map((t) => (
             <div
-              key={`${t.time}-${i}`}
+              key={t.fillId}
               className="grid grid-cols-3 px-3 py-[3px] hover:bg-[#15181d]"
             >
               <span

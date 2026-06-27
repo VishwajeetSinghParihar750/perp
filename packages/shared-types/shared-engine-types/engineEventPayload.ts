@@ -106,7 +106,13 @@ const TRADES_CREATED_PAYLOAD_SCHEMA = z.object({
   type: z.literal("trades.created"),
   data: z.object({
     marketSymbol: TRADBLE_SYMBOL_SCHEMA,
-    trades: z.array(z.tuple([PRICE_SCHEMA, QUANTITY_SCHEMA])), // array of [price, position ]
+    trades: z.array(
+      z.object({
+        fillId: FILL_ID_SCHEMA,
+        price: PRICE_SCHEMA,
+        qty: QUANTITY_SCHEMA,
+      }),
+    ),
   }),
 });
 

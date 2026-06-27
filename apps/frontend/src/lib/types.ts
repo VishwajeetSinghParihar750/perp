@@ -83,7 +83,13 @@ export interface PriceUpdateData {
 
 export interface TradesCreatedData {
   marketSymbol: TradableSymbol;
-  trades: [number, number][];
+  trades: WireTrade[];
+}
+
+export interface WireTrade {
+  fillId: string;
+  price: number;
+  qty: number;
 }
 
 export interface UserFillData {
@@ -138,6 +144,7 @@ export interface UiFill {
 }
 
 export interface PublicTrade {
+  fillId: string;
   price: number;
   qty: number;
   time: number;

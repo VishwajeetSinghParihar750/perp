@@ -10,6 +10,23 @@ export function parseFillSeq(fillId: string, marketSymbol: TradableSymbol): numb
   return Number.isNaN(seq) ? -1 : seq;
 }
 
+export function getLatestTradePrice(
+  trades: Pick<WireTrade, "fillId" | "price">[],
+  marketSymbol: TradableSymbol,
+): number | null {
+  if (trades.length === 0) return null;
+  let latest = trades[0];
+  let latestSeq = parseFillSeq(latest.fillId, marketSymbol);
+  for (let i = 1; i < trades.length; i++) {
+    const seq = parseFillSeq(trades[i].fillId, marketSymbol);
+    if (seq > latestSeq) {
+      latest = trades[i];
+      latestSeq = seq;
+    }
+  }
+  return latest.price;
+}
+
 function recomputeUp(trades: PublicTrade[]): PublicTrade[] {
   if (trades.length === 0) return trades;
   const result = trades.map((trade) => ({ ...trade }));

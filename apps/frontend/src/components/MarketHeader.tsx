@@ -39,7 +39,6 @@ export function MarketHeader() {
     setCurrentSymbol,
     markPrice,
     indexPrice,
-    lastPrice,
     markPrices,
     trades,
   } = useTrading();
@@ -119,10 +118,6 @@ export function MarketHeader() {
         <Stat
           label="Index Price"
           value={formatPrice(indexPrice, market.pricePrecision)}
-        />
-        <Stat
-          label="Last Price"
-          value={formatPrice(lastPrice, market.pricePrecision)}
         />
         <Stat
           label="24h Change"

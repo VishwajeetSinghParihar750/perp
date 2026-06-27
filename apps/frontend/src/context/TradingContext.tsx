@@ -20,7 +20,7 @@ import {
 import { TradingSocket } from "../lib/ws/client";
 import { OrderbookSync, type OrderbookView } from "../lib/sync/orderbookSync";
 import { PersonalSync, type PersonalBalance } from "../lib/sync/personalSync";
-import { TradesSync } from "../lib/sync/tradesSync";
+import { getLatestTradePrice, TradesSync } from "../lib/sync/tradesSync";
 import type {
   BalanceSnapshot,
   DepthSnapshot,
@@ -228,6 +228,11 @@ export function TradingProvider({ children }: { children: ReactNode }) {
       const snapshot = await fetchMarketTrades(activeToken, symbol, 100);
       tradesSyncRef.current.applySnapshot(snapshot);
       setTrades(tradesSyncRef.current.getTrades());
+      const latestPrice = getLatestTradePrice(snapshot, symbol);
+      if (latestPrice != null) {
+        setMarkPrices((prev) => ({ ...prev, [symbol]: latestPrice }));
+        setLastPrices((prev) => ({ ...prev, [symbol]: latestPrice }));
+      }
     } catch {
       // live stream keeps the tape updated regardless
     }
@@ -266,6 +271,17 @@ export function TradingProvider({ children }: { children: ReactNode }) {
         }
         case "trades.created": {
           const data = payload.data as TradesCreatedData;
+          const latestPrice = getLatestTradePrice(data.trades, data.marketSymbol);
+          if (latestPrice != null) {
+            setMarkPrices((prev) => ({
+              ...prev,
+              [data.marketSymbol]: latestPrice,
+            }));
+            setLastPrices((prev) => ({
+              ...prev,
+              [data.marketSymbol]: latestPrice,
+            }));
+          }
           if (data.marketSymbol !== activeSymbol) return;
           tradesSyncRef.current.onTradesCreated(data);
           setTrades(tradesSyncRef.current.getTrades());

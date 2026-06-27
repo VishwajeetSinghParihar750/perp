@@ -75,7 +75,9 @@ export class SingleMarketOrderbook implements Snapshotable<SINGLE_MARKET_ORDERBO
   private recordDepthLevel(side: SIDE, price: PRICE) {
     const levels = side === "BUY" ? this.bids : this.asks;
     const updates =
-      side === "BUY" ? this.pendingDepthUpdates.bids : this.pendingDepthUpdates.asks;
+      side === "BUY"
+        ? this.pendingDepthUpdates.bids
+        : this.pendingDepthUpdates.asks;
     const level = levels.getElementByKey(price);
     updates[String(price)] = level?.totalQty ?? 0;
   }
@@ -120,7 +122,10 @@ export class SingleMarketOrderbook implements Snapshotable<SINGLE_MARKET_ORDERBO
         this.orders.set(o.orderId, it);
       });
       this.bids.setElement(price, {
-        totalQty: orders.reduce((sum, o) => sum + (o.quantity - o.filledQuantity), 0),
+        totalQty: orders.reduce(
+          (sum, o) => sum + (o.quantity - o.filledQuantity),
+          0,
+        ),
         orders: levelOrders,
       });
     });
@@ -133,7 +138,10 @@ export class SingleMarketOrderbook implements Snapshotable<SINGLE_MARKET_ORDERBO
         this.orders.set(o.orderId, it);
       });
       this.asks.setElement(price, {
-        totalQty: orders.reduce((sum, o) => sum + (o.quantity - o.filledQuantity), 0),
+        totalQty: orders.reduce(
+          (sum, o) => sum + (o.quantity - o.filledQuantity),
+          0,
+        ),
         orders: levelOrders,
       });
     });
@@ -259,7 +267,10 @@ export class SingleMarketOrderbook implements Snapshotable<SINGLE_MARKET_ORDERBO
 
       if (!oppositeLevel || oppositeLevel.orders.empty()) {
         oppositePriceLevels.eraseElementByKey(bestOppositePrice);
-        this.recordDepthLevel(order.side === "BUY" ? "SELL" : "BUY", bestOppositePrice);
+        this.recordDepthLevel(
+          order.side === "BUY" ? "SELL" : "BUY",
+          bestOppositePrice,
+        );
         continue;
       }
 
@@ -320,7 +331,10 @@ export class SingleMarketOrderbook implements Snapshotable<SINGLE_MARKET_ORDERBO
 
       if (oppositeLevel.orders.empty()) {
         oppositePriceLevels.eraseElementByKey(bestOppositePrice);
-        this.recordDepthLevel(order.side === "BUY" ? "SELL" : "BUY", bestOppositePrice);
+        this.recordDepthLevel(
+          order.side === "BUY" ? "SELL" : "BUY",
+          bestOppositePrice,
+        );
       }
     }
   }
@@ -382,7 +396,6 @@ export class SingleMarketOrderbook implements Snapshotable<SINGLE_MARKET_ORDERBO
   placeOrder(order: Order): Order {
     this.resetPendingDepthUpdates();
 
-   
     this.emitOrderCreated(order);
 
     this.match(order);
@@ -399,6 +412,10 @@ export class SingleMarketOrderbook implements Snapshotable<SINGLE_MARKET_ORDERBO
       } else {
         this.sitOnBook(order, this.asks);
       }
+    }
+
+    if (order.type == "MARKET" && order.filledQuantity < order.quantity) {
+      this.cancelOrderStatusAndEmit(order);
     }
 
     this.emitDepthUpdateIfNeeded();
@@ -481,7 +498,8 @@ export default class Orderbook implements Snapshotable<ORDERBOOK_SNAPSHOT> {
   private orders: Map<ORDER_ID, SingleMarketOrderbook> = new Map();
 
   getSnapshot(): ORDERBOOK_SNAPSHOT {
-    const marketSnapshots: [MARKET_SYMBOL, SINGLE_MARKET_ORDERBOOK_SNAPSHOT][] = [];
+    const marketSnapshots: [MARKET_SYMBOL, SINGLE_MARKET_ORDERBOOK_SNAPSHOT][] =
+      [];
     for (const [symbol, ob] of this.marketOrderbooks.entries()) {
       marketSnapshots.push([symbol, ob.getSnapshot()]);
     }

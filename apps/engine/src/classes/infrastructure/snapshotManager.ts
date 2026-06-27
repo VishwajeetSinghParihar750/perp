@@ -6,10 +6,7 @@ interface Snapshotable<T> {
   loadSnapshot(snapshot: T): void;
 }
 
-export const compareRedisStreamId = (
-  id1: string,
-  id2: string,
-): -1 | 0 | 1 => {
+export const compareRedisStreamId = (id1: string, id2: string): -1 | 0 | 1 => {
   const [lhs1, rhs1] = id1.split("-").map(BigInt);
   const [lhs2, rhs2] = id2.split("-").map(BigInt);
 
@@ -112,8 +109,8 @@ class SnapshotManager {
 
     this.snapshotCounter++;
 
-    // save every 100 fully processes redis messages
-    if (this.snapshotCounter == 100) {
+    // save every 10_000 fully processes redis messages
+    if (this.snapshotCounter == 10_000) {
       this.snapshotCounter = 0;
       // make snapshot
 

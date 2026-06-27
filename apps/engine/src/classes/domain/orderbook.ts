@@ -299,7 +299,12 @@ export class SingleMarketOrderbook implements Snapshotable<SINGLE_MARKET_ORDERBO
           return;
         }
 
+        const tradeQuantity = Math.min(
+          makerOrder.quantity - makerOrder.filledQuantity,
+          order.quantity - order.filledQuantity,
+        );
         this.matchOrders(makerOrder, order, marginRequired1, marginRequired2);
+        oppositeLevel.totalQty -= tradeQuantity;
         this.recordDepthLevel(
           order.side === "BUY" ? "SELL" : "BUY",
           bestOppositePrice,

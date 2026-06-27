@@ -26,7 +26,7 @@ const CREATE_ORDER_PAYLOAD_SCHEMA = z.object({
   price: z.number().positive(),
   qty: z.number().positive(),
   marketSymbol: TRADBLE_SYMBOL_SCHEMA,
-  margin: z.number(),
+  margin: z.number().nonnegative(),
   marginType: MARGIN_TYPE_SCHEMA,
   type: TYPE_SCHEMA,
 });

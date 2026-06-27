@@ -53,7 +53,15 @@ export default class Account implements Snapshotable<ACCOUNT_SNAPSHOT> {
 
   addBalance(userId: USER_ID, amount: number): Result<BALANCE> {
     const curBal = this.getBalance(userId);
+
+    if (amount < 0 && curBal.balance + amount < 0)
+      return {
+        success: false,
+        error: new Error("INSUFFICIENT_BALANCE"),
+      };
+
     curBal.balance += amount;
+
     return { success: true, value: curBal };
   }
 

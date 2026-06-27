@@ -123,6 +123,15 @@ export class PersonalSync {
     return this.balance;
   }
 
+  /** Prepend HTTP-recovered fills; skips ids already applied via the live stream. */
+  seedFills(historical: UiFill[]): void {
+    if (historical.length === 0) return;
+    const existingIds = new Set(this.fills.map((f) => f.fillId));
+    const pending = historical.filter((f) => !existingIds.has(f.fillId));
+    if (pending.length === 0) return;
+    this.fills = [...this.fills, ...pending].slice(0, MAX_FILL_HISTORY);
+  }
+
   getFills(): UiFill[] {
     return this.fills;
   }

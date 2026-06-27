@@ -819,7 +819,8 @@ export type TransactionIsolationLevel = (typeof TransactionIsolationLevel)[keyof
 
 export const MarketScalarFieldEnum = {
   id: 'id',
-  symbol: 'symbol'
+  symbol: 'symbol',
+  createdAt: 'createdAt'
 } as const
 
 export type MarketScalarFieldEnum = (typeof MarketScalarFieldEnum)[keyof typeof MarketScalarFieldEnum]
@@ -853,7 +854,8 @@ export const OrderScalarFieldEnum = {
   quantity: 'quantity',
   status: 'status',
   type: 'type',
-  marginType: 'marginType'
+  marginType: 'marginType',
+  createdAt: 'createdAt'
 } as const
 
 export type OrderScalarFieldEnum = (typeof OrderScalarFieldEnum)[keyof typeof OrderScalarFieldEnum]
@@ -868,7 +870,8 @@ export const FillScalarFieldEnum = {
   longUserId: 'longUserId',
   shortUserId: 'shortUserId',
   longOrderId: 'longOrderId',
-  shortOrderId: 'shortOrderId'
+  shortOrderId: 'shortOrderId',
+  createdAt: 'createdAt'
 } as const
 
 export type FillScalarFieldEnum = (typeof FillScalarFieldEnum)[keyof typeof FillScalarFieldEnum]

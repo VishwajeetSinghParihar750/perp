@@ -48,6 +48,7 @@ export type FillMinAggregateOutputType = {
   shortUserId: string | null
   longOrderId: string | null
   shortOrderId: string | null
+  createdAt: Date | null
 }
 
 export type FillMaxAggregateOutputType = {
@@ -60,6 +61,7 @@ export type FillMaxAggregateOutputType = {
   shortUserId: string | null
   longOrderId: string | null
   shortOrderId: string | null
+  createdAt: Date | null
 }
 
 export type FillCountAggregateOutputType = {
@@ -72,6 +74,7 @@ export type FillCountAggregateOutputType = {
   shortUserId: number
   longOrderId: number
   shortOrderId: number
+  createdAt: number
   _all: number
 }
 
@@ -98,6 +101,7 @@ export type FillMinAggregateInputType = {
   shortUserId?: true
   longOrderId?: true
   shortOrderId?: true
+  createdAt?: true
 }
 
 export type FillMaxAggregateInputType = {
@@ -110,6 +114,7 @@ export type FillMaxAggregateInputType = {
   shortUserId?: true
   longOrderId?: true
   shortOrderId?: true
+  createdAt?: true
 }
 
 export type FillCountAggregateInputType = {
@@ -122,6 +127,7 @@ export type FillCountAggregateInputType = {
   shortUserId?: true
   longOrderId?: true
   shortOrderId?: true
+  createdAt?: true
   _all?: true
 }
 
@@ -221,6 +227,7 @@ export type FillGroupByOutputType = {
   shortUserId: string
   longOrderId: string
   shortOrderId: string
+  createdAt: Date
   _count: FillCountAggregateOutputType | null
   _avg: FillAvgAggregateOutputType | null
   _sum: FillSumAggregateOutputType | null
@@ -256,6 +263,7 @@ export type FillWhereInput = {
   shortUserId?: Prisma.StringFilter<"Fill"> | string
   longOrderId?: Prisma.StringFilter<"Fill"> | string
   shortOrderId?: Prisma.StringFilter<"Fill"> | string
+  createdAt?: Prisma.DateTimeFilter<"Fill"> | Date | string
   longUser?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
   shortUser?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
   longOrder?: Prisma.XOR<Prisma.OrderScalarRelationFilter, Prisma.OrderWhereInput>
@@ -273,6 +281,7 @@ export type FillOrderByWithRelationInput = {
   shortUserId?: Prisma.SortOrder
   longOrderId?: Prisma.SortOrder
   shortOrderId?: Prisma.SortOrder
+  createdAt?: Prisma.SortOrder
   longUser?: Prisma.UserOrderByWithRelationInput
   shortUser?: Prisma.UserOrderByWithRelationInput
   longOrder?: Prisma.OrderOrderByWithRelationInput
@@ -293,6 +302,7 @@ export type FillWhereUniqueInput = Prisma.AtLeast<{
   shortUserId?: Prisma.StringFilter<"Fill"> | string
   longOrderId?: Prisma.StringFilter<"Fill"> | string
   shortOrderId?: Prisma.StringFilter<"Fill"> | string
+  createdAt?: Prisma.DateTimeFilter<"Fill"> | Date | string
   longUser?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
   shortUser?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
   longOrder?: Prisma.XOR<Prisma.OrderScalarRelationFilter, Prisma.OrderWhereInput>
@@ -310,6 +320,7 @@ export type FillOrderByWithAggregationInput = {
   shortUserId?: Prisma.SortOrder
   longOrderId?: Prisma.SortOrder
   shortOrderId?: Prisma.SortOrder
+  createdAt?: Prisma.SortOrder
   _count?: Prisma.FillCountOrderByAggregateInput
   _avg?: Prisma.FillAvgOrderByAggregateInput
   _max?: Prisma.FillMaxOrderByAggregateInput
@@ -330,6 +341,7 @@ export type FillScalarWhereWithAggregatesInput = {
   shortUserId?: Prisma.StringWithAggregatesFilter<"Fill"> | string
   longOrderId?: Prisma.StringWithAggregatesFilter<"Fill"> | string
   shortOrderId?: Prisma.StringWithAggregatesFilter<"Fill"> | string
+  createdAt?: Prisma.DateTimeWithAggregatesFilter<"Fill"> | Date | string
 }
 
 export type FillCreateInput = {
@@ -337,6 +349,7 @@ export type FillCreateInput = {
   quantity: runtime.Decimal | runtime.DecimalJsLike | number | string
   price: runtime.Decimal | runtime.DecimalJsLike | number | string
   bidPrice: runtime.Decimal | runtime.DecimalJsLike | number | string
+  createdAt?: Date | string
   longUser: Prisma.UserCreateNestedOneWithoutLongFillsInput
   shortUser: Prisma.UserCreateNestedOneWithoutShortFillsInput
   longOrder: Prisma.OrderCreateNestedOneWithoutLongFillsInput
@@ -354,6 +367,7 @@ export type FillUncheckedCreateInput = {
   shortUserId: string
   longOrderId: string
   shortOrderId: string
+  createdAt?: Date | string
 }
 
 export type FillUpdateInput = {
@@ -361,6 +375,7 @@ export type FillUpdateInput = {
   quantity?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   price?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   bidPrice?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   longUser?: Prisma.UserUpdateOneRequiredWithoutLongFillsNestedInput
   shortUser?: Prisma.UserUpdateOneRequiredWithoutShortFillsNestedInput
   longOrder?: Prisma.OrderUpdateOneRequiredWithoutLongFillsNestedInput
@@ -378,6 +393,7 @@ export type FillUncheckedUpdateInput = {
   shortUserId?: Prisma.StringFieldUpdateOperationsInput | string
   longOrderId?: Prisma.StringFieldUpdateOperationsInput | string
   shortOrderId?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type FillCreateManyInput = {
@@ -390,6 +406,7 @@ export type FillCreateManyInput = {
   shortUserId: string
   longOrderId: string
   shortOrderId: string
+  createdAt?: Date | string
 }
 
 export type FillUpdateManyMutationInput = {
@@ -397,6 +414,7 @@ export type FillUpdateManyMutationInput = {
   quantity?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   price?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   bidPrice?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type FillUncheckedUpdateManyInput = {
@@ -409,6 +427,7 @@ export type FillUncheckedUpdateManyInput = {
   shortUserId?: Prisma.StringFieldUpdateOperationsInput | string
   longOrderId?: Prisma.StringFieldUpdateOperationsInput | string
   shortOrderId?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type FillListRelationFilter = {
@@ -431,6 +450,7 @@ export type FillCountOrderByAggregateInput = {
   shortUserId?: Prisma.SortOrder
   longOrderId?: Prisma.SortOrder
   shortOrderId?: Prisma.SortOrder
+  createdAt?: Prisma.SortOrder
 }
 
 export type FillAvgOrderByAggregateInput = {
@@ -449,6 +469,7 @@ export type FillMaxOrderByAggregateInput = {
   shortUserId?: Prisma.SortOrder
   longOrderId?: Prisma.SortOrder
   shortOrderId?: Prisma.SortOrder
+  createdAt?: Prisma.SortOrder
 }
 
 export type FillMinOrderByAggregateInput = {
@@ -461,6 +482,7 @@ export type FillMinOrderByAggregateInput = {
   shortUserId?: Prisma.SortOrder
   longOrderId?: Prisma.SortOrder
   shortOrderId?: Prisma.SortOrder
+  createdAt?: Prisma.SortOrder
 }
 
 export type FillSumOrderByAggregateInput = {
@@ -684,6 +706,7 @@ export type FillCreateWithoutMarketInput = {
   quantity: runtime.Decimal | runtime.DecimalJsLike | number | string
   price: runtime.Decimal | runtime.DecimalJsLike | number | string
   bidPrice: runtime.Decimal | runtime.DecimalJsLike | number | string
+  createdAt?: Date | string
   longUser: Prisma.UserCreateNestedOneWithoutLongFillsInput
   shortUser: Prisma.UserCreateNestedOneWithoutShortFillsInput
   longOrder: Prisma.OrderCreateNestedOneWithoutLongFillsInput
@@ -699,6 +722,7 @@ export type FillUncheckedCreateWithoutMarketInput = {
   shortUserId: string
   longOrderId: string
   shortOrderId: string
+  createdAt?: Date | string
 }
 
 export type FillCreateOrConnectWithoutMarketInput = {
@@ -740,6 +764,7 @@ export type FillScalarWhereInput = {
   shortUserId?: Prisma.StringFilter<"Fill"> | string
   longOrderId?: Prisma.StringFilter<"Fill"> | string
   shortOrderId?: Prisma.StringFilter<"Fill"> | string
+  createdAt?: Prisma.DateTimeFilter<"Fill"> | Date | string
 }
 
 export type FillCreateWithoutLongUserInput = {
@@ -747,6 +772,7 @@ export type FillCreateWithoutLongUserInput = {
   quantity: runtime.Decimal | runtime.DecimalJsLike | number | string
   price: runtime.Decimal | runtime.DecimalJsLike | number | string
   bidPrice: runtime.Decimal | runtime.DecimalJsLike | number | string
+  createdAt?: Date | string
   shortUser: Prisma.UserCreateNestedOneWithoutShortFillsInput
   longOrder: Prisma.OrderCreateNestedOneWithoutLongFillsInput
   shortOrder: Prisma.OrderCreateNestedOneWithoutShortFillsInput
@@ -762,6 +788,7 @@ export type FillUncheckedCreateWithoutLongUserInput = {
   shortUserId: string
   longOrderId: string
   shortOrderId: string
+  createdAt?: Date | string
 }
 
 export type FillCreateOrConnectWithoutLongUserInput = {
@@ -779,6 +806,7 @@ export type FillCreateWithoutShortUserInput = {
   quantity: runtime.Decimal | runtime.DecimalJsLike | number | string
   price: runtime.Decimal | runtime.DecimalJsLike | number | string
   bidPrice: runtime.Decimal | runtime.DecimalJsLike | number | string
+  createdAt?: Date | string
   longUser: Prisma.UserCreateNestedOneWithoutLongFillsInput
   longOrder: Prisma.OrderCreateNestedOneWithoutLongFillsInput
   shortOrder: Prisma.OrderCreateNestedOneWithoutShortFillsInput
@@ -794,6 +822,7 @@ export type FillUncheckedCreateWithoutShortUserInput = {
   longUserId: string
   longOrderId: string
   shortOrderId: string
+  createdAt?: Date | string
 }
 
 export type FillCreateOrConnectWithoutShortUserInput = {
@@ -843,6 +872,7 @@ export type FillCreateWithoutLongOrderInput = {
   quantity: runtime.Decimal | runtime.DecimalJsLike | number | string
   price: runtime.Decimal | runtime.DecimalJsLike | number | string
   bidPrice: runtime.Decimal | runtime.DecimalJsLike | number | string
+  createdAt?: Date | string
   longUser: Prisma.UserCreateNestedOneWithoutLongFillsInput
   shortUser: Prisma.UserCreateNestedOneWithoutShortFillsInput
   shortOrder: Prisma.OrderCreateNestedOneWithoutShortFillsInput
@@ -858,6 +888,7 @@ export type FillUncheckedCreateWithoutLongOrderInput = {
   longUserId: string
   shortUserId: string
   shortOrderId: string
+  createdAt?: Date | string
 }
 
 export type FillCreateOrConnectWithoutLongOrderInput = {
@@ -875,6 +906,7 @@ export type FillCreateWithoutShortOrderInput = {
   quantity: runtime.Decimal | runtime.DecimalJsLike | number | string
   price: runtime.Decimal | runtime.DecimalJsLike | number | string
   bidPrice: runtime.Decimal | runtime.DecimalJsLike | number | string
+  createdAt?: Date | string
   longUser: Prisma.UserCreateNestedOneWithoutLongFillsInput
   shortUser: Prisma.UserCreateNestedOneWithoutShortFillsInput
   longOrder: Prisma.OrderCreateNestedOneWithoutLongFillsInput
@@ -890,6 +922,7 @@ export type FillUncheckedCreateWithoutShortOrderInput = {
   longUserId: string
   shortUserId: string
   longOrderId: string
+  createdAt?: Date | string
 }
 
 export type FillCreateOrConnectWithoutShortOrderInput = {
@@ -943,6 +976,7 @@ export type FillCreateManyMarketInput = {
   shortUserId: string
   longOrderId: string
   shortOrderId: string
+  createdAt?: Date | string
 }
 
 export type FillUpdateWithoutMarketInput = {
@@ -950,6 +984,7 @@ export type FillUpdateWithoutMarketInput = {
   quantity?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   price?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   bidPrice?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   longUser?: Prisma.UserUpdateOneRequiredWithoutLongFillsNestedInput
   shortUser?: Prisma.UserUpdateOneRequiredWithoutShortFillsNestedInput
   longOrder?: Prisma.OrderUpdateOneRequiredWithoutLongFillsNestedInput
@@ -965,6 +1000,7 @@ export type FillUncheckedUpdateWithoutMarketInput = {
   shortUserId?: Prisma.StringFieldUpdateOperationsInput | string
   longOrderId?: Prisma.StringFieldUpdateOperationsInput | string
   shortOrderId?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type FillUncheckedUpdateManyWithoutMarketInput = {
@@ -976,6 +1012,7 @@ export type FillUncheckedUpdateManyWithoutMarketInput = {
   shortUserId?: Prisma.StringFieldUpdateOperationsInput | string
   longOrderId?: Prisma.StringFieldUpdateOperationsInput | string
   shortOrderId?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type FillCreateManyLongUserInput = {
@@ -987,6 +1024,7 @@ export type FillCreateManyLongUserInput = {
   shortUserId: string
   longOrderId: string
   shortOrderId: string
+  createdAt?: Date | string
 }
 
 export type FillCreateManyShortUserInput = {
@@ -998,6 +1036,7 @@ export type FillCreateManyShortUserInput = {
   longUserId: string
   longOrderId: string
   shortOrderId: string
+  createdAt?: Date | string
 }
 
 export type FillUpdateWithoutLongUserInput = {
@@ -1005,6 +1044,7 @@ export type FillUpdateWithoutLongUserInput = {
   quantity?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   price?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   bidPrice?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   shortUser?: Prisma.UserUpdateOneRequiredWithoutShortFillsNestedInput
   longOrder?: Prisma.OrderUpdateOneRequiredWithoutLongFillsNestedInput
   shortOrder?: Prisma.OrderUpdateOneRequiredWithoutShortFillsNestedInput
@@ -1020,6 +1060,7 @@ export type FillUncheckedUpdateWithoutLongUserInput = {
   shortUserId?: Prisma.StringFieldUpdateOperationsInput | string
   longOrderId?: Prisma.StringFieldUpdateOperationsInput | string
   shortOrderId?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type FillUncheckedUpdateManyWithoutLongUserInput = {
@@ -1031,6 +1072,7 @@ export type FillUncheckedUpdateManyWithoutLongUserInput = {
   shortUserId?: Prisma.StringFieldUpdateOperationsInput | string
   longOrderId?: Prisma.StringFieldUpdateOperationsInput | string
   shortOrderId?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type FillUpdateWithoutShortUserInput = {
@@ -1038,6 +1080,7 @@ export type FillUpdateWithoutShortUserInput = {
   quantity?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   price?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   bidPrice?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   longUser?: Prisma.UserUpdateOneRequiredWithoutLongFillsNestedInput
   longOrder?: Prisma.OrderUpdateOneRequiredWithoutLongFillsNestedInput
   shortOrder?: Prisma.OrderUpdateOneRequiredWithoutShortFillsNestedInput
@@ -1053,6 +1096,7 @@ export type FillUncheckedUpdateWithoutShortUserInput = {
   longUserId?: Prisma.StringFieldUpdateOperationsInput | string
   longOrderId?: Prisma.StringFieldUpdateOperationsInput | string
   shortOrderId?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type FillUncheckedUpdateManyWithoutShortUserInput = {
@@ -1064,6 +1108,7 @@ export type FillUncheckedUpdateManyWithoutShortUserInput = {
   longUserId?: Prisma.StringFieldUpdateOperationsInput | string
   longOrderId?: Prisma.StringFieldUpdateOperationsInput | string
   shortOrderId?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type FillCreateManyLongOrderInput = {
@@ -1075,6 +1120,7 @@ export type FillCreateManyLongOrderInput = {
   longUserId: string
   shortUserId: string
   shortOrderId: string
+  createdAt?: Date | string
 }
 
 export type FillCreateManyShortOrderInput = {
@@ -1086,6 +1132,7 @@ export type FillCreateManyShortOrderInput = {
   longUserId: string
   shortUserId: string
   longOrderId: string
+  createdAt?: Date | string
 }
 
 export type FillUpdateWithoutLongOrderInput = {
@@ -1093,6 +1140,7 @@ export type FillUpdateWithoutLongOrderInput = {
   quantity?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   price?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   bidPrice?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   longUser?: Prisma.UserUpdateOneRequiredWithoutLongFillsNestedInput
   shortUser?: Prisma.UserUpdateOneRequiredWithoutShortFillsNestedInput
   shortOrder?: Prisma.OrderUpdateOneRequiredWithoutShortFillsNestedInput
@@ -1108,6 +1156,7 @@ export type FillUncheckedUpdateWithoutLongOrderInput = {
   longUserId?: Prisma.StringFieldUpdateOperationsInput | string
   shortUserId?: Prisma.StringFieldUpdateOperationsInput | string
   shortOrderId?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type FillUncheckedUpdateManyWithoutLongOrderInput = {
@@ -1119,6 +1168,7 @@ export type FillUncheckedUpdateManyWithoutLongOrderInput = {
   longUserId?: Prisma.StringFieldUpdateOperationsInput | string
   shortUserId?: Prisma.StringFieldUpdateOperationsInput | string
   shortOrderId?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type FillUpdateWithoutShortOrderInput = {
@@ -1126,6 +1176,7 @@ export type FillUpdateWithoutShortOrderInput = {
   quantity?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   price?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   bidPrice?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   longUser?: Prisma.UserUpdateOneRequiredWithoutLongFillsNestedInput
   shortUser?: Prisma.UserUpdateOneRequiredWithoutShortFillsNestedInput
   longOrder?: Prisma.OrderUpdateOneRequiredWithoutLongFillsNestedInput
@@ -1141,6 +1192,7 @@ export type FillUncheckedUpdateWithoutShortOrderInput = {
   longUserId?: Prisma.StringFieldUpdateOperationsInput | string
   shortUserId?: Prisma.StringFieldUpdateOperationsInput | string
   longOrderId?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type FillUncheckedUpdateManyWithoutShortOrderInput = {
@@ -1152,6 +1204,7 @@ export type FillUncheckedUpdateManyWithoutShortOrderInput = {
   longUserId?: Prisma.StringFieldUpdateOperationsInput | string
   shortUserId?: Prisma.StringFieldUpdateOperationsInput | string
   longOrderId?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 
@@ -1166,6 +1219,7 @@ export type FillSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   shortUserId?: boolean
   longOrderId?: boolean
   shortOrderId?: boolean
+  createdAt?: boolean
   longUser?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   shortUser?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   longOrder?: boolean | Prisma.OrderDefaultArgs<ExtArgs>
@@ -1183,6 +1237,7 @@ export type FillSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   shortUserId?: boolean
   longOrderId?: boolean
   shortOrderId?: boolean
+  createdAt?: boolean
   longUser?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   shortUser?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   longOrder?: boolean | Prisma.OrderDefaultArgs<ExtArgs>
@@ -1200,6 +1255,7 @@ export type FillSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   shortUserId?: boolean
   longOrderId?: boolean
   shortOrderId?: boolean
+  createdAt?: boolean
   longUser?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   shortUser?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   longOrder?: boolean | Prisma.OrderDefaultArgs<ExtArgs>
@@ -1217,9 +1273,10 @@ export type FillSelectScalar = {
   shortUserId?: boolean
   longOrderId?: boolean
   shortOrderId?: boolean
+  createdAt?: boolean
 }
 
-export type FillOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "symbol" | "quantity" | "price" | "bidPrice" | "longUserId" | "shortUserId" | "longOrderId" | "shortOrderId", ExtArgs["result"]["fill"]>
+export type FillOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "symbol" | "quantity" | "price" | "bidPrice" | "longUserId" | "shortUserId" | "longOrderId" | "shortOrderId" | "createdAt", ExtArgs["result"]["fill"]>
 export type FillInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   longUser?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   shortUser?: boolean | Prisma.UserDefaultArgs<ExtArgs>
@@ -1261,6 +1318,7 @@ export type $FillPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     shortUserId: string
     longOrderId: string
     shortOrderId: string
+    createdAt: Date
   }, ExtArgs["result"]["fill"]>
   composites: {}
 }
@@ -1698,6 +1756,7 @@ export interface FillFieldRefs {
   readonly shortUserId: Prisma.FieldRef<"Fill", 'String'>
   readonly longOrderId: Prisma.FieldRef<"Fill", 'String'>
   readonly shortOrderId: Prisma.FieldRef<"Fill", 'String'>
+  readonly createdAt: Prisma.FieldRef<"Fill", 'DateTime'>
 }
     
 

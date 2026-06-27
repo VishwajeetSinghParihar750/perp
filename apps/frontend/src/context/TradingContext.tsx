@@ -210,16 +210,16 @@ export function TradingProvider({ children }: { children: ReactNode }) {
         price: f.price,
         qty: f.qty,
         status: "FILLED",
-        time: Date.now(),
+        time: f.time,
       }));
-      // only seed if live stream hasn't produced anything yet
-      if (personalSyncRef.current.getFills().length === 0 && mapped.length) {
-        setFills(mapped);
+      if (mapped.length) {
+        personalSyncRef.current.seedFills(mapped);
+        pushPersonalState();
       }
     } catch {
       // ignore
     }
-  }, [user]);
+  }, [user, pushPersonalState]);
 
   const loadMarketTrades = useCallback(async (symbol: TradableSymbol) => {
     const activeToken = tokenRef.current;

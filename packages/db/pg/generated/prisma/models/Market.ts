@@ -27,16 +27,19 @@ export type AggregateMarket = {
 export type MarketMinAggregateOutputType = {
   id: string | null
   symbol: $Enums.MARKET_SYMBOL | null
+  createdAt: Date | null
 }
 
 export type MarketMaxAggregateOutputType = {
   id: string | null
   symbol: $Enums.MARKET_SYMBOL | null
+  createdAt: Date | null
 }
 
 export type MarketCountAggregateOutputType = {
   id: number
   symbol: number
+  createdAt: number
   _all: number
 }
 
@@ -44,16 +47,19 @@ export type MarketCountAggregateOutputType = {
 export type MarketMinAggregateInputType = {
   id?: true
   symbol?: true
+  createdAt?: true
 }
 
 export type MarketMaxAggregateInputType = {
   id?: true
   symbol?: true
+  createdAt?: true
 }
 
 export type MarketCountAggregateInputType = {
   id?: true
   symbol?: true
+  createdAt?: true
   _all?: true
 }
 
@@ -132,6 +138,7 @@ export type MarketGroupByArgs<ExtArgs extends runtime.Types.Extensions.InternalA
 export type MarketGroupByOutputType = {
   id: string
   symbol: $Enums.MARKET_SYMBOL
+  createdAt: Date
   _count: MarketCountAggregateOutputType | null
   _min: MarketMinAggregateOutputType | null
   _max: MarketMaxAggregateOutputType | null
@@ -158,6 +165,7 @@ export type MarketWhereInput = {
   NOT?: Prisma.MarketWhereInput | Prisma.MarketWhereInput[]
   id?: Prisma.StringFilter<"Market"> | string
   symbol?: Prisma.EnumMARKET_SYMBOLFilter<"Market"> | $Enums.MARKET_SYMBOL
+  createdAt?: Prisma.DateTimeFilter<"Market"> | Date | string
   orders?: Prisma.OrderListRelationFilter
   fills?: Prisma.FillListRelationFilter
 }
@@ -165,6 +173,7 @@ export type MarketWhereInput = {
 export type MarketOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   symbol?: Prisma.SortOrder
+  createdAt?: Prisma.SortOrder
   orders?: Prisma.OrderOrderByRelationAggregateInput
   fills?: Prisma.FillOrderByRelationAggregateInput
 }
@@ -175,6 +184,7 @@ export type MarketWhereUniqueInput = Prisma.AtLeast<{
   AND?: Prisma.MarketWhereInput | Prisma.MarketWhereInput[]
   OR?: Prisma.MarketWhereInput[]
   NOT?: Prisma.MarketWhereInput | Prisma.MarketWhereInput[]
+  createdAt?: Prisma.DateTimeFilter<"Market"> | Date | string
   orders?: Prisma.OrderListRelationFilter
   fills?: Prisma.FillListRelationFilter
 }, "id" | "symbol">
@@ -182,6 +192,7 @@ export type MarketWhereUniqueInput = Prisma.AtLeast<{
 export type MarketOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   symbol?: Prisma.SortOrder
+  createdAt?: Prisma.SortOrder
   _count?: Prisma.MarketCountOrderByAggregateInput
   _max?: Prisma.MarketMaxOrderByAggregateInput
   _min?: Prisma.MarketMinOrderByAggregateInput
@@ -193,11 +204,13 @@ export type MarketScalarWhereWithAggregatesInput = {
   NOT?: Prisma.MarketScalarWhereWithAggregatesInput | Prisma.MarketScalarWhereWithAggregatesInput[]
   id?: Prisma.StringWithAggregatesFilter<"Market"> | string
   symbol?: Prisma.EnumMARKET_SYMBOLWithAggregatesFilter<"Market"> | $Enums.MARKET_SYMBOL
+  createdAt?: Prisma.DateTimeWithAggregatesFilter<"Market"> | Date | string
 }
 
 export type MarketCreateInput = {
   id?: string
   symbol: $Enums.MARKET_SYMBOL
+  createdAt?: Date | string
   orders?: Prisma.OrderCreateNestedManyWithoutMarketInput
   fills?: Prisma.FillCreateNestedManyWithoutMarketInput
 }
@@ -205,6 +218,7 @@ export type MarketCreateInput = {
 export type MarketUncheckedCreateInput = {
   id?: string
   symbol: $Enums.MARKET_SYMBOL
+  createdAt?: Date | string
   orders?: Prisma.OrderUncheckedCreateNestedManyWithoutMarketInput
   fills?: Prisma.FillUncheckedCreateNestedManyWithoutMarketInput
 }
@@ -212,6 +226,7 @@ export type MarketUncheckedCreateInput = {
 export type MarketUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   symbol?: Prisma.EnumMARKET_SYMBOLFieldUpdateOperationsInput | $Enums.MARKET_SYMBOL
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   orders?: Prisma.OrderUpdateManyWithoutMarketNestedInput
   fills?: Prisma.FillUpdateManyWithoutMarketNestedInput
 }
@@ -219,6 +234,7 @@ export type MarketUpdateInput = {
 export type MarketUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   symbol?: Prisma.EnumMARKET_SYMBOLFieldUpdateOperationsInput | $Enums.MARKET_SYMBOL
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   orders?: Prisma.OrderUncheckedUpdateManyWithoutMarketNestedInput
   fills?: Prisma.FillUncheckedUpdateManyWithoutMarketNestedInput
 }
@@ -226,31 +242,37 @@ export type MarketUncheckedUpdateInput = {
 export type MarketCreateManyInput = {
   id?: string
   symbol: $Enums.MARKET_SYMBOL
+  createdAt?: Date | string
 }
 
 export type MarketUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   symbol?: Prisma.EnumMARKET_SYMBOLFieldUpdateOperationsInput | $Enums.MARKET_SYMBOL
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type MarketUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   symbol?: Prisma.EnumMARKET_SYMBOLFieldUpdateOperationsInput | $Enums.MARKET_SYMBOL
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type MarketCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   symbol?: Prisma.SortOrder
+  createdAt?: Prisma.SortOrder
 }
 
 export type MarketMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   symbol?: Prisma.SortOrder
+  createdAt?: Prisma.SortOrder
 }
 
 export type MarketMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   symbol?: Prisma.SortOrder
+  createdAt?: Prisma.SortOrder
 }
 
 export type MarketScalarRelationFilter = {
@@ -264,6 +286,10 @@ export type StringFieldUpdateOperationsInput = {
 
 export type EnumMARKET_SYMBOLFieldUpdateOperationsInput = {
   set?: $Enums.MARKET_SYMBOL
+}
+
+export type DateTimeFieldUpdateOperationsInput = {
+  set?: Date | string
 }
 
 export type MarketCreateNestedOneWithoutOrdersInput = {
@@ -297,12 +323,14 @@ export type MarketUpdateOneRequiredWithoutFillsNestedInput = {
 export type MarketCreateWithoutOrdersInput = {
   id?: string
   symbol: $Enums.MARKET_SYMBOL
+  createdAt?: Date | string
   fills?: Prisma.FillCreateNestedManyWithoutMarketInput
 }
 
 export type MarketUncheckedCreateWithoutOrdersInput = {
   id?: string
   symbol: $Enums.MARKET_SYMBOL
+  createdAt?: Date | string
   fills?: Prisma.FillUncheckedCreateNestedManyWithoutMarketInput
 }
 
@@ -325,24 +353,28 @@ export type MarketUpdateToOneWithWhereWithoutOrdersInput = {
 export type MarketUpdateWithoutOrdersInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   symbol?: Prisma.EnumMARKET_SYMBOLFieldUpdateOperationsInput | $Enums.MARKET_SYMBOL
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   fills?: Prisma.FillUpdateManyWithoutMarketNestedInput
 }
 
 export type MarketUncheckedUpdateWithoutOrdersInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   symbol?: Prisma.EnumMARKET_SYMBOLFieldUpdateOperationsInput | $Enums.MARKET_SYMBOL
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   fills?: Prisma.FillUncheckedUpdateManyWithoutMarketNestedInput
 }
 
 export type MarketCreateWithoutFillsInput = {
   id?: string
   symbol: $Enums.MARKET_SYMBOL
+  createdAt?: Date | string
   orders?: Prisma.OrderCreateNestedManyWithoutMarketInput
 }
 
 export type MarketUncheckedCreateWithoutFillsInput = {
   id?: string
   symbol: $Enums.MARKET_SYMBOL
+  createdAt?: Date | string
   orders?: Prisma.OrderUncheckedCreateNestedManyWithoutMarketInput
 }
 
@@ -365,12 +397,14 @@ export type MarketUpdateToOneWithWhereWithoutFillsInput = {
 export type MarketUpdateWithoutFillsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   symbol?: Prisma.EnumMARKET_SYMBOLFieldUpdateOperationsInput | $Enums.MARKET_SYMBOL
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   orders?: Prisma.OrderUpdateManyWithoutMarketNestedInput
 }
 
 export type MarketUncheckedUpdateWithoutFillsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   symbol?: Prisma.EnumMARKET_SYMBOLFieldUpdateOperationsInput | $Enums.MARKET_SYMBOL
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   orders?: Prisma.OrderUncheckedUpdateManyWithoutMarketNestedInput
 }
 
@@ -417,6 +451,7 @@ export type MarketCountOutputTypeCountFillsArgs<ExtArgs extends runtime.Types.Ex
 export type MarketSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   symbol?: boolean
+  createdAt?: boolean
   orders?: boolean | Prisma.Market$ordersArgs<ExtArgs>
   fills?: boolean | Prisma.Market$fillsArgs<ExtArgs>
   _count?: boolean | Prisma.MarketCountOutputTypeDefaultArgs<ExtArgs>
@@ -425,19 +460,22 @@ export type MarketSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs =
 export type MarketSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   symbol?: boolean
+  createdAt?: boolean
 }, ExtArgs["result"]["market"]>
 
 export type MarketSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   symbol?: boolean
+  createdAt?: boolean
 }, ExtArgs["result"]["market"]>
 
 export type MarketSelectScalar = {
   id?: boolean
   symbol?: boolean
+  createdAt?: boolean
 }
 
-export type MarketOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "symbol", ExtArgs["result"]["market"]>
+export type MarketOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "symbol" | "createdAt", ExtArgs["result"]["market"]>
 export type MarketInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   orders?: boolean | Prisma.Market$ordersArgs<ExtArgs>
   fills?: boolean | Prisma.Market$fillsArgs<ExtArgs>
@@ -455,6 +493,7 @@ export type $MarketPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
     symbol: $Enums.MARKET_SYMBOL
+    createdAt: Date
   }, ExtArgs["result"]["market"]>
   composites: {}
 }
@@ -882,6 +921,7 @@ export interface Prisma__MarketClient<T, Null = never, ExtArgs extends runtime.T
 export interface MarketFieldRefs {
   readonly id: Prisma.FieldRef<"Market", 'String'>
   readonly symbol: Prisma.FieldRef<"Market", 'MARKET_SYMBOL'>
+  readonly createdAt: Prisma.FieldRef<"Market", 'DateTime'>
 }
     
 

@@ -13,6 +13,10 @@ function toNumber(value: string | number): number {
   return typeof value === "number" ? value : parseFloat(value);
 }
 
+function toTimestamp(value: string | number | Date): number {
+  return new Date(value).getTime();
+}
+
 async function apiFetch<T>(
   path: string,
   token: string,
@@ -58,6 +62,7 @@ interface HttpFill {
   shortUserId: string;
   longOrderId: string;
   shortOrderId: string;
+  createdAt: string;
 }
 
 export interface OpenOrder {
@@ -79,6 +84,7 @@ export interface HistoricalFill {
   qty: number;
   longUserId: string;
   shortUserId: string;
+  time: number;
 }
 
 export async function signIn(
@@ -147,6 +153,7 @@ export async function fetchFills(token: string): Promise<HistoricalFill[]> {
     qty: toNumber(f.quantity),
     longUserId: f.longUserId,
     shortUserId: f.shortUserId,
+    time: toTimestamp(f.createdAt),
   }));
 }
 
@@ -171,7 +178,7 @@ export async function fetchMarketTrades(
     fillId: f.id,
     price: toNumber(f.price),
     qty: toNumber(f.quantity),
-    time: Date.now(),
+    time: toTimestamp(f.createdAt),
     up: true,
   }));
   for (let i = 0; i < trades.length - 1; i++) {

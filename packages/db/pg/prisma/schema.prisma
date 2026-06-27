@@ -47,6 +47,8 @@ model Market {
   //
   orders Order[]
   fills Fill[]
+
+  createdAt DateTime @default(now())
 }
 
 model User {
@@ -86,6 +88,8 @@ model Order {
   longFills Fill[] @relation(name : "longOrder")
   shortFills Fill[] @relation(name : "shortOrder")
   market Market @relation(fields: [symbol], references: [symbol])
+
+  createdAt DateTime @default(now())
 }
 
 model Fill {
@@ -110,4 +114,5 @@ model Fill {
 
   market Market @relation(fields: [symbol], references: [symbol])
 
+  createdAt DateTime @default(now())
 }

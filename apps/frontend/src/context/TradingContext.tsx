@@ -42,6 +42,13 @@ interface AuthUser {
   username: string;
 }
 
+function isRestingOpenOrder(order: Pick<OpenOrder, "type" | "status">): boolean {
+  return (
+    order.type === "LIMIT" &&
+    (order.status === "OPEN" || order.status === "PARTIALLY_FILLED")
+  );
+}
+
 type PriceMap = Partial<Record<TradableSymbol, number>>;
 
 interface TradingContextValue {
@@ -165,7 +172,9 @@ export function TradingProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const syncOpenOrders = useCallback(() => {
-    setOpenOrders([...openOrdersRef.current.values()]);
+    setOpenOrders(
+      [...openOrdersRef.current.values()].filter(isRestingOpenOrder),
+    );
   }, []);
 
   // ---- HTTP recovery (seed on connect / symbol switch) ---------------------
@@ -176,7 +185,7 @@ export function TradingProvider({ children }: { children: ReactNode }) {
     try {
       const orders = await fetchOpenOrders(activeToken, symbol);
       for (const order of orders) {
-        if (order.status === "OPEN" || order.status === "PARTIALLY_FILLED") {
+        if (isRestingOpenOrder(order)) {
           openOrdersRef.current.set(order.orderId, order);
         }
       }
@@ -430,7 +439,7 @@ export function TradingProvider({ children }: { children: ReactNode }) {
         }
         if (res.type === "order_created") {
           const order = res.payload as WireOrder;
-          if (order.status === "OPEN" || order.status === "PARTIALLY_FILLED") {
+          if (isRestingOpenOrder(order)) {
             openOrdersRef.current.set(order.orderId, {
               orderId: order.orderId,
               side: order.side,

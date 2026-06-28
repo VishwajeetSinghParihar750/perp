@@ -13,10 +13,41 @@ export async function getCandles(req: Request, res: Response) {
     `[ORDER] Fetch candles request for marketSymbol: ${marketSymbol} for timeframe: ${timeframe}`,
   );
 
-  //
-  const candles = await prismaClient.$queryRaw(`
-    
-    `);
+  // repeating code to prevent using queryRawUnsafe since cant use table name as variable safely
+  let candles: any;
+  switch (timeframe) {
+    case "1day":
+      candles = await prismaClient.$queryRaw`
+    SELECT * from candles_1d 
+    WHERE symbol = ${marketSymbol} 
+    ORDER BY bucket desc
+    LIMIT ${limit}
+    OFFSET ${offset}
+     `;
+      break;
 
-  res.json({ error: false, payload: {} });
+    case "1hour":
+      candles = await prismaClient.$queryRaw`
+    SELECT * from candles_1h 
+    WHERE symbol = ${marketSymbol} 
+    ORDER BY bucket desc
+    LIMIT ${limit}
+    OFFSET ${offset}
+     `;
+      break;
+
+    case "1min":
+      candles = await prismaClient.$queryRaw`
+    SELECT * from candles_1m 
+    WHERE symbol = ${marketSymbol} 
+    ORDER BY bucket desc
+    LIMIT ${limit}
+    OFFSET ${offset}
+     `;
+      break;
+    default:
+      throw new Error("INVALID_TIMEFRAME");
+  }
+
+  res.json({ error: false, payload: candles });
 }

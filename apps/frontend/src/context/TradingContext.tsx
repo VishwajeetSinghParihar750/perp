@@ -10,6 +10,7 @@ import {
 } from "react";
 import { ALL_EVENTS } from "../lib/constants";
 import {
+  fetchCandles,
   fetchFills,
   fetchMarketTrades,
   fetchOpenOrders,
@@ -20,6 +21,13 @@ import {
 import { TradingSocket } from "../lib/ws/client";
 import { OrderbookSync, type OrderbookView } from "../lib/sync/orderbookSync";
 import { PersonalSync, type PersonalBalance } from "../lib/sync/personalSync";
+import {
+  CandlesSync,
+  getCandleFetchLimit,
+  getTimeframeConfig,
+  type Candle,
+  type ChartTimeframe,
+} from "../lib/sync/candlesSync";
 import { getLatestTradePrice, TradesSync } from "../lib/sync/tradesSync";
 import type {
   BalanceSnapshot,
@@ -74,6 +82,9 @@ interface TradingContextValue {
   // streamed market data
   orderbook: OrderbookView;
   trades: PublicTrade[];
+  candles: Candle[];
+  candleTimeframe: ChartTimeframe;
+  setCandleTimeframe: (timeframe: ChartTimeframe) => void;
   indexPrices: PriceMap;
   markPrices: PriceMap;
   lastPrices: PriceMap;
@@ -139,6 +150,9 @@ export function TradingProvider({ children }: { children: ReactNode }) {
 
   const [orderbook, setOrderbook] = useState<OrderbookView>(EMPTY_BOOK);
   const [trades, setTrades] = useState<PublicTrade[]>([]);
+  const [candles, setCandles] = useState<Candle[]>([]);
+  const [candleTimeframe, setCandleTimeframeState] =
+    useState<ChartTimeframe>("5m");
   const [indexPrices, setIndexPrices] = useState<PriceMap>({});
   const [markPrices, setMarkPrices] = useState<PriceMap>({});
   const [lastPrices, setLastPrices] = useState<PriceMap>({});
@@ -157,12 +171,15 @@ export function TradingProvider({ children }: { children: ReactNode }) {
   const socketRef = useRef<TradingSocket | null>(null);
   const orderbookSyncRef = useRef<OrderbookSync>(new OrderbookSync());
   const tradesSyncRef = useRef<TradesSync>(new TradesSync("SOLUSD"));
+  const candlesSyncRef = useRef<CandlesSync>(new CandlesSync("SOLUSD", "5m"));
   const personalSyncRef = useRef<PersonalSync>(new PersonalSync());
   const openOrdersRef = useRef<Map<string, OpenOrder>>(new Map());
   const currentSymbolRef = useRef<TradableSymbol>(currentSymbol);
+  const candleTimeframeRef = useRef<ChartTimeframe>(candleTimeframe);
   const tokenRef = useRef<string | null>(token);
 
   currentSymbolRef.current = currentSymbol;
+  candleTimeframeRef.current = candleTimeframe;
   tokenRef.current = token;
 
   const clearNotice = useCallback(() => setNotice(null), []);
@@ -238,6 +255,28 @@ export function TradingProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const loadCandles = useCallback(
+    async (symbol: TradableSymbol, timeframe: ChartTimeframe) => {
+      const activeToken = tokenRef.current;
+      if (!activeToken) return;
+      try {
+        const { apiTimeframe } = getTimeframeConfig(timeframe);
+        await candlesSyncRef.current.awaitSnapshot(() =>
+          fetchCandles(
+            activeToken,
+            symbol,
+            apiTimeframe,
+            getCandleFetchLimit(timeframe),
+          ),
+        );
+        setCandles(candlesSyncRef.current.getCandles());
+      } catch {
+        // live trades keep the chart updated regardless
+      }
+    },
+    [],
+  );
+
   // ---- event handling ------------------------------------------------------
 
   const applyFillToOpenOrders = useCallback(
@@ -285,6 +324,8 @@ export function TradingProvider({ children }: { children: ReactNode }) {
           if (data.marketSymbol !== activeSymbol) return;
           tradesSyncRef.current.onTradesCreated(data);
           setTrades(tradesSyncRef.current.getTrades());
+          candlesSyncRef.current.onTradesCreated(data);
+          setCandles(candlesSyncRef.current.getCandles());
           return;
         }
         case "indexprice.updated": {
@@ -324,7 +365,12 @@ export function TradingProvider({ children }: { children: ReactNode }) {
     // fresh sync engines: they buffer events until snapshots arrive
     orderbookSyncRef.current = new OrderbookSync();
     tradesSyncRef.current = new TradesSync(symbol);
+    candlesSyncRef.current = new CandlesSync(
+      symbol,
+      candleTimeframeRef.current,
+    );
     personalSyncRef.current = new PersonalSync();
+    setCandles([]);
 
     try {
       // 1. subscribe first so depth, trades + personal fills start buffering
@@ -347,14 +393,15 @@ export function TradingProvider({ children }: { children: ReactNode }) {
       );
       pushPersonalState();
 
-      // 4. recover trades, orders + fill history from db
+      // 4. recover trades, candles, orders + fill history from db
       void loadMarketTrades(symbol);
+      void loadCandles(symbol, candleTimeframeRef.current);
       void loadOpenOrders(symbol);
       void loadFills();
     } catch (err) {
       console.error("[bootstrap] failed", err);
     }
-  }, [loadFills, loadMarketTrades, loadOpenOrders, pushPersonalState]);
+  }, [loadCandles, loadFills, loadMarketTrades, loadOpenOrders, pushPersonalState]);
 
   const doLogout = useCallback(() => {
     localStorage.removeItem("perp_token");
@@ -366,6 +413,7 @@ export function TradingProvider({ children }: { children: ReactNode }) {
     setFills([]);
     setOrderbook(EMPTY_BOOK);
     setTrades([]);
+    setCandles([]);
     openOrdersRef.current.clear();
     setOpenOrders([]);
   }, []);
@@ -536,6 +584,7 @@ export function TradingProvider({ children }: { children: ReactNode }) {
       currentSymbolRef.current = symbol;
       setCurrentSymbolState(symbol);
       setTrades([]);
+      setCandles([]);
       setOrderbook(EMPTY_BOOK);
 
       const socket = socketRef.current;
@@ -544,6 +593,10 @@ export function TradingProvider({ children }: { children: ReactNode }) {
       // re-sync the book + trade tape for the new symbol (already subscribed)
       orderbookSyncRef.current = new OrderbookSync();
       tradesSyncRef.current = new TradesSync(symbol);
+      candlesSyncRef.current = new CandlesSync(
+        symbol,
+        candleTimeframeRef.current,
+      );
       socket
         .getDepth(symbol)
         .then((res) => {
@@ -552,9 +605,24 @@ export function TradingProvider({ children }: { children: ReactNode }) {
         })
         .catch(() => {});
       void loadMarketTrades(symbol);
+      void loadCandles(symbol, candleTimeframeRef.current);
       void loadOpenOrders(symbol);
     },
-    [loadMarketTrades, loadOpenOrders],
+    [loadCandles, loadMarketTrades, loadOpenOrders],
+  );
+
+  const setCandleTimeframe = useCallback(
+    (timeframe: ChartTimeframe) => {
+      if (timeframe === candleTimeframeRef.current) return;
+      candleTimeframeRef.current = timeframe;
+      setCandleTimeframeState(timeframe);
+      setCandles([]);
+
+      const symbol = currentSymbolRef.current;
+      candlesSyncRef.current = new CandlesSync(symbol, timeframe);
+      void loadCandles(symbol, timeframe);
+    },
+    [loadCandles],
   );
 
   const value = useMemo<TradingContextValue>(
@@ -569,6 +637,9 @@ export function TradingProvider({ children }: { children: ReactNode }) {
       setCurrentSymbol,
       orderbook,
       trades,
+      candles,
+      candleTimeframe,
+      setCandleTimeframe,
       indexPrices,
       markPrices,
       lastPrices,
@@ -598,6 +669,9 @@ export function TradingProvider({ children }: { children: ReactNode }) {
       setCurrentSymbol,
       orderbook,
       trades,
+      candles,
+      candleTimeframe,
+      setCandleTimeframe,
       indexPrices,
       markPrices,
       lastPrices,

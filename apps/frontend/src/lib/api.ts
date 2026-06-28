@@ -157,6 +157,31 @@ export async function fetchFills(token: string): Promise<HistoricalFill[]> {
   }));
 }
 
+export interface HttpCandle {
+  bucket: string;
+  lastTradeId: string;
+  symbol: TradableSymbol;
+  volume: string | number;
+  trades: number;
+  high: string | number;
+  low: string | number;
+  open: string | number;
+  close: string | number;
+}
+
+export async function fetchCandles(
+  token: string,
+  marketSymbol: TradableSymbol,
+  timeframe: "1min" | "1hour" | "1day",
+  limit: number,
+  offset = 0,
+): Promise<HttpCandle[]> {
+  return apiFetch<HttpCandle[]>(
+    `/candles/${marketSymbol}/${timeframe}?limit=${limit}&offset=${offset}`,
+    token,
+  );
+}
+
 export async function fetchMarketTrades(
   token: string,
   marketSymbol: TradableSymbol,

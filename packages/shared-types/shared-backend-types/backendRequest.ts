@@ -106,8 +106,8 @@ const GET_CANDLES_PARAMS_SCHEMA = z.object({
 });
 
 const GET_CANDLES_QUERY_SCHEMA = z.object({
-  limit: z.number().positive(),
-  offset: z.number().nonnegative().optional(),
+  limit: z.coerce.number().positive(),
+  offset: z.coerce.number().nonnegative().optional(),
 });
 
 const ENGINE_REQUEST_SCHEMA = z.union([

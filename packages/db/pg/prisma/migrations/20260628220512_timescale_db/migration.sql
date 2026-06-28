@@ -105,6 +105,7 @@ ALTER TABLE "Fill" ADD CONSTRAINT "Fill_symbol_fkey" FOREIGN KEY ("symbol") REFE
 
 
 
+
 -- Timescale db
 CREATE EXTENSION IF NOT EXISTS timescaledb;
 
@@ -115,6 +116,7 @@ WITH (timescaledb.continuous)
 AS
 SELECT 
     time_bucket('1 minute', "createdAt") AS bucket,
+    max(id) as lastTradeId,
     symbol,
     sum(quantity) AS volume,
     count(*) AS trades,
@@ -141,6 +143,7 @@ WITH (timescaledb.continuous)
 AS
 SELECT
     time_bucket('1 hour', bucket) AS bucket,
+    max(lastTradeId) as lastTradeId,
     symbol,
     sum(volume) AS volume,
     sum(trades) AS trades,
@@ -169,6 +172,7 @@ WITH (timescaledb.continuous)
 AS
 SELECT 
     time_bucket('1 day', bucket) AS bucket,
+    max(lastTradeId) as lastTradeId,
     symbol,
     sum(volume) AS volume,
     sum(trades) AS trades,

@@ -1,51 +1,28 @@
 import { useEffect, useRef, useState } from "react";
 import { useTrading } from "../context/TradingContext";
 import { getMarket } from "../lib/constants";
-
-interface Candle {
-  t: number;
-  o: number;
-  h: number;
-  l: number;
-  c: number;
-}
+import type { ChartTimeframe } from "../lib/sync/candlesSync";
 
 const CHART_TABS = ["Chart", "Depth", "Margin", "Funding", "Market Info"];
-const TIMEFRAMES = ["1m", "5m", "15m", "1h", "4h", "1d"];
-const BUCKET_MS = 3000;
-const MAX_CANDLES = 90;
+const TIMEFRAMES: ChartTimeframe[] = ["1m", "5m", "15m", "1h", "4h", "1d"];
 
 export function PriceChart() {
-  const { markPrice, lastPrice, currentSymbol } = useTrading();
+  const {
+    candles,
+    candleTimeframe,
+    setCandleTimeframe,
+    currentSymbol,
+  } = useTrading();
   const market = getMarket(currentSymbol);
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const candlesRef = useRef<Record<string, Candle[]>>({});
   const [, forceRender] = useState(0);
   const [activeTab, setActiveTab] = useState("Chart");
-  const [activeTf, setActiveTf] = useState("5m");
 
-  const price = markPrice ?? lastPrice ?? null;
-
-  // fold the streamed price into time buckets to form candles
   useEffect(() => {
-    if (price == null) return;
-    const list = candlesRef.current[currentSymbol] ?? [];
-    const now = Date.now();
-    const last = list[list.length - 1];
-
-    if (!last || now - last.t >= BUCKET_MS) {
-      list.push({ t: now, o: last?.c ?? price, h: price, l: price, c: price });
-      if (list.length > MAX_CANDLES) list.shift();
-    } else {
-      last.h = Math.max(last.h, price);
-      last.l = Math.min(last.l, price);
-      last.c = price;
-    }
-    candlesRef.current[currentSymbol] = list;
     forceRender((n) => n + 1);
-  }, [price, currentSymbol]);
+  }, [candles, currentSymbol]);
 
   // draw
   useEffect(() => {
@@ -65,12 +42,11 @@ export function PriceChart() {
     ctx.scale(dpr, dpr);
     ctx.clearRect(0, 0, width, height);
 
-    const candles = candlesRef.current[currentSymbol] ?? [];
     if (candles.length < 2) {
       ctx.fillStyle = "#3a3f49";
       ctx.font = "12px Inter, sans-serif";
       ctx.textAlign = "center";
-      ctx.fillText("Waiting for price feed…", width / 2, height / 2);
+      ctx.fillText("Loading candles…", width / 2, height / 2);
       return;
     }
 
@@ -169,9 +145,9 @@ export function PriceChart() {
           {TIMEFRAMES.map((tf) => (
             <button
               key={tf}
-              onClick={() => setActiveTf(tf)}
+              onClick={() => setCandleTimeframe(tf)}
               className={`rounded px-1.5 py-0.5 text-[11px] font-mono transition-colors ${
-                activeTf === tf
+                candleTimeframe === tf
                   ? "bg-[#1c2027] text-white"
                   : "text-[#6b7280] hover:text-[#9aa0aa]"
               }`}

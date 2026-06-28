@@ -5,10 +5,11 @@ import WebSocket from "ws";
 import { BackendRequest } from "@repo/shared-types";
 
 const zodBodyVerification =
-  (schema: z.ZodObject<any>, params: boolean = false) =>
+  (schema: z.ZodObject<any>, params: boolean = false, query: boolean = false) =>
   (req: Request, res: Response, next: NextFunction) => {
     try {
       if (params) schema.parse(req.params);
+      else if (query) schema.parse(req.query);
       else schema.parse(req.body);
       next();
     } catch (error) {

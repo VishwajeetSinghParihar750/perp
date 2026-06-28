@@ -93,7 +93,7 @@ model Order {
 }
 
 model Fill {
-  id String @id @default(ulid())
+  id String @default(ulid())
   symbol MARKET_SYMBOL
   quantity Decimal @db.Decimal(18,2)
   price Decimal @db.Decimal(18,2)
@@ -115,4 +115,10 @@ model Fill {
   market Market @relation(fields: [symbol], references: [symbol])
 
   createdAt DateTime @default(now())
+
+
+  // composite id with createdAt needed for timescale db
+  @@id([id, createdAt])
+  // for faster timescale db queries
+  @@index([symbol , createdAt(sort: Desc)])
 }

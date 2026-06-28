@@ -1,6 +1,6 @@
 services:
   postgres:
-    image: postgres
+    image: timescale/timescaledb:latest-pg17
     environment:
       POSTGRES_DB: perp
       POSTGRES_USER: postgres

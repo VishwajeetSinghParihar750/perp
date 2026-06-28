@@ -94,6 +94,22 @@ const GET_ORDERS_SCHEMA = z.object({
   marketSymbol: TRADBLE_SYMBOL_SCHEMA,
 });
 
+const CANDLES_TIMEFRAME_SCHEMA = z.union([
+  z.literal("1min"),
+  z.literal("1hour"),
+  z.literal("1day"),
+]);
+
+const GET_CANDLES_PARAMS_SCHEMA = z.object({
+  marketSymbol: TRADBLE_SYMBOL_SCHEMA,
+  timeframe: CANDLES_TIMEFRAME_SCHEMA,
+});
+
+const GET_CANDLES_QUERY_SCHEMA = z.object({
+  limit: z.number().positive(),
+  offset: z.number().nonnegative().optional(),
+});
+
 const ENGINE_REQUEST_SCHEMA = z.union([
   UNSUBSCRIBE_EVENT_SCHEMA,
   SUBSCRIBE_EVENT_SCHEMA,
@@ -105,7 +121,13 @@ const ENGINE_REQUEST_SCHEMA = z.union([
   CREATE_ORDER_SCHEMA,
 ]);
 
-const DB_REQUEST_SCHEMA = z.union([GET_ORDER_SCHEMA, GET_ORDER_SCHEMA]);
+const DB_REQUEST_SCHEMA = z.union([
+  GET_ORDER_SCHEMA,
+  GET_ORDERS_SCHEMA,
+  GET_CANDLES_PARAMS_SCHEMA,
+  GET_CANDLES_QUERY_SCHEMA,
+]);
+
 type DB_REQUEST = z.infer<typeof DB_REQUEST_SCHEMA>;
 
 const BACKEND_REQUEST_SCHEMA = z.union([
@@ -114,6 +136,8 @@ const BACKEND_REQUEST_SCHEMA = z.union([
 ]);
 
 type CREATE_ORDER_REQUEST = z.infer<typeof CREATE_ORDER_SCHEMA>;
+type GET_CANDLES_REQUEST = z.infer<typeof GET_CANDLES_PARAMS_SCHEMA>;
+type GET_CANDLES_QUERY_REQUEST = z.infer<typeof GET_CANDLES_QUERY_SCHEMA>;
 type CANCEL_ORDER_REQUEST = z.infer<typeof CANCEL_ORDER_SCHEMA>;
 type GET_BALANCE_REQUEST = z.infer<typeof GET_BALANCE_SCHEMA>;
 type ADD_BALANCE_REQUEST = z.infer<typeof ADD_BALANCE_SCHEMA>;
@@ -142,6 +166,8 @@ export type {
   ENGINE_REQUEST,
   CURRENCY_SYMBOL,
   ENGINE_REQUEST_TYPE,
+  GET_CANDLES_REQUEST,
+  GET_CANDLES_QUERY_REQUEST,
   DB_REQUEST,
   BACKEND_REQUEST,
 };
@@ -171,6 +197,8 @@ export {
   ENGINE_REQUEST_TYPE_SCHEMA,
   CREATE_ORDER_PAYLOAD_SCHEMA,
   BACKEND_REQUEST_SCHEMA,
+  GET_CANDLES_PARAMS_SCHEMA,
+  GET_CANDLES_QUERY_SCHEMA,
   isEngineRequset,
 };
 

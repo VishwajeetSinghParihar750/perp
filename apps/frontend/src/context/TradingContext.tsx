@@ -29,6 +29,7 @@ import {
   type ChartTimeframe,
 } from "../lib/sync/candlesSync";
 import { getLatestTradePrice, TradesSync } from "../lib/sync/tradesSync";
+import { createUiBatcher, type UiBatcher } from "../lib/uiBatcher";
 import type {
   BalanceSnapshot,
   DepthSnapshot,
@@ -179,6 +180,10 @@ export function TradingProvider({ children }: { children: ReactNode }) {
   const currentSymbolRef = useRef<TradableSymbol>(currentSymbol);
   const candleTimeframeRef = useRef<ChartTimeframe>(candleTimeframe);
   const tokenRef = useRef<string | null>(token);
+  const pendingTradePricesRef = useRef<{
+    mark: PriceMap;
+    last: PriceMap;
+  }>({ mark: {}, last: {} });
 
   currentSymbolRef.current = currentSymbol;
   candleTimeframeRef.current = candleTimeframe;
@@ -198,6 +203,38 @@ export function TradingProvider({ children }: { children: ReactNode }) {
       [...openOrdersRef.current.values()].filter(isRestingOpenOrder),
     );
   }, []);
+
+  const flushOrderbookUi = useCallback(() => {
+    setOrderbook(orderbookSyncRef.current.getView());
+  }, []);
+
+  const flushTradesUi = useCallback(() => {
+    const pending = pendingTradePricesRef.current;
+    const hasPendingPrices =
+      Object.keys(pending.mark).length > 0 ||
+      Object.keys(pending.last).length > 0;
+    if (hasPendingPrices) {
+      setMarkPrices((prev) => ({ ...prev, ...pending.mark }));
+      setLastPrices((prev) => ({ ...prev, ...pending.last }));
+      pendingTradePricesRef.current = { mark: {}, last: {} };
+    }
+    setTrades(tradesSyncRef.current.getTrades());
+    setCandles(candlesSyncRef.current.getCandles());
+  }, []);
+
+  const uiBatcherRef = useRef<UiBatcher | null>(null);
+
+  useEffect(() => {
+    const batcher = createUiBatcher({
+      orderbook: flushOrderbookUi,
+      trades: flushTradesUi,
+    });
+    uiBatcherRef.current = batcher;
+    return () => {
+      batcher.dispose();
+      uiBatcherRef.current = null;
+    };
+  }, [flushOrderbookUi, flushTradesUi]);
 
   // ---- HTTP recovery (seed on connect / symbol switch) ---------------------
 
@@ -310,27 +347,23 @@ export function TradingProvider({ children }: { children: ReactNode }) {
           const data = payload.data as DepthUpdateData;
           if (data.marketSymbol !== activeSymbol) return;
           orderbookSyncRef.current.onUpdate(data);
-          setOrderbook(orderbookSyncRef.current.getView());
+          uiBatcherRef.current?.markOrderbookDirty();
           return;
         }
         case "trades.created": {
           const data = payload.data as TradesCreatedData;
           const latestPrice = getLatestTradePrice(data.trades, data.marketSymbol);
           if (latestPrice != null) {
-            setMarkPrices((prev) => ({
-              ...prev,
-              [data.marketSymbol]: latestPrice,
-            }));
-            setLastPrices((prev) => ({
-              ...prev,
-              [data.marketSymbol]: latestPrice,
-            }));
+            pendingTradePricesRef.current.mark[data.marketSymbol] = latestPrice;
+            pendingTradePricesRef.current.last[data.marketSymbol] = latestPrice;
           }
-          if (data.marketSymbol !== activeSymbol) return;
+          if (data.marketSymbol !== activeSymbol) {
+            if (latestPrice != null) uiBatcherRef.current?.markTradesDirty();
+            return;
+          }
           tradesSyncRef.current.onTradesCreated(data);
-          setTrades(tradesSyncRef.current.getTrades());
           candlesSyncRef.current.onTradesCreated(data);
-          setCandles(candlesSyncRef.current.getCandles());
+          uiBatcherRef.current?.markTradesDirty();
           return;
         }
         case "indexprice.updated": {

@@ -9,6 +9,7 @@ const TIMEFRAMES: ChartTimeframe[] = ["1m", "5m", "15m", "1h", "4h", "1d"];
 export function PriceChart() {
   const {
     candles,
+    candlesReady,
     candleTimeframe,
     setCandleTimeframe,
     currentSymbol,
@@ -22,7 +23,7 @@ export function PriceChart() {
 
   useEffect(() => {
     forceRender((n) => n + 1);
-  }, [candles, currentSymbol]);
+  }, [candles, candlesReady, currentSymbol]);
 
   // draw
   useEffect(() => {
@@ -42,11 +43,19 @@ export function PriceChart() {
     ctx.scale(dpr, dpr);
     ctx.clearRect(0, 0, width, height);
 
-    if (candles.length < 2) {
+    if (!candlesReady) {
       ctx.fillStyle = "#3a3f49";
       ctx.font = "12px Inter, sans-serif";
       ctx.textAlign = "center";
       ctx.fillText("Loading candles…", width / 2, height / 2);
+      return;
+    }
+
+    if (candles.length === 0) {
+      ctx.fillStyle = "#3a3f49";
+      ctx.font = "12px Inter, sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText("Waiting for trades…", width / 2, height / 2);
       return;
     }
 

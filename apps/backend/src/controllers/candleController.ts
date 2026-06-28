@@ -49,5 +49,7 @@ export async function getCandles(req: Request, res: Response) {
       throw new Error("INVALID_TIMEFRAME");
   }
 
+  console.log("candles : ", candles);
+
   res.json({ error: false, payload: candles });
 }

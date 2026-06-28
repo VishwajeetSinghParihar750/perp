@@ -83,6 +83,7 @@ interface TradingContextValue {
   orderbook: OrderbookView;
   trades: PublicTrade[];
   candles: Candle[];
+  candlesReady: boolean;
   candleTimeframe: ChartTimeframe;
   setCandleTimeframe: (timeframe: ChartTimeframe) => void;
   indexPrices: PriceMap;
@@ -151,6 +152,7 @@ export function TradingProvider({ children }: { children: ReactNode }) {
   const [orderbook, setOrderbook] = useState<OrderbookView>(EMPTY_BOOK);
   const [trades, setTrades] = useState<PublicTrade[]>([]);
   const [candles, setCandles] = useState<Candle[]>([]);
+  const [candlesReady, setCandlesReady] = useState(false);
   const [candleTimeframe, setCandleTimeframeState] =
     useState<ChartTimeframe>("5m");
   const [indexPrices, setIndexPrices] = useState<PriceMap>({});
@@ -259,6 +261,7 @@ export function TradingProvider({ children }: { children: ReactNode }) {
     async (symbol: TradableSymbol, timeframe: ChartTimeframe) => {
       const activeToken = tokenRef.current;
       if (!activeToken) return;
+      setCandlesReady(false);
       try {
         const { apiTimeframe } = getTimeframeConfig(timeframe);
         await candlesSyncRef.current.awaitSnapshot(() =>
@@ -269,9 +272,11 @@ export function TradingProvider({ children }: { children: ReactNode }) {
             getCandleFetchLimit(timeframe),
           ),
         );
-        setCandles(candlesSyncRef.current.getCandles());
       } catch {
-        // live trades keep the chart updated regardless
+        candlesSyncRef.current.goLiveWithoutSnapshot();
+      } finally {
+        setCandles(candlesSyncRef.current.getCandles());
+        setCandlesReady(true);
       }
     },
     [],
@@ -371,6 +376,7 @@ export function TradingProvider({ children }: { children: ReactNode }) {
     );
     personalSyncRef.current = new PersonalSync();
     setCandles([]);
+    setCandlesReady(false);
 
     try {
       // 1. subscribe first so depth, trades + personal fills start buffering
@@ -414,6 +420,7 @@ export function TradingProvider({ children }: { children: ReactNode }) {
     setOrderbook(EMPTY_BOOK);
     setTrades([]);
     setCandles([]);
+    setCandlesReady(false);
     openOrdersRef.current.clear();
     setOpenOrders([]);
   }, []);
@@ -585,6 +592,7 @@ export function TradingProvider({ children }: { children: ReactNode }) {
       setCurrentSymbolState(symbol);
       setTrades([]);
       setCandles([]);
+      setCandlesReady(false);
       setOrderbook(EMPTY_BOOK);
 
       const socket = socketRef.current;
@@ -617,6 +625,7 @@ export function TradingProvider({ children }: { children: ReactNode }) {
       candleTimeframeRef.current = timeframe;
       setCandleTimeframeState(timeframe);
       setCandles([]);
+      setCandlesReady(false);
 
       const symbol = currentSymbolRef.current;
       candlesSyncRef.current = new CandlesSync(symbol, timeframe);
@@ -638,6 +647,7 @@ export function TradingProvider({ children }: { children: ReactNode }) {
       orderbook,
       trades,
       candles,
+      candlesReady,
       candleTimeframe,
       setCandleTimeframe,
       indexPrices,
@@ -670,6 +680,7 @@ export function TradingProvider({ children }: { children: ReactNode }) {
       orderbook,
       trades,
       candles,
+      candlesReady,
       candleTimeframe,
       setCandleTimeframe,
       indexPrices,

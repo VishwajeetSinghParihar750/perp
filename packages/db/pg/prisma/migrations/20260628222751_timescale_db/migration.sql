@@ -104,8 +104,6 @@ ALTER TABLE "Fill" ADD CONSTRAINT "Fill_shortOrderId_fkey" FOREIGN KEY ("shortOr
 ALTER TABLE "Fill" ADD CONSTRAINT "Fill_symbol_fkey" FOREIGN KEY ("symbol") REFERENCES "Market"("symbol") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 
-
-
 -- Timescale db
 CREATE EXTENSION IF NOT EXISTS timescaledb;
 
@@ -119,7 +117,7 @@ SELECT
     max(id) as lastTradeId,
     symbol,
     sum(quantity) AS volume,
-    count(*) AS trades,
+    count(*)::INT AS trades,
     max(price) AS high, min(price) AS low, 
     first(price, "createdAt") AS open,
     last(price, "createdAt") AS close

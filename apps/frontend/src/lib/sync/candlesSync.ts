@@ -164,6 +164,12 @@ export class CandlesSync {
 
     for (let attempt = 0; attempt < MAX_POLL_ATTEMPTS; attempt++) {
       const rows = await fetchSnapshot();
+      // No DB history yet — build candles purely from the live trade stream.
+      if (rows.length === 0) {
+        this.applySnapshot(rows);
+        return;
+      }
+
       const dbLastSeq = this.getSnapshotLastTradeSeq(rows);
       if (firstSubSeq == null || dbLastSeq >= firstSubSeq) {
         this.applySnapshot(rows);
@@ -173,6 +179,16 @@ export class CandlesSync {
     }
 
     this.applySnapshot(await fetchSnapshot());
+  }
+
+  /** Transition to live mode when the candles API is unavailable. */
+  goLiveWithoutSnapshot(): void {
+    if (this.state === "live") return;
+    this.applySnapshot([]);
+  }
+
+  isLive(): boolean {
+    return this.state === "live";
   }
 
   getCandles(): Candle[] {

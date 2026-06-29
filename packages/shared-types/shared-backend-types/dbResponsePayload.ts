@@ -1,0 +1,99 @@
+import z from "zod";
+import {
+  FILL_ID_SCHEMA,
+  MARGIN_TYPE_SCHEMA,
+  ORDER_ID_SCHEMA,
+  ORDER_STATUS_SCHEMA,
+  SIDE_SCHEMA,
+  TRADBLE_SYMBOL_SCHEMA,
+  TYPE_SCHEMA,
+  USER_ID_SCHEMA,
+} from "../shared-engine-types/types.js";
+
+const DECIMAL_SCHEMA = z.union([z.string(), z.number()]);
+const DATETIME_SCHEMA = z.union([z.string(), z.date()]);
+
+const DB_ORDER_SCHEMA = z.object({
+  id: ORDER_ID_SCHEMA,
+  userId: USER_ID_SCHEMA,
+  side: SIDE_SCHEMA,
+  symbol: TRADBLE_SYMBOL_SCHEMA,
+  margin: DECIMAL_SCHEMA,
+  price: DECIMAL_SCHEMA,
+  filledQuantity: DECIMAL_SCHEMA,
+  quantity: DECIMAL_SCHEMA,
+  status: ORDER_STATUS_SCHEMA,
+  type: TYPE_SCHEMA,
+  marginType: MARGIN_TYPE_SCHEMA,
+  createdAt: DATETIME_SCHEMA,
+});
+
+const DB_FILL_SCHEMA = z.object({
+  id: FILL_ID_SCHEMA,
+  symbol: TRADBLE_SYMBOL_SCHEMA,
+  quantity: DECIMAL_SCHEMA,
+  price: DECIMAL_SCHEMA,
+  bidPrice: DECIMAL_SCHEMA,
+  longUserId: USER_ID_SCHEMA,
+  shortUserId: USER_ID_SCHEMA,
+  longOrderId: ORDER_ID_SCHEMA,
+  shortOrderId: ORDER_ID_SCHEMA,
+  createdAt: DATETIME_SCHEMA,
+});
+
+const DB_CANDLE_SCHEMA = z.object({
+  bucket: DATETIME_SCHEMA,
+  lastTradeId: FILL_ID_SCHEMA,
+  symbol: TRADBLE_SYMBOL_SCHEMA,
+  volume: DECIMAL_SCHEMA,
+  trades: z.number().int(),
+  high: DECIMAL_SCHEMA,
+  low: DECIMAL_SCHEMA,
+  open: DECIMAL_SCHEMA,
+  close: DECIMAL_SCHEMA,
+});
+
+const SIGNUP_RESPONSE_PAYLOAD_SCHEMA = z.string();
+
+const SIGNIN_RESPONSE_PAYLOAD_SCHEMA = z.object({
+  jwt_token: z.string(),
+});
+
+const DB_RESPONSE_PAYLOAD_SCHEMA = z.union([
+  DB_ORDER_SCHEMA,
+  z.array(DB_ORDER_SCHEMA),
+  z.null(),
+  DB_FILL_SCHEMA,
+  z.array(DB_FILL_SCHEMA),
+  DB_CANDLE_SCHEMA,
+  z.array(DB_CANDLE_SCHEMA),
+  SIGNUP_RESPONSE_PAYLOAD_SCHEMA,
+  SIGNIN_RESPONSE_PAYLOAD_SCHEMA,
+]);
+
+type DB_ORDER = z.infer<typeof DB_ORDER_SCHEMA>;
+type DB_FILL = z.infer<typeof DB_FILL_SCHEMA>;
+type DB_CANDLE = z.infer<typeof DB_CANDLE_SCHEMA>;
+type SIGNUP_RESPONSE_PAYLOAD = z.infer<typeof SIGNUP_RESPONSE_PAYLOAD_SCHEMA>;
+type SIGNIN_RESPONSE_PAYLOAD = z.infer<typeof SIGNIN_RESPONSE_PAYLOAD_SCHEMA>;
+type DB_RESPONSE_PAYLOAD = z.infer<typeof DB_RESPONSE_PAYLOAD_SCHEMA>;
+
+export {
+  DECIMAL_SCHEMA,
+  DATETIME_SCHEMA,
+  DB_ORDER_SCHEMA,
+  DB_FILL_SCHEMA,
+  DB_CANDLE_SCHEMA,
+  SIGNUP_RESPONSE_PAYLOAD_SCHEMA,
+  SIGNIN_RESPONSE_PAYLOAD_SCHEMA,
+  DB_RESPONSE_PAYLOAD_SCHEMA,
+};
+
+export type {
+  DB_ORDER,
+  DB_FILL,
+  DB_CANDLE,
+  SIGNUP_RESPONSE_PAYLOAD,
+  SIGNIN_RESPONSE_PAYLOAD,
+  DB_RESPONSE_PAYLOAD,
+};

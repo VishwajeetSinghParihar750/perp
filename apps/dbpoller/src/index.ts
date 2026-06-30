@@ -77,14 +77,14 @@ const processPendingUnackedEvents = async () => {
     if (xreadGroupRes) {
       let messages: any[] = xreadGroupRes[0].messages;
 
+      if (messages.length === 0) break;
+
       await handleBatchEvents(messages);
       await redisClient.xAck(
         process.env.DB_POLLER_REDIS_STREAM!,
         "group",
         messages.map((msg) => msg.id),
       );
-
-      if (messages.length == 0) break;
     } else throw new Error("xreadGroupRes is falsy , this should not happen");
   }
 };
@@ -104,13 +104,15 @@ const processNewEvents = async () => {
     if (xreadGroupRes) {
       let messages: any[] = xreadGroupRes[0].messages;
 
+      if (messages.length === 0) continue;
+
       await handleBatchEvents(messages);
       await redisClient.xAck(
         process.env.DB_POLLER_REDIS_STREAM!,
         "group",
         messages.map((msg) => msg.id),
       );
-    } else throw new Error("xreadGroupRes is falsy , this should not happen");
+    }
   }
 };
 

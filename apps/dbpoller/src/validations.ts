@@ -1,4 +1,4 @@
-import { EngineEvent } from "@repo/shared-types";
+import { EngineEvent, EngineEventPayload } from "@repo/shared-types";
 
 import z from "zod";
 
@@ -8,17 +8,33 @@ const DB_POLLER_SCHEMA = z.union([
   EngineEvent.ORDER_CANCELLED_SCHEMA,
 ]);
 
+const DB_POLLER_PAYLOAD_SCHEMA = z.union([
+  EngineEventPayload.ORDER_CREATED_PAYLOAD_SCHEMA,
+  EngineEventPayload.FILLS_CREATED_PAYLOAD_SCHEMA,
+  EngineEventPayload.ORDER_CANCELLED_PAYLOAD_SCHEMA,
+]);
+
 type DB_POLLER_EVENT = z.infer<typeof DB_POLLER_SCHEMA>;
+type DB_POLLER_EVENT_PAYLOAD = z.infer<typeof DB_POLLER_PAYLOAD_SCHEMA>;
 
 type ORDER_CREATED_EVENT = EngineEvent.ORDER_CREATED_EVENT;
 type FILLS_CREATED_EVENT = EngineEvent.FILLS_CREATED_EVENT;
 type ORDER_CANCELLED_EVENT = EngineEvent.ORDER_CANCELLED_EVENT;
+type ORDER_CREATED_EVENT_PAYLOAD = z.infer<
+  typeof EngineEventPayload.ORDER_CREATED_PAYLOAD_SCHEMA
+>;
+type FILLS_CREATED_EVENT_PAYLOAD = z.infer<
+  typeof EngineEventPayload.FILLS_CREATED_PAYLOAD_SCHEMA
+>;
 
-export { DB_POLLER_SCHEMA };
+export { DB_POLLER_SCHEMA, DB_POLLER_PAYLOAD_SCHEMA };
 
 export type {
   DB_POLLER_EVENT,
   ORDER_CREATED_EVENT,
   FILLS_CREATED_EVENT,
   ORDER_CANCELLED_EVENT,
+  ORDER_CREATED_EVENT_PAYLOAD,
+  FILLS_CREATED_EVENT_PAYLOAD,
+  DB_POLLER_EVENT_PAYLOAD,
 };

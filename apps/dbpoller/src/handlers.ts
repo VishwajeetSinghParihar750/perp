@@ -1,6 +1,7 @@
 import { prismaClient } from "@repo/db";
 import {
   DB_POLLER_SCHEMA,
+  type DB_POLLER_EVENT,
   type FILLS_CREATED_EVENT,
   type ORDER_CANCELLED_EVENT,
   type ORDER_CREATED_EVENT,
@@ -164,7 +165,7 @@ const handleOrderCancelled = async (event: ORDER_CANCELLED_EVENT) => {
   });
 };
 
-const handleEvent = async (passedEvent: unknown) => {
+const handleEvent = async (passedEvent: DB_POLLER_EVENT) => {
   const event = DB_POLLER_SCHEMA.parse(passedEvent);
 
   switch (event.payload.type) {

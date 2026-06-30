@@ -5,7 +5,7 @@ import {
   prismaClient,
   Prisma,
 } from "@repo/db";
-import { handleEvent } from "./handlers.ts";
+import { handleBatchEvents } from "./batching.ts";
 
 process.on("uncaughtException", (err, origin) => {
   console.error("uncaughtException", err.message, err.name, origin);
@@ -70,26 +70,19 @@ const processPendingUnackedEvents = async () => {
       "consumer",
       [{ id: "0", key: process.env.DB_POLLER_REDIS_STREAM! }],
       {
-        COUNT: 100,
+        COUNT: 1000,
       },
     );
 
     if (xreadGroupRes) {
       let messages: any[] = xreadGroupRes[0].messages;
 
-      for (const { id, message } of messages) {
-        console.log(`[DB_POLLER] Processing pending unacked message ID: ${id}`);
-        const event = JSON.parse(message.data);
-        await handleEvent(event);
-        await redisClient.xAck(
-          process.env.DB_POLLER_REDIS_STREAM!,
-          "group",
-          id,
-        );
-        console.log(
-          `[DB_POLLER] Successfully processed and ACKed message ID: ${id}`,
-        );
-      }
+      await handleBatchEvents(messages);
+      await redisClient.xAck(
+        process.env.DB_POLLER_REDIS_STREAM!,
+        "group",
+        messages.map((msg) => msg.id),
+      );
 
       if (messages.length == 0) break;
     } else throw new Error("xreadGroupRes is falsy , this should not happen");
@@ -103,28 +96,20 @@ const processNewEvents = async () => {
       "consumer",
       [{ id: ">", key: process.env.DB_POLLER_REDIS_STREAM! }],
       {
-        BLOCK: 0,
-        COUNT: 100,
+        BLOCK: 200,
+        COUNT: 1000,
       },
     );
 
     if (xreadGroupRes) {
       let messages: any[] = xreadGroupRes[0].messages;
 
-      for (const { id, message } of messages) {
-        console.log(`[DB_POLLER] Processing new message ID: ${id}`);
-        const event = JSON.parse(message.data);
-        await handleEvent(event);
-
-        await redisClient.xAck(
-          process.env.DB_POLLER_REDIS_STREAM!,
-          "group",
-          id,
-        );
-        console.log(
-          `[DB_POLLER] Successfully processed and ACKed message ID: ${id}`,
-        );
-      }
+      await handleBatchEvents(messages);
+      await redisClient.xAck(
+        process.env.DB_POLLER_REDIS_STREAM!,
+        "group",
+        messages.map((msg) => msg.id),
+      );
     } else throw new Error("xreadGroupRes is falsy , this should not happen");
   }
 };

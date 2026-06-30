@@ -1,20 +1,16 @@
-import { EngineEvent, EngineEventPayload } from "@repo/shared-types";
-
 import {
   DB_POLLER_SCHEMA,
-  type DB_POLLER_EVENT,
-  type DB_POLLER_EVENT_PAYLOAD,
   type ORDER_CREATED_EVENT_PAYLOAD,
   type FILLS_CREATED_EVENT_PAYLOAD,
 } from "./validations.ts";
-import { prismaClient } from "@repo/db";
+import { Prisma, prismaClient } from "@repo/db";
 
 type orderUpdate = {
   type: "order.updated";
   data: {
     id: string;
     filledQty?: number;
-    status?: string;
+    status: string;
   };
 };
 
@@ -57,6 +53,7 @@ const handleBatchEvents = async (messages: any[]) => {
                 type: "order.updated",
                 data: {
                   id: toUpdateOrderInfo.orderId,
+                  status: "",
                 },
               };
 
@@ -76,6 +73,7 @@ const handleBatchEvents = async (messages: any[]) => {
             type: "order.updated",
             data: {
               id: orderId,
+              status: "",
             },
           };
         toUpdateOrder.data.status = "CANCELLED";
@@ -90,16 +88,101 @@ const handleBatchEvents = async (messages: any[]) => {
     }
   }
 
-  await prismaClient.$transaction(async (tx) => {
-    const idemResult = await tx.processedEvent.findMany({
-      where: {
-        id: {
-          in: idempotencyKeys,
+  let orderUpdateValues = Prisma.join(
+    Array.from(currentUpdatedOrders.entries()).map(
+      ([id, updateObj]) =>
+        Prisma.sql`(${id} ${updateObj.data.filledQty ?? "NULL"} ${updateObj.data.status})`,
+    ),
+  );
+
+  try {
+    await prismaClient.$transaction(async (tx) => {
+      const idemResult = await tx.processedEvent.findMany({
+        where: {
+          id: {
+            in: idempotencyKeys,
+          },
         },
-      },
+      });
+      if (idemResult.length > 0) {
+        throw new Error("IDEMPOTENCY_KEY_EXISTS");
+      }
+
+      await tx.order.createMany({
+        data: Array.from(currentOrders.entries()).map(([orderId, orderObj]) => {
+          const {
+            filledQty,
+            margin,
+            marginType,
+            price,
+            qty,
+            side,
+            status,
+            marketSymbol,
+            type,
+            userId,
+          } = orderObj.data;
+
+          return {
+            id: orderId,
+            userId,
+            side,
+            symbol: marketSymbol,
+            margin,
+            price,
+            filledQuantity: filledQty,
+            quantity: qty,
+            status,
+            type,
+            marginType,
+          };
+        }),
+      });
+
+      await tx.fill.createMany({
+        data: currentFills.data.fills.map((fill) => {
+          const {
+            bidPrice,
+            buyOrderInfo,
+            fillId,
+            price,
+            qty,
+            sellOrderInfo,
+            marketSymbol,
+          } = fill;
+
+          return {
+            id: fillId,
+            bidPrice,
+            price,
+            quantity: qty,
+            symbol: marketSymbol,
+            longOrderId: buyOrderInfo.orderId,
+            longUserId: buyOrderInfo.buyerId,
+            shortOrderId: sellOrderInfo.orderId,
+            shortUserId: sellOrderInfo.sellerId,
+          };
+        }),
+      });
+
+      //
+      await tx.$executeRaw(
+        Prisma.sql`
+    UPDATE order o
+    SET filledQuantity = v.filledQty, status = v.status
+    FROM (
+      VALUES ${orderUpdateValues}
+    ) as v(id, filledQty, status)
+    WHERE o.id = v.id
+    `,
+      );
     });
-    //
-  });
+  } catch (error) {
+    if ((error as Error).message == "IDEMPOTENCY_KEY_EXISTS") {
+      // fine
+      //
+    } else throw error;
+  }
 };
 
 export { handleBatchEvents };

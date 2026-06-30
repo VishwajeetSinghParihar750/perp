@@ -6,5 +6,6 @@ const prismaPgAdapter = new PrismaPg({
   connectionString: process.env.DATABASE_URL!,
 });
 
-const prismaClient = new PrismaClient({ adapter: prismaPgAdapter });
+const prismaClient: PrismaClient = new PrismaClient({ adapter: prismaPgAdapter });
 export { prismaClient, Prisma };
+export type { PrismaClient } from "./generated/prisma/client.js";

@@ -516,11 +516,11 @@ export async function runLoadTest(
 
 export const DEFAULT_LOAD_TEST_CONFIG: LoadTestConfig = {
   userCount: 4,
-  decisionsPerUser: 10,
-  delayMs: [0, 10_000],
-  marketSymbol: "BTCUSD",
+  decisionsPerUser: 100,
+  delayMs: [0, 1_000],
+  marketSymbol: "SOLUSD",
   price: 0,
-  qtyRange: [0.001, 0.01],
+  qtyRange: [1, 10],
   leverage: 10,
   usernamePrefix: "loadtest",
   password: "loadtest-pass",

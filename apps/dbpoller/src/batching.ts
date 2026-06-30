@@ -21,13 +21,12 @@ let currentFills: FILLS_CREATED_EVENT_PAYLOAD = {
   data: { fills: [] },
 };
 let currentUpdatedOrders: Map<string, orderUpdate> = new Map();
-let idempotencyKeys = [];
 
 const handleBatchEvents = async (messages: any[]) => {
-  //
   currentOrders = new Map();
   currentFills.data.fills = [];
   currentUpdatedOrders = new Map();
+  const idempotencyKeys: string[] = [];
 
   const events = messages.map((msg) =>
     DB_POLLER_SCHEMA.parse(JSON.parse(msg.data)),
@@ -89,13 +88,6 @@ const handleBatchEvents = async (messages: any[]) => {
     }
   }
 
-  let orderUpdateValues = Prisma.join(
-    Array.from(currentUpdatedOrders.entries()).map(
-      ([id, updateObj]) =>
-        Prisma.sql`(${id} ${updateObj.data.filledQty ?? "NULL"} ${updateObj.data.status})`,
-    ),
-  );
-
   try {
     await prismaClient.$transaction(async (tx) => {
       const idemResult = await tx.processedEvent.findMany({
@@ -109,9 +101,8 @@ const handleBatchEvents = async (messages: any[]) => {
         throw new Error("IDEMPOTENCY_KEY_EXISTS");
       }
 
-      // create + update orders
-      await tx.order.createMany({
-        data: Array.from(currentOrders.entries()).map(([orderId, orderObj]) => {
+      const orderCreates = Array.from(currentOrders.entries()).map(
+        ([orderId, orderObj]) => {
           const {
             filledQty,
             margin,
@@ -138,12 +129,13 @@ const handleBatchEvents = async (messages: any[]) => {
             type,
             marginType,
           };
-        }),
-      });
+        },
+      );
+      if (orderCreates.length > 0) {
+        await tx.order.createMany({ data: orderCreates });
+      }
 
-      // create fills
-      await tx.fill.createMany({
-        data: currentFills.data.fills.map((fill) => {
+      const fillCreates = currentFills.data.fills.map((fill) => {
           const {
             bidPrice,
             buyOrderInfo,
@@ -165,12 +157,21 @@ const handleBatchEvents = async (messages: any[]) => {
             shortOrderId: sellOrderInfo.orderId,
             shortUserId: sellOrderInfo.sellerId,
           };
-        }),
-      });
+        });
+      if (fillCreates.length > 0) {
+        await tx.fill.createMany({ data: fillCreates });
+      }
 
-      // update orders
-      await tx.$executeRaw(
-        Prisma.sql`
+      if (currentUpdatedOrders.size > 0) {
+        const orderUpdateValues = Prisma.join(
+          Array.from(currentUpdatedOrders.entries()).map(
+            ([id, updateObj]) =>
+              Prisma.sql`(${id}, ${updateObj.data.filledQty ?? null}, ${updateObj.data.status})`,
+          ),
+        );
+
+        await tx.$executeRaw(
+          Prisma.sql`
     UPDATE order o
     SET filledQuantity = v.filledQty, status = v.status
     FROM (
@@ -178,14 +179,12 @@ const handleBatchEvents = async (messages: any[]) => {
     ) as v(id, filledQty, status)
     WHERE o.id = v.id
     `,
+        );
+      }
 
-        // add idempotency keys
-        await tx.processedEvent.createMany({
-          data: idempotencyKeys.map((id) => {
-            return { id };
-          }),
-        }),
-      );
+      await tx.processedEvent.createMany({
+        data: idempotencyKeys.map((id) => ({ id })),
+      });
     });
   } catch (error) {
     if ((error as Error).message == "IDEMPOTENCY_KEY_EXISTS") {

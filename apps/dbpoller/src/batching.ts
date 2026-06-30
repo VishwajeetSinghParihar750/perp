@@ -109,6 +109,7 @@ const handleBatchEvents = async (messages: any[]) => {
         throw new Error("IDEMPOTENCY_KEY_EXISTS");
       }
 
+      // create + update orders
       await tx.order.createMany({
         data: Array.from(currentOrders.entries()).map(([orderId, orderObj]) => {
           const {
@@ -140,6 +141,7 @@ const handleBatchEvents = async (messages: any[]) => {
         }),
       });
 
+      // create fills
       await tx.fill.createMany({
         data: currentFills.data.fills.map((fill) => {
           const {
@@ -166,7 +168,7 @@ const handleBatchEvents = async (messages: any[]) => {
         }),
       });
 
-      //
+      // update orders
       await tx.$executeRaw(
         Prisma.sql`
     UPDATE order o
@@ -176,6 +178,13 @@ const handleBatchEvents = async (messages: any[]) => {
     ) as v(id, filledQty, status)
     WHERE o.id = v.id
     `,
+
+        // add idempotency keys
+        await tx.processedEvent.createMany({
+          data: idempotencyKeys.map((id) => {
+            return { id };
+          }),
+        }),
       );
     });
   } catch (error) {

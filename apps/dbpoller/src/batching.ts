@@ -1,3 +1,4 @@
+import { handleEvent } from "./handlers.ts";
 import {
   DB_POLLER_SCHEMA,
   type ORDER_CREATED_EVENT_PAYLOAD,
@@ -179,8 +180,8 @@ const handleBatchEvents = async (messages: any[]) => {
     });
   } catch (error) {
     if ((error as Error).message == "IDEMPOTENCY_KEY_EXISTS") {
-      // fine
-      //
+      // do normal one by one processing
+      for (const event of events) await handleEvent(event);
     } else throw error;
   }
 };

@@ -28,9 +28,10 @@ const handleBatchEvents = async (messages: any[]) => {
   currentUpdatedOrders = new Map();
   const idempotencyKeys: string[] = [];
 
-  const events = messages.map((msg) =>
-    DB_POLLER_SCHEMA.parse(JSON.parse(msg.data)),
-  );
+  const events = messages.map((msg) => {
+    console.log(msg);
+    return DB_POLLER_SCHEMA.parse(JSON.parse(msg.message.data));
+  });
 
   for (const event of events) {
     idempotencyKeys.push(event.idempotencyKey);
@@ -136,28 +137,28 @@ const handleBatchEvents = async (messages: any[]) => {
       }
 
       const fillCreates = currentFills.data.fills.map((fill) => {
-          const {
-            bidPrice,
-            buyOrderInfo,
-            fillId,
-            price,
-            qty,
-            sellOrderInfo,
-            marketSymbol,
-          } = fill;
+        const {
+          bidPrice,
+          buyOrderInfo,
+          fillId,
+          price,
+          qty,
+          sellOrderInfo,
+          marketSymbol,
+        } = fill;
 
-          return {
-            id: fillId,
-            bidPrice,
-            price,
-            quantity: qty,
-            symbol: marketSymbol,
-            longOrderId: buyOrderInfo.orderId,
-            longUserId: buyOrderInfo.buyerId,
-            shortOrderId: sellOrderInfo.orderId,
-            shortUserId: sellOrderInfo.sellerId,
-          };
-        });
+        return {
+          id: fillId,
+          bidPrice,
+          price,
+          quantity: qty,
+          symbol: marketSymbol,
+          longOrderId: buyOrderInfo.orderId,
+          longUserId: buyOrderInfo.buyerId,
+          shortOrderId: sellOrderInfo.orderId,
+          shortUserId: sellOrderInfo.sellerId,
+        };
+      });
       if (fillCreates.length > 0) {
         await tx.fill.createMany({ data: fillCreates });
       }
@@ -172,8 +173,9 @@ const handleBatchEvents = async (messages: any[]) => {
 
         await tx.$executeRaw(
           Prisma.sql`
-    UPDATE order o
-    SET filledQuantity = v.filledQty, status = v.status
+    UPDATE "Order" o
+    SET "filledQuantity" = COALESCE(v.filledQty, o."filledQuantity"),
+        status = v.status
     FROM (
       VALUES ${orderUpdateValues}
     ) as v(id, filledQty, status)

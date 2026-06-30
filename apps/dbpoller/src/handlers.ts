@@ -165,9 +165,7 @@ const handleOrderCancelled = async (event: ORDER_CANCELLED_EVENT) => {
   });
 };
 
-const handleEvent = async (passedEvent: DB_POLLER_EVENT) => {
-  const event = DB_POLLER_SCHEMA.parse(passedEvent);
-
+const handleEvent = async (event: DB_POLLER_EVENT) => {
   switch (event.payload.type) {
     case "fills.created":
       await handleFillsCreated(event as FILLS_CREATED_EVENT);

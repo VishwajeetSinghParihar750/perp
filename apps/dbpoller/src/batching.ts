@@ -200,27 +200,59 @@ const handleBatchEvents = async (messages: any[]) => {
       }
 
       if (currentUpdatedOrders.size > 0) {
-        console.log(
-          `[DB_POLLER] [BATCH] Updating ${currentUpdatedOrders.size} order(s): ${Array.from(currentUpdatedOrders.keys()).join(", ")}`,
-        );
-        const orderUpdateValues = Prisma.join(
-          Array.from(currentUpdatedOrders.entries()).map(
-            ([id, updateObj]) =>
-              Prisma.sql`(${id}, ${updateObj.data.filledQty ?? null}, ${updateObj.data.status})`,
-          ),
-        );
+        const statusOnlyUpdates = Array.from(
+          currentUpdatedOrders.entries(),
+        ).filter(([, updateObj]) => updateObj.data.filledQty === undefined);
+        const filledQtyAndStatusUpdates = Array.from(
+          currentUpdatedOrders.entries(),
+        ).filter(([, updateObj]) => updateObj.data.filledQty !== undefined);
 
-        await tx.$executeRaw(
-          Prisma.sql`
+        if (statusOnlyUpdates.length > 0) {
+          console.log(
+            `[DB_POLLER] [BATCH] Updating status for ${statusOnlyUpdates.length} order(s): ${statusOnlyUpdates.map(([id]) => id).join(", ")}`,
+          );
+          const statusOnlyValues = Prisma.join(
+            statusOnlyUpdates.map(
+              ([id, updateObj]) =>
+                Prisma.sql`(${id}, ${updateObj.data.status})`,
+            ),
+          );
+
+          await tx.$executeRaw(
+            Prisma.sql`
     UPDATE "Order" o
-    SET "filledQuantity" = COALESCE(v.filledQty, o."filledQuantity"),
-        status = v.status
+    SET status = v.status::"ORDER_STATUS"
     FROM (
-      VALUES ${orderUpdateValues}
+      VALUES ${statusOnlyValues}
+    ) as v(id, status)
+    WHERE o.id = v.id
+    `,
+          );
+        }
+
+        if (filledQtyAndStatusUpdates.length > 0) {
+          console.log(
+            `[DB_POLLER] [BATCH] Updating filledQuantity and status for ${filledQtyAndStatusUpdates.length} order(s): ${filledQtyAndStatusUpdates.map(([id]) => id).join(", ")}`,
+          );
+          const filledQtyAndStatusValues = Prisma.join(
+            filledQtyAndStatusUpdates.map(
+              ([id, updateObj]) =>
+                Prisma.sql`(${id}, ${updateObj.data.filledQty}, ${updateObj.data.status})`,
+            ),
+          );
+
+          await tx.$executeRaw(
+            Prisma.sql`
+    UPDATE "Order" o
+    SET "filledQuantity" = v.filledQty::numeric,
+        status = v.status::"ORDER_STATUS"
+    FROM (
+      VALUES ${filledQtyAndStatusValues}
     ) as v(id, filledQty, status)
     WHERE o.id = v.id
     `,
-        );
+          );
+        }
       }
 
       console.log(

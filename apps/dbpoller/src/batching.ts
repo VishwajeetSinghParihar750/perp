@@ -23,13 +23,17 @@ let currentFills: FILLS_CREATED_EVENT_PAYLOAD = {
 let currentUpdatedOrders: Map<string, orderUpdate> = new Map();
 
 const handleBatchEvents = async (messages: any[]) => {
+  console.log(
+    `[DB_POLLER] [BATCH] Starting batch processing for ${messages.length} message(s)`,
+  );
+
   currentOrders = new Map();
   currentFills.data.fills = [];
   currentUpdatedOrders = new Map();
   const idempotencyKeys: string[] = [];
 
   const events = messages.map((msg) => {
-    console.log(msg);
+    console.log(`[DB_POLLER] [BATCH] Parsing message id: ${msg.id}`);
     return DB_POLLER_SCHEMA.parse(JSON.parse(msg.message.data));
   });
 
@@ -37,10 +41,19 @@ const handleBatchEvents = async (messages: any[]) => {
     idempotencyKeys.push(event.idempotencyKey);
     switch (event.payload.type) {
       case "order.created":
+        console.log(
+          `[DB_POLLER] [BATCH] Aggregating order.created for order: ${event.payload.data.orderId} (idempotencyKey: ${event.idempotencyKey})`,
+        );
         currentOrders.set(event.payload.data.orderId, event.payload);
         break;
       case "fills.created":
+        console.log(
+          `[DB_POLLER] [BATCH] Aggregating fills.created with ${event.payload.data.fills.length} fill(s) (idempotencyKey: ${event.idempotencyKey})`,
+        );
         for (const fill of event.payload.data.fills) {
+          console.log(
+            `[DB_POLLER] [BATCH] Queuing fill: ${fill.fillId} for marketSymbol: ${fill.marketSymbol}, price: ${fill.price}, qty: ${fill.qty}`,
+          );
           currentFills.data.fills.push(fill);
 
           for (const toUpdateOrderInfo of [
@@ -61,6 +74,10 @@ const handleBatchEvents = async (messages: any[]) => {
             toUpdateOrder.data.filledQty = toUpdateOrderInfo.filledQty;
             toUpdateOrder.data.status = toUpdateOrderInfo.orderStatus;
 
+            console.log(
+              `[DB_POLLER] [BATCH] Queuing order update from fill: ${toUpdateOrderInfo.orderId} -> status: ${toUpdateOrderInfo.orderStatus}, filledQty: ${toUpdateOrderInfo.filledQty}`,
+            );
+
             if (toUpdateOrder.type == "order.updated")
               currentUpdatedOrders.set(toUpdateOrder.data.id, toUpdateOrder);
             else currentOrders.set(toUpdateOrder.data.orderId, toUpdateOrder);
@@ -69,6 +86,9 @@ const handleBatchEvents = async (messages: any[]) => {
         break;
       case "order.cancelled":
         const orderId = event.payload.data.orderId;
+        console.log(
+          `[DB_POLLER] [BATCH] Aggregating order.cancelled for order: ${orderId} (idempotencyKey: ${event.idempotencyKey})`,
+        );
         let toUpdateOrder = currentUpdatedOrders.get(orderId) ??
           currentOrders.get(orderId) ?? {
             type: "order.updated",
@@ -89,8 +109,15 @@ const handleBatchEvents = async (messages: any[]) => {
     }
   }
 
+  console.log(
+    `[DB_POLLER] [BATCH] Aggregation complete — orders to create: ${currentOrders.size}, fills to create: ${currentFills.data.fills.length}, orders to update: ${currentUpdatedOrders.size}`,
+  );
+
   try {
     await prismaClient.$transaction(async (tx) => {
+      console.log(
+        `[DB_POLLER] [BATCH] Checking idempotency for ${idempotencyKeys.length} key(s)`,
+      );
       const idemResult = await tx.processedEvent.findMany({
         where: {
           id: {
@@ -99,6 +126,9 @@ const handleBatchEvents = async (messages: any[]) => {
         },
       });
       if (idemResult.length > 0) {
+        console.log(
+          `[DB_POLLER] [BATCH] Idempotency conflict — ${idemResult.length} key(s) already processed: ${idemResult.map((e) => e.id).join(", ")}`,
+        );
         throw new Error("IDEMPOTENCY_KEY_EXISTS");
       }
 
@@ -133,6 +163,9 @@ const handleBatchEvents = async (messages: any[]) => {
         },
       );
       if (orderCreates.length > 0) {
+        console.log(
+          `[DB_POLLER] [BATCH] Creating ${orderCreates.length} order(s): ${orderCreates.map((o) => o.id).join(", ")}`,
+        );
         await tx.order.createMany({ data: orderCreates });
       }
 
@@ -160,10 +193,16 @@ const handleBatchEvents = async (messages: any[]) => {
         };
       });
       if (fillCreates.length > 0) {
+        console.log(
+          `[DB_POLLER] [BATCH] Creating ${fillCreates.length} fill(s): ${fillCreates.map((f) => f.id).join(", ")}`,
+        );
         await tx.fill.createMany({ data: fillCreates });
       }
 
       if (currentUpdatedOrders.size > 0) {
+        console.log(
+          `[DB_POLLER] [BATCH] Updating ${currentUpdatedOrders.size} order(s): ${Array.from(currentUpdatedOrders.keys()).join(", ")}`,
+        );
         const orderUpdateValues = Prisma.join(
           Array.from(currentUpdatedOrders.entries()).map(
             ([id, updateObj]) =>
@@ -184,13 +223,19 @@ const handleBatchEvents = async (messages: any[]) => {
         );
       }
 
+      console.log(
+        `[DB_POLLER] [BATCH] Marking ${idempotencyKeys.length} event(s) as processed`,
+      );
       await tx.processedEvent.createMany({
         data: idempotencyKeys.map((id) => ({ id })),
       });
     });
+    console.log(`[DB_POLLER] [BATCH] Batch transaction committed successfully`);
   } catch (error) {
     if ((error as Error).message == "IDEMPOTENCY_KEY_EXISTS") {
-      // do normal one by one processing
+      console.log(
+        `[DB_POLLER] [BATCH] Falling back to one-by-one processing for ${events.length} event(s)`,
+      );
       for (const event of events) await handleEvent(event);
     } else throw error;
   }

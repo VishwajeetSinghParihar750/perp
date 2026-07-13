@@ -114,7 +114,7 @@ docker run -p 3001:3001 \
   -e REDIS_ENGINE_RECEIVE_STREAM_NAME="backend:responses" \
   -e REDIS_ENGINE_STREAM="engine:input" \
   -e DB_POLLER_REDIS_STREAM="dbpoller:events" \
-  -e PRICE_UPDATES_WEBSOCKET_BACKEND_URL="wss://fstream.binance.com/ws" \
+  -e PRICE_UPDATES_WEBSOCKET_BACKEND_URL="wss://dstream.binance.com/ws" \
   perp
 # then open http://localhost:3001/healthz
 ```

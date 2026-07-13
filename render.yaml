@@ -32,4 +32,6 @@ services:
       - key: DB_POLLER_REDIS_STREAM
         value: dbpoller:events
       - key: PRICE_UPDATES_WEBSOCKET_BACKEND_URL
-        value: wss://fstream.binance.com/ws
+        # COIN-M (dstream) delivers the BTCUSD/ETHUSD/SOLUSD @indexPrice streams.
+        # fstream (USD-M) ACKs the subscription but sends no data for these.
+        value: wss://dstream.binance.com/ws

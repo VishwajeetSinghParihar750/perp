@@ -1,6 +1,7 @@
 import { fetchOpenOrders, signIn, signUp } from "../api";
 import { API_URL, getMarket, resolveReferencePrice, WS_URL } from "../constants";
 import type { MarginType, Side, TradableSymbol } from "../types";
+import { sleep } from "../utils";
 
 export interface LoadTestConfig {
   userCount: number;
@@ -92,10 +93,6 @@ function marginForLoadTest(
 
 function randomDelayMs(min: number, max: number): number {
   return min + Math.floor(Math.random() * (max - min + 1));
-}
-
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 function randomSide(): Side {

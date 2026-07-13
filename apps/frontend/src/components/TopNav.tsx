@@ -1,4 +1,4 @@
-import { Search, ChevronDown, Wallet, LogOut } from "lucide-react";
+import { Search, ChevronDown, Wallet, LogOut, FlaskConical } from "lucide-react";
 import { useTrading } from "../context/TradingContext";
 
 const NAV_ITEMS = ["Spot", "Futures", "Lend", "Vault", "Stocks", "BP"];
@@ -39,6 +39,13 @@ export function TopNav({ onOpenAuth }: TopNavProps) {
       </div>
 
       <div className="flex items-center gap-3">
+        <a
+          href="/loadtest"
+          className="flex items-center gap-1.5 rounded-lg border border-[#1c1f26] bg-[#111317] px-3 py-1.5 text-[13px] font-semibold text-[#9aa0aa] transition-colors hover:border-[#16c784] hover:text-[#16c784]"
+        >
+          <FlaskConical className="h-3.5 w-3.5" />
+          <span className="hidden sm:inline">Simulation</span>
+        </a>
         <button className="rounded-md p-2 text-[#9aa0aa] transition-colors hover:bg-[#15181d] hover:text-white">
           <Search className="h-4 w-4" />
         </button>

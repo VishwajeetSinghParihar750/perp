@@ -1,4 +1,5 @@
 import type { TradableSymbol, TradesCreatedData, WireTrade } from "../types";
+import { sleep, toNumber } from "../utils";
 import { parseFillSeq } from "./tradesSync";
 
 export interface Candle {
@@ -43,14 +44,6 @@ const TIMEFRAME_CONFIG: Record<ChartTimeframe, TimeframeConfig> = {
 };
 
 type SyncState = "syncing" | "live";
-
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-function toNumber(value: string | number): number {
-  return typeof value === "number" ? value : parseFloat(value);
-}
 
 function rowLastTradeId(row: DbCandleRow): string | undefined {
   return row.lastTradeId ?? row.lasttradeid;

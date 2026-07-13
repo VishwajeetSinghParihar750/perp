@@ -1,4 +1,5 @@
 import { API_URL } from "./constants";
+import { toNumber } from "./utils";
 import type {
   MarginType,
   OrderStatus,
@@ -8,10 +9,6 @@ import type {
 } from "./types";
 
 type ApiResponse<T> = { error: boolean; payload: T };
-
-function toNumber(value: string | number): number {
-  return typeof value === "number" ? value : parseFloat(value);
-}
 
 function toTimestamp(value: string | number | Date): number {
   return new Date(value).getTime();

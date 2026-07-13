@@ -5,13 +5,12 @@
   "license": "ISC",
   "author": "",
   "type": "module",
-  "main": "./dist/index.js",
+  "main": "./index.ts",
   "types": "./index.ts",
   "exports": {
     ".": {
       "types": "./index.ts",
-      "import": "./dist/index.js",
-      "default": "./dist/index.js"
+      "default": "./index.ts"
     }
   },
   "scripts": {

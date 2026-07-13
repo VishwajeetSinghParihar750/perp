@@ -1,0 +1,35 @@
+# Render Blueprint: one free Docker web service running engine + dbpoller +
+# backend (HTTP+WS on a single port) with an in-container Redis.
+#
+# Deploy: Render Dashboard -> New -> Blueprint -> pick this repo.
+# Then fill the three secret env vars (marked sync: false) in the dashboard:
+#   DATABASE_URL     -> your Tiger Cloud (TimescaleDB) connection string
+#   JWT_SECRET_KEY   -> any long random string
+#   FRONTEND_ORIGIN  -> your deployed frontend URL (e.g. https://perp.vercel.app)
+services:
+  - type: web
+    name: perp-backend
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    healthCheckPath: /healthz
+    autoDeploy: true
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET_KEY
+        sync: false
+      - key: FRONTEND_ORIGIN
+        sync: false
+      - key: REDIS_URL
+        value: redis://127.0.0.1:6379
+      - key: REDIS_ENGINE_SEND_STREAM_NAME
+        value: engine:input
+      - key: REDIS_ENGINE_RECEIVE_STREAM_NAME
+        value: backend:responses
+      - key: REDIS_ENGINE_STREAM
+        value: engine:input
+      - key: DB_POLLER_REDIS_STREAM
+        value: dbpoller:events
+      - key: PRICE_UPDATES_WEBSOCKET_BACKEND_URL
+        value: wss://fstream.binance.com/ws

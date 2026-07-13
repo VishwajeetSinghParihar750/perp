@@ -1,0 +1,14 @@
+node_modules
+**/node_modules
+.git
+.turbo
+**/.turbo
+**/dist
+**/.next
+**/out
+apps/frontend/dist
+apps/engine/data
+*.log
+.env
+**/.env
+.DS_Store

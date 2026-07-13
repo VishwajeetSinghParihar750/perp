@@ -6,7 +6,8 @@
   "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "bun tsx watch src/server.ts"
+    "dev": "bun tsx watch src/server.ts",
+    "start": "bun src/server.ts"
   },
   "author": "",
   "license": "ISC",

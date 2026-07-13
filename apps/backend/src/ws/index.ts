@@ -1,4 +1,5 @@
 import { WebSocketServer } from "ws";
+import type { Server } from "node:http";
 import {
   handleWebSocketMessage,
   handleWsDisconnected,
@@ -11,24 +12,32 @@ const httpServer = createServer();
 
 const wss = new WebSocketServer({ noServer: true });
 
-httpServer.on("upgrade", (req, socket, head) => {
-  console.log(
-    `[WS] Received connection upgrade request from ${req.socket.remoteAddress}`,
-  );
-  wss.handleUpgrade(req, socket, head, (ws) => {
-    if (!verifyJwtToken(ws, req)) {
-      console.log(
-        `[WS] Token verification failed for upgrade request from ${req.socket.remoteAddress}`,
-      );
-      ws.close(4001, "Unauthorized");
-      return;
-    }
+// Attach the WebSocket upgrade handler to any HTTP server. This lets the
+// WS endpoint share a single port with the Express HTTP server (required by
+// hosts that expose only one port, e.g. Render), while still supporting the
+// dedicated PORT_WS server used in local development.
+export function attachWebSocketUpgrade(server: Server) {
+  server.on("upgrade", (req, socket, head) => {
     console.log(
-      `[WS] Connection upgraded successfully for user: ${ws.user?.username} (${ws.user?.id})`,
+      `[WS] Received connection upgrade request from ${req.socket.remoteAddress}`,
     );
-    wss.emit("connection", ws, req);
+    wss.handleUpgrade(req, socket, head, (ws) => {
+      if (!verifyJwtToken(ws, req)) {
+        console.log(
+          `[WS] Token verification failed for upgrade request from ${req.socket.remoteAddress}`,
+        );
+        ws.close(4001, "Unauthorized");
+        return;
+      }
+      console.log(
+        `[WS] Connection upgraded successfully for user: ${ws.user?.username} (${ws.user?.id})`,
+      );
+      wss.emit("connection", ws, req);
+    });
   });
-});
+}
+
+attachWebSocketUpgrade(httpServer);
 
 wss.on("connection", (ws, req) => {
   console.log(
